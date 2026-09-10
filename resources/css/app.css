@@ -1,0 +1,122 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+/*
+ * This console is LIGHT ONLY, and this one line is what makes that true.
+ *
+ * Tailwind v4 binds `dark:` to prefers-color-scheme by default, so the whole
+ * console rendered dark on any machine whose operating system was set to dark —
+ * with no toggle and no way to say otherwise. Rebinding the variant to a
+ * `data-theme` attribute that is never set makes every existing `dark:` class
+ * inert immediately, rather than requiring a regex over nine hundred lines of
+ * Blade. Those dead classes are then removed view by view as each is redesigned.
+ *
+ * A financial statement does not have a night mode. This one is printed, signed
+ * and quoted in meetings, and it should look the same on paper as on screen.
+ */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme {
+    /*
+     * TYPOGRAPHY
+     *
+     * No webfont, deliberately. The previous declaration named 'Instrument Sans'
+     * and never loaded it — no link tag, no @font-face — so the console fell
+     * back to system-ui while claiming otherwise. Worse, a bursary on a phone
+     * hotspot that fails to fetch a font gets a page that reflows under them.
+     * System stacks render instantly, offline, on every machine in Cameroon.
+     *
+     * Serif for headings because this is a statement, not a dashboard: it is the
+     * visual grammar the Bursar already reads on a budget sheet.
+     */
+    --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+        Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+    --font-serif: Georgia, Cambria, 'Times New Roman', Times, serif;
+    --font-mono: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', Menlo, Consolas, monospace;
+
+    /*
+     * PALETTE — institutional, warm, restrained.
+     *
+     * Three colours are RESERVED and must never be spent on decoration, because
+     * the console already uses them to carry meaning that people rely on:
+     *
+     *   amber   a figure that is missing, stale, or not yet reported
+     *   rose    a finding, or a report that disagrees with itself
+     *   emerald reporting, healthy, present
+     *
+     * Everything else is ink on parchment plus a single accent. A body may
+     * override the accent with its own colour; see --color-accent below.
+     */
+    --color-ink: #16202e;
+    --color-ink-soft: #46566b;
+    --color-ink-muted: #6f8096;
+    --color-ground: #f7f5f1;
+    --color-surface: #ffffff;
+    --color-surface-sunk: #f2efe9;
+    --color-rule: #ded8cf;
+    --color-rule-strong: #c8c0b3;
+
+    /* The default accent. Overridden per body at runtime by an inline custom
+       property on <html>, so a deanery can carry its own colour without a
+       rebuild. */
+    --color-accent: #1f3a5f;
+    --color-accent-soft: #eef2f7;
+    --color-accent-ink: #142744;
+}
+
+/*
+ * The per-body accent arrives as an inline --body-accent on <html>. Falling back
+ * to the default keeps every page correct when a body has set no colour, which
+ * is most of them.
+ */
+:root {
+    --color-accent: var(--body-accent, #1f3a5f);
+}
+
+@layer base {
+    body {
+        background-color: var(--color-ground);
+        color: var(--color-ink);
+    }
+
+    /* Money is compared down a column far more often than it is read across a
+       row, so figures must line up. Applied here rather than remembered on
+       every table cell. */
+    .tabular-nums,
+    td,
+    th {
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+/*
+ * PRINT
+ *
+ * The consolidated statement is the artefact that leaves this system and gets
+ * quoted. If it prints badly, the most authoritative-looking version of the
+ * platform's output is its worst one.
+ */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+
+    body {
+        background: #fff;
+        color: #000;
+    }
+
+    /* A table split across a page break loses its header and its subtotal
+       lands alone on page two. */
+    table {
+        break-inside: avoid;
+    }
+
+    thead {
+        display: table-header-group;
+    }
+}

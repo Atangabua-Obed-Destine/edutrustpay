@@ -1,0 +1,143 @@
+<?php
+
+declare(strict_types=1);
+
+namespace EdutrustPay\Contract;
+
+/**
+ * What an institution can currently report.
+ *
+ * This is the accommodation that makes the whole platform workable, and it is
+ * not a nicety. The three systems feeding EdutrustPay are at very different
+ * levels of completeness: edutrustshsm is mid-build and gains modules monthly,
+ * and posinnova's double-entry ledger has never been written to at all — its
+ * accounting_accounts_transactions table is empty, and its GL codes are unset.
+ *
+ * Had the contract assumed a ledger everywhere, posinnova would have contributed
+ * a confident, perfectly balanced ZERO to the consolidated position, and nobody
+ * would have noticed. That is precisely the failure the brief forbids: a
+ * beautiful consolidated statement faithfully reporting a consistent lie.
+ *
+ * So: a capability absent from the declaration means CANNOT REPORT. A figure
+ * present with value 0 means GENUINELY ZERO. These are different facts and the
+ * contract never lets them collapse into each other.
+ *
+ * Each capability owns a set of payload paths. PayloadBuilder enforces the
+ * coupling in both directions — you cannot supply receivables without declaring
+ * the capability, and you cannot declare it without supplying them.
+ */
+final class Capability
+{
+    /** Income and expenditure by OHADA group, plus cash position and control totals. */
+    public const LEDGER = 'ledger';
+
+    /** Debtors, with ageing buckets. */
+    public const RECEIVABLES = 'receivables';
+
+    /** Creditors, with ageing buckets. */
+    public const PAYABLES = 'payables';
+
+    /** Budget versus actual. */
+    public const BUDGET = 'budget';
+
+    /** Student counts and expected fees. Not applicable to a business institution. */
+    public const ENROLMENT = 'enrolment';
+
+    /** Staff cost and statutory liabilities. */
+    public const PAYROLL = 'payroll';
+
+    /** Ledger hash, reversal and backdating counts — the tamper-evidence block. */
+    public const INTEGRITY = 'integrity';
+
+    /** Reconciliation against a bank or mobile-money statement. */
+    public const BANK_RECON = 'bank_recon';
+
+    /**
+     * Every capability, in the order the console's capability matrix shows them.
+     *
+     * @return list<string>
+     */
+    public static function all(): array
+    {
+        return [
+            self::LEDGER,
+            self::RECEIVABLES,
+            self::PAYABLES,
+            self::BUDGET,
+            self::ENROLMENT,
+            self::PAYROLL,
+            self::INTEGRITY,
+            self::BANK_RECON,
+        ];
+    }
+
+    public static function isValid(string $capability): bool
+    {
+        return in_array($capability, self::all(), true);
+    }
+
+    /**
+     * The payload blocks each capability owns.
+     *
+     * A block is a top-level-dotted path into the payload. If the capability is
+     * declared, every one of its blocks must be present; if it is not declared,
+     * none of them may be.
+     *
+     * @return array<string, list<string>>
+     */
+    public static function blocks(): array
+    {
+        return [
+            self::LEDGER => [
+                'financial.income_by_group',
+                'financial.expenditure_by_group',
+                'financial.surplus_deficit',
+                'financial.cash',
+                'financial.control',
+            ],
+            self::RECEIVABLES => ['financial.receivables'],
+            self::PAYABLES => ['financial.payables'],
+            self::BUDGET => ['financial.budget'],
+            self::PAYROLL => ['financial.payroll'],
+            self::BANK_RECON => ['financial.bank_recon'],
+            self::ENROLMENT => ['operational.enrolment'],
+            self::INTEGRITY => ['integrity'],
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function blocksFor(string $capability): array
+    {
+        return self::blocks()[$capability] ?? [];
+    }
+
+    /**
+     * Capabilities that cannot apply to a given institution type.
+     *
+     * A business institution has no enrolment; asking a pharmacy for student
+     * counts is a category error, and the console should render that cell as
+     * "not applicable" rather than "not yet reporting" — the difference between
+     * a gap that will close and one that never will.
+     *
+     * @return list<string>
+     */
+    public static function notApplicableTo(string $institutionType): array
+    {
+        return $institutionType === 'business' ? [self::ENROLMENT] : [];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function applicableTo(string $institutionType): array
+    {
+        $excluded = self::notApplicableTo($institutionType);
+
+        return array_values(array_filter(
+            self::all(),
+            static fn (string $c): bool => ! in_array($c, $excluded, true)
+        ));
+    }
+}

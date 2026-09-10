@@ -1,0 +1,29 @@
+<?php
+
+declare(strict_types=1);
+
+namespace EdutrustPay\Contract;
+
+/**
+ * The contract version.
+ *
+ * Four independently-deployed codebases implement this contract: the EdutrustPay
+ * console (Laravel 12), paxhitestbed (Laravel 10), edutrustshsm (Laravel 12) and
+ * posinnova (Laravel 9). They upgrade on different days. Every payload therefore
+ * carries the version it was built against, the ingest API returns the version it
+ * currently speaks, and each institution records the version it is expected to
+ * send — so a rollout can be staged rather than flag-day.
+ */
+final class ContractVersion
+{
+    /** The version this package implements. */
+    public const CURRENT = '1.0';
+
+    /** Versions this package can still read. */
+    public const SUPPORTED = ['1.0'];
+
+    public static function supports(string $version): bool
+    {
+        return in_array($version, self::SUPPORTED, true);
+    }
+}

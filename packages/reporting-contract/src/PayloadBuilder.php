@@ -1,0 +1,496 @@
+<?php
+
+declare(strict_types=1);
+
+namespace EdutrustPay\Contract;
+
+use EdutrustPay\Contract\Exceptions\CapabilityMismatchException;
+use EdutrustPay\Contract\Exceptions\ContractException;
+
+/**
+ * Builds a contract payload.
+ *
+ * THE DESIGN IDEA
+ * ---------------
+ * The rule the platform rests on is that a missing figure and a zero figure are
+ * different facts. Every other codebase states that rule in a comment and hopes.
+ * Here, declaring a capability and supplying its figures are THE SAME ACT: you
+ * declare `receivables` by calling receivables(). There is no way to declare a
+ * capability you have no figures for, and no way to smuggle figures in without
+ * declaring the capability, because neither is expressible.
+ *
+ * That means the two failure modes cannot occur:
+ *   - a system reporting 0 for something it cannot actually measure
+ *   - a system quietly attaching figures the console does not know to trust
+ *
+ * Omission is the way to say "cannot report". It requires no method call, which
+ * is as it should be: an institution mid-build (edutrustshsm) or without a
+ * working ledger at all (posinnova) simply calls fewer methods.
+ *
+ * Amounts are Money instances throughout. Counts are integers. Nothing is a
+ * float — see Money and Canonical for why that is load-bearing rather than
+ * fastidious.
+ */
+final class PayloadBuilder
+{
+    private string $institutionRef;
+
+    private string $period;
+
+    private string $status = 'provisional';
+
+    private int $sequence = 1;
+
+    private string $generatedAt;
+
+    private string $currency = 'XAF';
+
+    /** @var array<string, mixed> */
+    private array $financial = [];
+
+    /** @var array<string, mixed> */
+    private array $operational = [];
+
+    /** @var array<string, mixed>|null */
+    private ?array $integrity = null;
+
+    /** @var array<string, bool> capability => declared */
+    private array $declared = [];
+
+    private function __construct(string $institutionRef, string $period)
+    {
+        $this->institutionRef = $institutionRef;
+        $this->period = $period;
+        $this->generatedAt = gmdate('Y-m-d\TH:i:s\Z');
+
+        self::assertPeriod($period);
+
+        if ($institutionRef === '') {
+            throw new ContractException('An institution reference is required.');
+        }
+    }
+
+    /**
+     * @param  string  $period  calendar month, "YYYY-MM"
+     */
+    public static function for(string $institutionRef, string $period): self
+    {
+        return new self($institutionRef, $period);
+    }
+
+    /**
+     * provisional — the month is still open and these figures may move.
+     * final      — the month is closed.
+     *
+     * The distinction matters because restating a FINAL period is a control
+     * event (fraud model B: books edited after the fact), while a provisional
+     * month changing is just normal bookkeeping.
+     */
+    public function status(string $status): self
+    {
+        if (! in_array($status, ['provisional', 'final'], true)) {
+            throw new ContractException(sprintf('Status must be provisional or final, got "%s".', $status));
+        }
+
+        $this->status = $status;
+
+        return $this;
+    }
+
+    /**
+     * Increments per (institution, period). A higher sequence for a period
+     * already received supersedes it; the prior version is retained, never
+     * overwritten (brief §4.7).
+     */
+    public function sequence(int $sequence): self
+    {
+        if ($sequence < 1) {
+            throw new ContractException('Sequence starts at 1.');
+        }
+
+        $this->sequence = $sequence;
+
+        return $this;
+    }
+
+    /** ISO-8601 UTC. Defaults to now. */
+    public function generatedAt(string $isoUtc): self
+    {
+        if (strtotime($isoUtc) === false) {
+            throw new ContractException(sprintf('generated_at must be a parseable timestamp, got "%s".', $isoUtc));
+        }
+
+        $this->generatedAt = $isoUtc;
+
+        return $this;
+    }
+
+    public function currency(string $currency): self
+    {
+        if (preg_match('/^[A-Z]{3}$/', $currency) !== 1) {
+            throw new ContractException(sprintf('Currency must be a 3-letter ISO code, got "%s".', $currency));
+        }
+
+        $this->currency = $currency;
+
+        return $this;
+    }
+
+    /**
+     * Income and expenditure by OHADA group, cash position, and control totals.
+     *
+     * Consolidation happens at OHADA class/group level precisely so that no
+     * institution has to adopt anyone else's chart of accounts (brief §4.2).
+     * Each maps its own accounts to OHADA groups once, locally.
+     *
+     * The control totals let the console verify that the ledger balances itself
+     * rather than trusting a summary. Note that an UNBALANCED set is accepted
+     * here on purpose — see Validator for why rejecting it would be a mistake.
+     *
+     * @param  array<string, Money>  $incomeByGroup       OHADA group => amount, e.g. ['70' => Money]
+     * @param  array<string, Money>  $expenditureByGroup
+     * @param  array{opening: Money, movement: Money, closing: Money}  $cash
+     * @param  array{total_debits: Money, total_credits: Money, journal_entry_count: int, unposted_count: int}  $control
+     */
+    public function ledger(
+        array $incomeByGroup,
+        array $expenditureByGroup,
+        Money $surplusDeficit,
+        array $cash,
+        array $control
+    ): self {
+        self::assertGroupMap($incomeByGroup, 'income_by_group');
+        self::assertGroupMap($expenditureByGroup, 'expenditure_by_group');
+        self::assertShape($cash, ['opening', 'movement', 'closing'], 'cash');
+        self::assertMoneyValues($cash, 'cash');
+        self::assertShape($control, ['total_debits', 'total_credits', 'journal_entry_count', 'unposted_count'], 'control');
+
+        foreach (['total_debits', 'total_credits'] as $key) {
+            if (! $control[$key] instanceof Money) {
+                throw new ContractException(sprintf('control.%s must be a Money instance.', $key));
+            }
+        }
+
+        foreach (['journal_entry_count', 'unposted_count'] as $key) {
+            if (! is_int($control[$key]) || $control[$key] < 0) {
+                throw new ContractException(sprintf('control.%s must be a non-negative integer.', $key));
+            }
+        }
+
+        $this->financial['income_by_group'] = self::asMap($incomeByGroup);
+        $this->financial['expenditure_by_group'] = self::asMap($expenditureByGroup);
+        $this->financial['surplus_deficit'] = $surplusDeficit;
+        $this->financial['cash'] = $cash;
+        $this->financial['control'] = $control;
+
+        return $this->declare(Capability::LEDGER);
+    }
+
+    /**
+     * @param  array{0_30: Money, 31_60: Money, 61_90: Money, 90_plus: Money}  $ageing
+     */
+    public function receivables(Money $total, array $ageing): self
+    {
+        $this->financial['receivables'] = ['total' => $total, 'ageing' => self::assertAgeing($ageing, 'receivables')];
+
+        return $this->declare(Capability::RECEIVABLES);
+    }
+
+    /**
+     * @param  array{0_30: Money, 31_60: Money, 61_90: Money, 90_plus: Money}  $ageing
+     */
+    public function payables(Money $total, array $ageing): self
+    {
+        $this->financial['payables'] = ['total' => $total, 'ageing' => self::assertAgeing($ageing, 'payables')];
+
+        return $this->declare(Capability::PAYABLES);
+    }
+
+    public function budget(Money $budgeted, Money $actual): self
+    {
+        $this->financial['budget'] = ['budgeted' => $budgeted, 'actual' => $actual];
+
+        return $this->declare(Capability::BUDGET);
+    }
+
+    /**
+     * Staff cost for the month and the statutory liabilities standing against it.
+     *
+     * Statutory liabilities (CNPS, tax withheld) are carried separately because
+     * an institution that is paying salaries but not remitting withholdings is a
+     * specific and common failure, and it is invisible in a staff-cost total.
+     */
+    public function payroll(Money $staffCost, Money $statutoryLiabilities): self
+    {
+        $this->financial['payroll'] = [
+            'staff_cost' => $staffCost,
+            'statutory_liabilities' => $statutoryLiabilities,
+        ];
+
+        return $this->declare(Capability::PAYROLL);
+    }
+
+    /**
+     * Reconciliation against a source the bursar does not author.
+     *
+     * The highest-value control in the platform (brief §11): it is the only one
+     * that compares the ledger against something outside the bursar's reach.
+     */
+    public function bankRecon(Money $statementClosing, Money $ledgerClosing, string $statementRef): self
+    {
+        $this->financial['bank_recon'] = [
+            'statement_closing' => $statementClosing,
+            'ledger_closing' => $ledgerClosing,
+            'divergence' => $statementClosing->subtract($ledgerClosing),
+            'statement_ref' => $statementRef,
+        ];
+
+        return $this->declare(Capability::BANK_RECON);
+    }
+
+    /**
+     * Enrolment and fee collection.
+     *
+     * expected_fees is the anti-fraud figure: enrolment multiplied by the fee
+     * structure the BODY set, not a number the institution chose. Compared
+     * against collected, it turns "do we trust this report" into arithmetic.
+     *
+     * cash_share — the proportion taken as physical cash — is the exposure
+     * measure for interception (fraud model C).
+     *
+     * @param  string  $collectionRate  decimal string, e.g. "0.50" (never a float)
+     * @param  string  $cashShare       decimal string, e.g. "0.31"
+     */
+    public function enrolment(
+        int $enrolment,
+        Money $expectedFees,
+        Money $collected,
+        string $collectionRate,
+        string $cashShare
+    ): self {
+        if ($enrolment < 0) {
+            throw new ContractException('Enrolment cannot be negative.');
+        }
+
+        self::assertRate($collectionRate, 'collection_rate');
+        self::assertRate($cashShare, 'cash_share');
+
+        $this->operational['enrolment'] = $enrolment;
+        $this->operational['expected_fees'] = $expectedFees;
+        $this->operational['collected'] = $collected;
+        $this->operational['collection_rate'] = $collectionRate;
+        $this->operational['cash_share'] = $cashShare;
+
+        return $this->declare(Capability::ENROLMENT);
+    }
+
+    /**
+     * Tamper-evidence for the period.
+     *
+     * ledger_hash is taken over the period's journal lines, so the console can
+     * tell that a period's underlying detail changed even when the totals did
+     * not — which is exactly how fraud model B looks from the outside.
+     *
+     * On backdated_entries: count entries whose entry_date precedes the date
+     * they were created, EXCLUDING reversals. paxhitestbed deliberately dates a
+     * reversal with the original entry's date when that period is still open
+     * (TransactionAutoMapService::reversalPlacement), so counting reversals here
+     * would make the finding fire constantly on correct behaviour and train
+     * everyone to ignore it.
+     */
+    public function integrity(string $ledgerHash, int $auditEvents, int $reversals, int $backdatedEntries): self
+    {
+        foreach (['audit_events' => $auditEvents, 'reversals' => $reversals, 'backdated_entries' => $backdatedEntries] as $key => $count) {
+            if ($count < 0) {
+                throw new ContractException(sprintf('integrity.%s cannot be negative.', $key));
+            }
+        }
+
+        if (preg_match('/^sha256:[0-9a-f]{64}$/', $ledgerHash) !== 1) {
+            throw new ContractException(sprintf(
+                'ledger_hash must look like "sha256:<64 hex chars>", got "%s".',
+                $ledgerHash
+            ));
+        }
+
+        $this->integrity = [
+            'ledger_hash' => $ledgerHash,
+            'audit_events' => $auditEvents,
+            'reversals' => $reversals,
+            'backdated_entries' => $backdatedEntries,
+        ];
+
+        return $this->declare(Capability::INTEGRITY);
+    }
+
+    /**
+     * Assemble the payload.
+     *
+     * @return array<string, mixed>
+     */
+    public function build(): array
+    {
+        if ($this->declared === []) {
+            throw new CapabilityMismatchException(
+                'A report must declare at least one capability. An institution with nothing to '
+                .'report should send a heartbeat instead — silence and "nothing happened" are '
+                .'different facts, and only one of them is an alarm.'
+            );
+        }
+
+        $capabilities = array_values(array_filter(
+            Capability::all(),
+            fn (string $c): bool => isset($this->declared[$c])
+        ));
+
+        $payload = [
+            'contract_version' => ContractVersion::CURRENT,
+            'institution_ref' => $this->institutionRef,
+            'period' => $this->period,
+            'status' => $this->status,
+            'sequence' => $this->sequence,
+            'generated_at' => $this->generatedAt,
+            'currency' => $this->currency,
+            'capabilities' => $capabilities,
+        ];
+
+        if ($this->financial !== []) {
+            $payload['financial'] = $this->financial;
+        }
+
+        if ($this->operational !== []) {
+            $payload['operational'] = $this->operational;
+        }
+
+        if ($this->integrity !== null) {
+            $payload['integrity'] = $this->integrity;
+        }
+
+        // Belt and braces: prove the invariant actually holds on the way out,
+        // rather than trusting that every method above maintained it.
+        Validator::assertCapabilityCoupling($payload);
+
+        return $payload;
+    }
+
+    /**
+     * Build and serialise in one step.
+     */
+    public function toJson(): string
+    {
+        return Canonical::encode($this->build());
+    }
+
+    private function declare(string $capability): self
+    {
+        $this->declared[$capability] = true;
+
+        return $this;
+    }
+
+    private static function assertPeriod(string $period): void
+    {
+        if (preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $period) !== 1) {
+            throw new ContractException(sprintf(
+                'Period must be a calendar month "YYYY-MM", got "%s". The unit is always the '
+                .'calendar month, never a fiscal year: paxhitestbed runs January-December and the '
+                .'schools run July-June, so a body holds both. Institutions report months and the '
+                .'console assembles any fiscal year from them.',
+                $period
+            ));
+        }
+    }
+
+    /**
+     * @param  array<string, Money>  $map
+     */
+    private static function assertGroupMap(array $map, string $label): void
+    {
+        foreach ($map as $group => $amount) {
+            if (preg_match('/^\d{2}$/', (string) $group) !== 1) {
+                throw new ContractException(sprintf(
+                    '%s is keyed by two-digit OHADA group, got "%s".',
+                    $label,
+                    (string) $group
+                ));
+            }
+
+            if (! $amount instanceof Money) {
+                throw new ContractException(sprintf('%s["%s"] must be a Money instance.', $label, (string) $group));
+            }
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $ageing
+     * @return array<string, Money>
+     */
+    private static function assertAgeing(array $ageing, string $label): array
+    {
+        self::assertShape($ageing, ['0_30', '31_60', '61_90', '90_plus'], $label.'.ageing');
+        self::assertMoneyValues($ageing, $label.'.ageing');
+
+        return $ageing;
+    }
+
+    /**
+     * @param  array<string, mixed>  $actual
+     * @param  list<string>  $required
+     */
+    private static function assertShape(array $actual, array $required, string $label): void
+    {
+        $missing = array_diff($required, array_keys($actual));
+
+        if ($missing !== []) {
+            throw new ContractException(sprintf('%s is missing: %s.', $label, implode(', ', $missing)));
+        }
+
+        $unexpected = array_diff(array_keys($actual), $required);
+
+        if ($unexpected !== []) {
+            throw new ContractException(sprintf('%s has unexpected keys: %s.', $label, implode(', ', $unexpected)));
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $values
+     */
+    private static function assertMoneyValues(array $values, string $label): void
+    {
+        foreach ($values as $key => $value) {
+            if (! $value instanceof Money) {
+                throw new ContractException(sprintf('%s.%s must be a Money instance.', $label, (string) $key));
+            }
+        }
+    }
+
+    private static function assertRate(string $rate, string $label): void
+    {
+        if (preg_match('/^(0(\.\d{1,4})?|1(\.0{1,4})?)$/', $rate) !== 1) {
+            throw new ContractException(sprintf(
+                '%s must be a decimal string between "0" and "1", e.g. "0.50" — not a float. Got "%s".',
+                $label,
+                $rate
+            ));
+        }
+    }
+
+    /**
+     * Mark an OHADA group map as a map, unconditionally.
+     *
+     * Two failure modes this closes, both silent:
+     *
+     *   - A month with genuinely no income in any group would serialise as []
+     *     rather than {}, and a truthful report would fail schema validation.
+     *   - PHP cannot tell ['0' => x, '1' => y] from a list, so a group map whose
+     *     keys happened to look list-shaped would encode as a JSON array and the
+     *     group codes would vanish. OHADA groups run "10".."99" so this cannot
+     *     bite today, but the contract should not depend on that staying true.
+     *
+     * @param  array<string, Money>  $map
+     */
+    private static function asMap(array $map): \stdClass
+    {
+        return (object) $map;
+    }
+}

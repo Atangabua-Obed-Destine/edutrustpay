@@ -1,0 +1,49 @@
+{
+    "name": "unbalanced-ledger",
+    "description": "Debits do not equal credits, and there is an unposted backlog. Must be ACCEPTED and raise unbalanced_ledger — never rejected at the door.",
+    "contract_version": "1.0",
+    "signing": {
+        "note": "The secret below is a published test vector, not a credential.",
+        "secret": "edutrustpay-test-vector-secret-do-not-use-in-production",
+        "timestamp": "2026-09-02T08:15:00Z",
+        "signature_base": "timestamp . \".\" . canonical_json",
+        "signature": "sha256=aad15de68dc87795b275bcf431a8524e385f3265fff1451438612b932ba3daf5"
+    },
+    "expected_warnings": [
+        "unbalanced_ledger",
+        "unposted_backlog"
+    ],
+    "canonical_json": "{\"capabilities\":[\"ledger\"],\"contract_version\":\"1.0\",\"currency\":\"XAF\",\"financial\":{\"cash\":{\"closing\":\"600000.00\",\"movement\":\"500000.00\",\"opening\":\"100000.00\"},\"control\":{\"journal_entry_count\":120,\"total_credits\":\"4750000.00\",\"total_debits\":\"5000000.00\",\"unposted_count\":7},\"expenditure_by_group\":{\"60\":\"1500000.00\"},\"income_by_group\":{\"70\":\"2000000.00\"},\"surplus_deficit\":\"500000.00\"},\"generated_at\":\"2026-07-02T08:00:00Z\",\"institution_ref\":\"11111111-2222-3333-4444-555555555555\",\"period\":\"2026-06\",\"sequence\":1,\"status\":\"provisional\"}",
+    "payload": {
+        "capabilities": [
+            "ledger"
+        ],
+        "contract_version": "1.0",
+        "currency": "XAF",
+        "financial": {
+            "cash": {
+                "closing": "600000.00",
+                "movement": "500000.00",
+                "opening": "100000.00"
+            },
+            "control": {
+                "journal_entry_count": 120,
+                "total_credits": "4750000.00",
+                "total_debits": "5000000.00",
+                "unposted_count": 7
+            },
+            "expenditure_by_group": {
+                "60": "1500000.00"
+            },
+            "income_by_group": {
+                "70": "2000000.00"
+            },
+            "surplus_deficit": "500000.00"
+        },
+        "generated_at": "2026-07-02T08:00:00Z",
+        "institution_ref": "11111111-2222-3333-4444-555555555555",
+        "period": "2026-06",
+        "sequence": 1,
+        "status": "provisional"
+    }
+}

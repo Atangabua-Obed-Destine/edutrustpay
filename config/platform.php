@@ -57,13 +57,7 @@ return [
     |
     | Read by PlatformSeeder when standing up a new deployment.
     |
-    | These live here rather than being read from env() inside the seeder for a
-    | reason that bit this project on XAMPP: the console runs with its config
-    | CACHED, because Apache's mod_php keeps one PHP process across requests and
-    | Laravel's Dotenv refuses to overwrite variables another application in
-    | that same process already set. With the config cached, Laravel never reads
-    | .env at runtime at all — which is the point — and any stray env() call
-    | outside a config file silently returns null.
+    | Read through config so the seeder works whether or not the config is cached.
     |
     | A blank password means "generate one and print it once".
     |

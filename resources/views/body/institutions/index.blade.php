@@ -3,6 +3,15 @@
 @section('title', __('Institutions'))
 @section('subtitle', trans_choice('{1}One institution|[2,*]:count institutions', $institutions->count(), ['count' => $institutions->count()]))
 
+@section('header-actions')
+    @can('institution.create')
+        <a href="{{ route('body.manage.institutions.create') }}"
+           class="rounded bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">
+            {{ __('Add an institution') }}
+        </a>
+    @endcan
+@endsection
+
 @section('content')
 
     <div class="overflow-x-auto rounded border border-rule">
@@ -15,6 +24,7 @@
                     <th class="px-4 py-2 font-semibold">{{ __('Capabilities') }}</th>
                     <th class="px-4 py-2 font-semibold">{{ __('Last period') }}</th>
                     <th class="px-4 py-2 font-semibold">{{ __('Reporting') }}</th>
+                    <th class="px-4 py-2"></th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-rule bg-surface">
@@ -27,7 +37,7 @@
                         <td class="px-4 py-2 text-ink-muted">{{ $institution->body->name }}</td>
                         <td class="px-4 py-2 text-ink-muted">{{ $institution->system }}</td>
                         <td class="px-4 py-2 text-ink-muted tabular-nums">
-                            {{ count($institution->declaredCapabilities()) }} / {{ count($institution->applicableCapabilities()) }}
+                            {{ $institution->capabilities->whereNotNull('first_seen_at')->count() }} / {{ count($institution->applicableCapabilities()) }}
                         </td>
                         <td class="px-4 py-2 text-ink-muted">{{ $institution->last_period_received ?? '—' }}</td>
                         <td class="px-4 py-2">
@@ -38,6 +48,11 @@
                             @else
                                 <span class="text-xs text-emerald-700">{{ __('current') }}</span>
                             @endif
+                        </td>
+                        <td class="px-4 py-2 text-right">
+                            @canany(['institution.update', 'capability.declare', 'credential.view'])
+                                <a href="{{ route('body.manage.institutions.show', $institution) }}" class="text-xs font-medium text-ink-soft hover:underline">{{ __('Manage') }}</a>
+                            @endcanany
                         </td>
                     </tr>
                 @endforeach

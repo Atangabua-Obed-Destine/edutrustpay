@@ -17,9 +17,7 @@ use Illuminate\Support\Str;
  * should have to make on the day they go live.
  *
  * The password is NOT 'password'. It comes from config('platform.operator'),
- * or is generated and printed once. Read through config rather than env()
- * directly, because this console runs with its configuration CACHED and a
- * stray env() call would then silently return null - see config/platform.php.
+ * or is generated and printed once.
  * A seeded default credential on a system holding
  * an archdiocese's consolidated finances is the kind of thing that survives
  * unnoticed into production for years.

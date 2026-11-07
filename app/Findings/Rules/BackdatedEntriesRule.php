@@ -85,7 +85,7 @@ class BackdatedEntriesRule implements Rule
             // Most of a month arriving late is a different matter from a couple
             // of straggling invoices.
             severity: $share !== null && $share > 50 ? 'high' : 'medium',
-            title: __(':count entries were added after the month closed', ['count' => $report->backdated_entries]),
+            title: trans_choice('{1}1 entry was added after the month ended|[2,*]:count entries were added after the month ended', (int) $report->backdated_entries, ['count' => $report->backdated_entries]),
             explanation: __(
                 ':count of the entries behind :name\'s :period figures were created after :period had '
                 .'ended:share. Some of this is ordinary — invoices arrive late. It matters when a period '

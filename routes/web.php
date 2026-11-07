@@ -13,6 +13,8 @@ use App\Http\Controllers\Body\ConsolidationController;
 use App\Http\Controllers\Body\DashboardController as BodyDashboard;
 use App\Http\Controllers\Body\FindingController;
 use App\Http\Controllers\Body\InstitutionController;
+use App\Http\Controllers\Body\RoleController;
+use App\Http\Middleware\EnsureBodyView;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -29,7 +31,13 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', fn () => redirect()->route(auth()->check() ? 'body.dashboard' : 'login'));
+Route::get('/', function () {
+    if (! auth()->check()) {
+        return redirect()->route('login');
+    }
+
+    return redirect()->route(auth()->user()->isSuperAdmin() ? 'admin.dashboard' : 'body.dashboard');
+});
 
 // ═══════════════════════════════════════════════════════════════════
 // Authentication
@@ -60,7 +68,7 @@ Route::post('invite/{token}', [InvitationController::class, 'store'])
 // Body console
 // ═══════════════════════════════════════════════════════════════════
 
-Route::middleware('auth')->prefix('body')->name('body.')->group(function () {
+Route::middleware(['auth', EnsureBodyView::class])->prefix('body')->name('body.')->group(function () {
 
     Route::get('/', BodyDashboard::class)->name('dashboard');
 
@@ -95,6 +103,50 @@ Route::middleware('auth')->prefix('body')->name('body.')->group(function () {
     // who can close the findings they are auditing is not an auditor.
     Route::post('findings/{finding}/resolve', [FindingController::class, 'resolve'])
         ->middleware('permission:finding.resolve')->name('findings.resolve');
+
+    /*
+     * The body runs its own schools and staff. Same screens as the operator's,
+     * limited to this body and those nested inside it. Permission checked per
+     * action, so a role can be given exactly what it needs.
+     */
+    Route::prefix('manage')->name('manage.')->group(function () {
+        Route::get('institutions/create', [AdminInstitutionController::class, 'create'])
+            ->middleware('permission:institution.create')->name('institutions.create');
+        Route::post('institutions', [AdminInstitutionController::class, 'store'])
+            ->middleware('permission:institution.create')->name('institutions.store');
+        Route::get('institutions/{institution}', [AdminInstitutionController::class, 'show'])
+            ->middleware('permission:institution.update|capability.declare|credential.view')->name('institutions.show');
+        Route::get('institutions/{institution}/edit', [AdminInstitutionController::class, 'edit'])
+            ->middleware('permission:institution.update')->name('institutions.edit');
+        Route::put('institutions/{institution}', [AdminInstitutionController::class, 'update'])
+            ->middleware('permission:institution.update')->name('institutions.update');
+        Route::put('institutions/{institution}/capabilities', [AdminInstitutionController::class, 'capabilities'])
+            ->middleware('permission:capability.declare')->name('institutions.capabilities');
+        Route::post('institutions/{institution}/onboarding', [AdminInstitutionController::class, 'onboarding'])
+            ->middleware('permission:institution.update')->name('institutions.onboarding');
+
+        Route::post('institutions/{institution}/credentials', [CredentialController::class, 'store'])
+            ->middleware('permission:credential.issue')->name('credentials.store');
+        Route::post('institutions/{institution}/credentials/{credential}/rotate', [CredentialController::class, 'rotate'])
+            ->middleware('permission:credential.rotate')->name('credentials.rotate');
+        Route::post('institutions/{institution}/credentials/{credential}/revoke', [CredentialController::class, 'revoke'])
+            ->middleware('permission:credential.revoke')->name('credentials.revoke');
+
+        Route::get('people', [UserController::class, 'index'])->middleware('permission:user.view')->name('users.index');
+        Route::get('people/create', [UserController::class, 'create'])->middleware('permission:user.invite')->name('users.create');
+        Route::post('people', [UserController::class, 'store'])->middleware('permission:user.invite')->name('users.store');
+        Route::get('people/{user}/edit', [UserController::class, 'edit'])->middleware('permission:user.update')->name('users.edit');
+        Route::put('people/{user}', [UserController::class, 'update'])->middleware('permission:user.update')->name('users.update');
+        Route::post('people/{user}/reinvite', [UserController::class, 'reinvite'])->middleware('permission:user.invite')->name('users.reinvite');
+        Route::post('people/{user}/toggle', [UserController::class, 'toggle'])->middleware('permission:user.deactivate')->name('users.toggle');
+
+        Route::get('roles', [RoleController::class, 'index'])->middleware('permission:role.view')->name('roles.index');
+        Route::get('roles/create', [RoleController::class, 'create'])->middleware('permission:role.manage')->name('roles.create');
+        Route::post('roles', [RoleController::class, 'store'])->middleware('permission:role.manage')->name('roles.store');
+        Route::get('roles/{role}/edit', [RoleController::class, 'edit'])->middleware('permission:role.manage')->name('roles.edit');
+        Route::put('roles/{role}', [RoleController::class, 'update'])->middleware('permission:role.manage')->name('roles.update');
+        Route::delete('roles/{role}', [RoleController::class, 'destroy'])->middleware('permission:role.manage')->name('roles.destroy');
+    });
 
     Route::middleware('permission:consolidation.view')->group(function () {
         Route::get('consolidation', [ConsolidationController::class, 'show'])->name('consolidation');
@@ -143,6 +195,8 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')
     Route::get('users', [UserController::class, 'index'])->name('users.index');
     Route::get('users/create', [UserController::class, 'create'])->name('users.create');
     Route::post('users', [UserController::class, 'store'])->name('users.store');
+    Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
+    Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::post('users/{user}/reinvite', [UserController::class, 'reinvite'])->name('users.reinvite');
     Route::post('users/{user}/toggle', [UserController::class, 'toggle'])->name('users.toggle');
 });

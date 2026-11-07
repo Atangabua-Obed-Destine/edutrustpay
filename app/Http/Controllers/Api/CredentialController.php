@@ -32,7 +32,7 @@ use Illuminate\Http\Request;
 class CredentialController extends Controller
 {
     /** How long a rotated-from key keeps working. */
-    public const GRACE_HOURS = 48;
+    public const GRACE_HOURS = InstitutionCredential::GRACE_HOURS;
 
     public function rotate(Request $request): JsonResponse
     {
@@ -47,7 +47,7 @@ class CredentialController extends Controller
         );
 
         // Mark the old one as rotated but leave it usable until the grace period
-        // expires. RevokeRotatedCredentials sweeps it up afterwards.
+        // expires. InstitutionCredential::expireRotated() retires it afterwards.
         $current->forceFill([
             'rotated_at' => now(),
             'revoked_reason' => 'Rotated by the institution; expires '.now()->addHours(self::GRACE_HOURS)->toDateTimeString(),

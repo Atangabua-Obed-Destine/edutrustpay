@@ -15,6 +15,18 @@
     </div>
 
     <div class="space-y-3 p-4">
+        <p class="text-sm text-amber-900">{{ __('The school enters these four values on its EdutrustPay Reporting settings page, then clicks Test connection.') }}</p>
+
+        <div>
+            <p class="text-xs uppercase tracking-wide text-amber-800">{{ __('Console address') }}</p>
+            <code class="mt-0.5 block break-all rounded bg-surface px-3 py-2 font-mono text-sm">{{ rtrim(config('app.url'), '/') }}</code>
+        </div>
+
+        <div>
+            <p class="text-xs uppercase tracking-wide text-amber-800">{{ __('Institution reference') }}</p>
+            <code class="mt-0.5 block break-all rounded bg-surface px-3 py-2 font-mono text-sm">{{ $secret['ref'] ?? '' }}</code>
+        </div>
+
         <div>
             <p class="text-xs uppercase tracking-wide text-amber-800">{{ __('Key id') }}</p>
             <code class="mt-0.5 block break-all rounded bg-surface px-3 py-2 font-mono text-sm">{{ $secret['key_id'] }}</code>

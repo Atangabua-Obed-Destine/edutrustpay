@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Support\BodyContext;
 use EdutrustPay\Contract\ContractVersion;
 use Illuminate\Validation\Rule;
 
@@ -10,7 +11,7 @@ class InstitutionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->isSuperAdmin() ?? false;
+        return $this->user()?->can($this->route('institution') ? 'institution.update' : 'institution.create') ?? false;
     }
 
     /**
@@ -21,7 +22,8 @@ class InstitutionRequest extends FormRequest
         $institution = $this->route('institution');
 
         return [
-            'body_id' => ['required', 'exists:bodies,id'],
+            // Never into a body this person cannot see.
+            'body_id' => ['required', Rule::in(BodyContext::accessibleIds())],
             'name' => ['required', 'string', 'max:191'],
             'slug' => ['nullable', 'string', 'max:191', 'alpha_dash', Rule::unique('institutions', 'slug')->ignore($institution?->id)],
 

@@ -5,6 +5,7 @@ namespace App\Findings\Rules;
 use App\Findings\FindingDraft;
 use App\Findings\Rule;
 use App\Findings\RuleContext;
+use Carbon\Carbon;
 use EdutrustPay\Contract\Money;
 
 /**
@@ -46,12 +47,15 @@ class FinalRestatedRule implements Rule
 
         $previous = $report->supersedes;
 
-        // Only a period that had been declared FINAL counts.
-        if (! $previous || $previous->status !== 'final') {
+        if (! $previous) {
             return null;
         }
 
         $movement = $this->movement($previous, $report);
+
+        if ($previous->status !== 'final') {
+            return $this->lateChange($context, $previous, $movement);
+        }
 
         return new FindingDraft(
             rule: $this->code(),
@@ -80,6 +84,74 @@ class FinalRestatedRule implements Rule
                 'previous_ledger_hash' => $previous->ledger_hash,
                 'new_ledger_hash' => $report->ledger_hash,
                 'days_between' => $previous->generated_at->diffInDays($report->generated_at),
+            ], fn ($v) => $v !== null),
+            period: $report->period,
+        );
+    }
+
+    /**
+     * A month still marked provisional whose LEDGER changed well after it ended.
+     *
+     * Status alone cannot carry this control. A school that never closes its
+     * accounting periods (PAX HIGHER INSTITUTE has closed 0 of 27) reports every
+     * month as provisional forever, so the final-month check above never fires
+     * and old months can be edited unnoticed. Measured on the ledger hash, so a
+     * receivable changing because a student paid does not count.
+     *
+     * @param  array{sentence: string, delta: ?string}  $movement
+     */
+    private function lateChange(RuleContext $context, $previous, array $movement): ?FindingDraft
+    {
+        $report = $context->report;
+        $days = (int) config('findings.rules.final_restated.late_after_days', 30);
+        $monthEnd = Carbon::createFromFormat('Y-m', $report->period)->endOfMonth();
+
+        $ledgerMoved = $previous->ledger_hash && $report->ledger_hash
+            && $previous->ledger_hash !== $report->ledger_hash;
+
+        if (! $ledgerMoved || $report->generated_at->lessThan($monthEnd->copy()->addDays($days))) {
+            return null;
+        }
+
+        /*
+         * Same totals with a different hash means entries were re-created or
+         * renumbered without the month's figures moving. Worth asking about, but
+         * not the same thing as money changing in an old month.
+         */
+        $figuresMoved = (string) $previous->surplus_deficit !== (string) $report->surplus_deficit
+            || (string) $previous->total_debits !== (string) $report->total_debits
+            || $previous->journal_entry_count !== $report->journal_entry_count;
+
+        return new FindingDraft(
+            rule: $this->code(),
+            severity: $figuresMoved ? 'high' : 'medium',
+            title: $figuresMoved
+                ? __('An old month was changed')
+                : __('An old month\'s entries were re-created'),
+            explanation: __(
+                $figuresMoved
+                    ? ':name changed its books for :period :days days after that month ended. :movement '
+                        .'Both versions are retained. Late entries can be honest catch-up work, so ask what '
+                        .'was added and why; this is also the shape a retro-edited ledger takes.'
+                    : ':name re-created or renumbered its entries for :period :days days after that month '
+                        .'ended. The month\'s totals did not change. Both versions are retained. This usually '
+                        .'means the ledger was rebuilt, so ask who did it and why.',
+                [
+                    'name' => $context->institution->name,
+                    'period' => $report->period,
+                    'days' => (int) $monthEnd->diffInDays($report->generated_at),
+                    'movement' => $movement['sentence'],
+                ]
+            ),
+            figures: array_filter([
+                'period' => $report->period,
+                'previous_sequence' => $previous->sequence,
+                'new_sequence' => $report->sequence,
+                'previous_surplus' => $previous->surplus_deficit,
+                'new_surplus' => $report->surplus_deficit,
+                'surplus_movement' => $movement['delta'],
+                'previous_ledger_hash' => $previous->ledger_hash,
+                'new_ledger_hash' => $report->ledger_hash,
             ], fn ($v) => $v !== null),
             period: $report->period,
         );
@@ -115,9 +187,9 @@ class FinalRestatedRule implements Rule
 
         return [
             'sentence' => __('The surplus moved from :before to :after, a change of :delta.', [
-                'before' => $before->value(),
-                'after' => $after->value(),
-                'delta' => $delta->value(),
+                'before' => money_text($before->value()),
+                'after' => money_text($after->value()),
+                'delta' => money_text($delta->value()),
             ]),
             'delta' => $delta->value(),
         ];

@@ -8,6 +8,12 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 
+// XAMPP runs PHP inside one threaded Apache process, shared by every app it
+// serves. Loading .env with putenv() lets one app's DB_DATABASE reach another.
+// Same fix as edutrustshsm; it also means this app no longer depends on a cached
+// config to stay on its own database.
+\Illuminate\Support\Env::disablePutenv();
+
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         /*

@@ -76,9 +76,9 @@ class CollectionGapRule implements Rule
                     'name' => $context->institution->name,
                     'enrolment' => $report->enrolment ?? __('an unstated number of'),
                     'period' => $report->period,
-                    'expected' => $expected->value(),
-                    'collected' => $collected->value(),
-                    'shortfall' => $shortfall->value(),
+                    'expected' => money_text($expected->value()),
+                    'collected' => money_text($collected->value()),
+                    'shortfall' => money_text($shortfall->value()),
                     'cash' => $cashShare !== null && $cashShare > 0.5
                         ? __(' :share% of what was collected was taken as physical cash.', ['share' => round($cashShare * 100)])
                         : '',

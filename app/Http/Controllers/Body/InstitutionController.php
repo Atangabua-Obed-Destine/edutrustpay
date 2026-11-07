@@ -61,7 +61,7 @@ class InstitutionController extends Controller
             'income' => $report ? $report->groupTotals('income') : [],
             'expenditure' => $report ? $report->groupTotals('expenditure') : [],
             'trend' => $consolidation->trend($institution, 'surplus_deficit', Capability::LEDGER),
-            'events' => $institution->syncEvents()->orderByDesc('id')->limit(12)->get(),
+            'events' => $institution->syncEvents()->orderByDesc('id')->limit(6)->get(),
             'drillThrough' => $drill->for($institution, $period),
         ]);
     }

@@ -26,8 +26,8 @@
         </p>
     @else
         <div class="space-y-2">
-            @foreach ($findings as $finding)
-                @include('body.partials.finding-row', ['finding' => $finding])
+            @foreach ($groups as $group)
+                @include('body.partials.finding-group', ['group' => $group])
             @endforeach
         </div>
 

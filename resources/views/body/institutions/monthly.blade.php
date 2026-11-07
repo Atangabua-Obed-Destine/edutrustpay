@@ -74,7 +74,7 @@
              refuse a report. --}}
         @if ($report->warningList())
             <div class="mb-6 rounded border-l-4 border-rose-400 bg-rose-50 px-4 py-3">
-                <p class="text-sm font-semibold text-rose-900">{{ __('This report disagrees with itself') }}</p>
+                <p class="text-sm font-semibold text-rose-900">{{ __('Points to check in this report') }}</p>
                 <ul class="mt-1 space-y-1 text-sm text-rose-800">
                     @foreach ($report->warningList() as $warning)
                         <li>· {{ $warning['message'] }}</li>

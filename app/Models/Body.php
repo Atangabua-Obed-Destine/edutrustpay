@@ -201,6 +201,16 @@ class Body extends Model
     /**
      * Indented name for a select box, so the tree is legible in a flat list.
      */
+    /**
+     * This body and those above it, from the materialised path.
+     *
+     * @return array<int, int>
+     */
+    public function pathIds(): array
+    {
+        return array_map('intval', array_values(array_filter(explode('/', (string) $this->path))));
+    }
+
     public function getIndentedNameAttribute(): string
     {
         return str_repeat('— ', $this->depth).$this->name;

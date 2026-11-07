@@ -8,6 +8,7 @@ use App\Models\Body;
 use App\Models\Institution;
 use App\Models\InstitutionCapability;
 use App\Services\OnboardingChecklistService;
+use App\Support\BodyContext;
 use EdutrustPay\Contract\Capability;
 use EdutrustPay\Contract\ContractVersion;
 use Illuminate\Http\Request;
@@ -15,15 +16,24 @@ use Illuminate\Http\Request;
 /**
  * Enrolling and configuring institutions.
  *
- * The operator works outside every body, so every query here bypasses the
- * tenancy scope explicitly. That is safe because the route group already
- * requires the super_admin role, and it is necessary because BodyContext would
- * otherwise filter these to the operator's own body, which does not exist.
+ * Used from both sides: by the operator across every body, and by a body's own
+ * administrators under /body/manage. Route binding goes through the tenancy
+ * scope, so an institution in another body is a 404 here. Only index(), which is
+ * registered for the operator alone, bypasses it.
  */
 class InstitutionController extends Controller
 {
     public function __construct(private OnboardingChecklistService $checklist)
     {
+    }
+
+    /**
+     * Where an institution may be placed: everywhere for the operator, this body
+     * and those nested inside it for a body's own administrator.
+     */
+    private function availableBodies()
+    {
+        return Body::whereIn('id', BodyContext::accessibleIds())->orderBy('path')->get();
     }
 
     public function index(Request $request)
@@ -47,14 +57,14 @@ class InstitutionController extends Controller
     {
         return view('admin.institutions.form', [
             'institution' => new Institution([
-                'body_id' => $request->integer('body') ?: null,
+                'body_id' => $request->integer('body') ?: (BodyContext::isSuperAdmin() ? null : BodyContext::current()),
                 'type' => 'school_basic',
                 'system' => 'edutrustshsm',
                 'connectivity_mode' => 'push',
                 'contract_version' => ContractVersion::CURRENT,
                 'is_active' => true,
             ]),
-            'bodies' => Body::orderBy('path')->get(),
+            'bodies' => $this->availableBodies(),
         ]);
     }
 
@@ -65,7 +75,7 @@ class InstitutionController extends Controller
         );
 
         return redirect()
-            ->route('admin.institutions.show', $institution)
+            ->to(manage_route('institutions.show', $institution))
             ->with('success', __('
                 :name enrolled. Issue credentials and declare what it can report — until you declare a
                 capability, the console will show it as "not yet reporting" rather than as zero, which is
@@ -95,7 +105,7 @@ class InstitutionController extends Controller
     {
         return view('admin.institutions.form', [
             'institution' => $institution,
-            'bodies' => Body::orderBy('path')->get(),
+            'bodies' => $this->availableBodies(),
         ]);
     }
 
@@ -104,7 +114,7 @@ class InstitutionController extends Controller
         $institution->update($request->validated() + ['is_active' => $request->boolean('is_active')]);
 
         return redirect()
-            ->route('admin.institutions.show', $institution)
+            ->to(manage_route('institutions.show', $institution))
             ->with('success', __('Saved.'));
     }
 
@@ -143,7 +153,7 @@ class InstitutionController extends Controller
         $ignored = $observed->diff($chosen);
 
         return redirect()
-            ->route('admin.institutions.show', $institution)
+            ->to(manage_route('institutions.show', $institution))
             ->with('success', trim(__('Capabilities updated.').' '.($ignored->isNotEmpty()
                 ? __('Kept :list — reports carrying them have already arrived, so removing them would make this page disagree with the figures.', ['list' => $ignored->implode(', ')])
                 : '')));

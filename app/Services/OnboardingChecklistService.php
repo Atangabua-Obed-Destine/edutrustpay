@@ -31,11 +31,6 @@ class OnboardingChecklistService
     public static function steps(): array
     {
         return [
-            'merchant_account' => [
-                'label' => __('Merchant account in the institution\'s own name'),
-                'why' => __('Start this first — it takes the longest. EdutrustPay never holds money, so payments must land in the institution\'s own account.'),
-                'manual' => true,
-            ],
             'server_power' => [
                 'label' => __('Server and power backup'),
                 'why' => __('The institution keeps its own books locally. Reporting has to survive a power cut.'),
@@ -129,7 +124,7 @@ class OnboardingChecklistService
              * cannot be compared with anyone else's. That is worth saying out
              * loud rather than leaving as an unticked box among eight others.
              */
-            if (! $done && in_array($key, ['ohada_mapping', 'merchant_account'], true)) {
+            if (! $done && $key === 'ohada_mapping') {
                 $blocking[] = $meta['label'];
             }
         }

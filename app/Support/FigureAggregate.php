@@ -77,9 +77,26 @@ final class FigureAggregate
         return $this->total;
     }
 
+    /**
+     * The total for display, or the fact that there is no total.
+     *
+     * With nothing reported the arithmetic still yields 0, and printing it put
+     * "0 XAF" on the dashboard for a month no institution had filed: the exact
+     * confusion of missing with zero this class exists to prevent. Handled here
+     * rather than in each template so a new card cannot get it wrong.
+     */
     public function formatted(): string
     {
+        if ($this->covered === []) {
+            return __('no figures yet');
+        }
+
         return number_format((float) $this->total->value(), 0, '.', ' ');
+    }
+
+    public function hasFigures(): bool
+    {
+        return $this->covered !== [];
     }
 
     public function coveredCount(): int
@@ -149,7 +166,7 @@ final class FigureAggregate
             );
         }
 
-        return __('Consolidated across :covered of :total institutions. :missing not reporting.', [
+        return __('Consolidated across :covered of :total institutions. :missing has no figure for this.', [
             'covered' => $this->coveredCount(),
             'total' => $total,
             'missing' => $this->missingCount(),

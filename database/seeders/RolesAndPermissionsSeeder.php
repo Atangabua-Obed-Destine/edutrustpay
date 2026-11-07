@@ -32,6 +32,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'Finding' => ['view', 'resolve'],
         'Consolidation' => ['view', 'export'],
         'User' => ['view', 'invite', 'update', 'deactivate'],
+        'Role' => ['view', 'manage'],
         'Audit' => ['view'],
         'Settings' => ['view', 'update'],
     ];
@@ -56,6 +57,17 @@ class RolesAndPermissionsSeeder extends Seeder
                 'finding.view', 'finding.resolve',
                 'consolidation.view', 'consolidation.export',
                 'credential.view', 'audit.view',
+            ],
+        ],
+        'education_secretary' => [
+            'display' => 'Education Secretary',
+            'description' => 'Oversees the schools: their reports and findings. A starting point; a body can copy it and adjust.',
+            'permissions' => [
+                'body.view', 'institution.view', 'capability.view',
+                'report.view', 'report.export',
+                'finding.view', 'finding.resolve',
+                'consolidation.view', 'consolidation.export',
+                'audit.view',
             ],
         ],
         'auditor' => [

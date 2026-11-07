@@ -73,68 +73,12 @@
                     {{ $body?->name ?? platform_name() }}
                 </p>
                 <p class="truncate text-[11px] uppercase tracking-wider text-white/60">
-                    {{ $body?->type ?: console_name() }}
+                    {{ $body?->type ?: ($isOperator ? __('Platform operator') : console_name()) }}
                 </p>
             </div>
         </div>
 
-        <nav class="flex-1 space-y-6 px-3 py-5 text-sm">
-            <div>
-                <p class="px-2 pb-2 text-[11px] font-semibold uppercase tracking-wider text-white/45">{{ __('Oversight') }}</p>
-
-                <x-nav-link :href="route('body.dashboard')" :active="request()->routeIs('body.dashboard')">
-                    {{ __('Overview') }}
-                </x-nav-link>
-
-                @can('finding.view')
-                    <x-nav-link :href="route('body.findings.index')" :active="request()->routeIs('body.findings.*')"
-                                :badge="$openFindingCount ?? null">
-                        {{ __('Findings') }}
-                    </x-nav-link>
-                @endcan
-
-                @can('consolidation.view')
-                    <x-nav-link :href="route('body.consolidation')" :active="request()->routeIs('body.consolidation')">
-                        {{ __('Consolidated position') }}
-                    </x-nav-link>
-                @endcan
-            </div>
-
-            <div>
-                <p class="px-2 pb-2 text-[11px] font-semibold uppercase tracking-wider text-white/45">{{ __('Institutions') }}</p>
-
-                @can('institution.view')
-                    <x-nav-link :href="route('body.institutions.index')" :active="request()->routeIs('body.institutions.*')">
-                        {{ __('All institutions') }}
-                    </x-nav-link>
-                @endcan
-
-                @can('capability.view')
-                    <x-nav-link :href="route('body.capabilities')" :active="request()->routeIs('body.capabilities')">
-                        {{ __('Capability matrix') }}
-                    </x-nav-link>
-                @endcan
-            </div>
-
-            @if ($isOperator)
-                <div>
-                    <p class="px-2 pb-2 text-[11px] font-semibold uppercase tracking-wider text-white/45">{{ __('Operator') }}</p>
-
-                    <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
-                        {{ __('Overview') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('admin.bodies.index')" :active="request()->routeIs('admin.bodies.*')">
-                        {{ __('Bodies') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('admin.institutions.index')" :active="request()->routeIs('admin.institutions.*')">
-                        {{ __('Institutions') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
-                        {{ __('People') }}
-                    </x-nav-link>
-                </div>
-            @endif
-        </nav>
+        @include('layouts.partials.console-nav')
 
         <div class="border-t border-white/15 px-5 py-4 text-xs text-white/60">
             <p class="truncate font-medium text-white/90">{{ auth()->user()->name }}</p>
@@ -149,6 +93,20 @@
     </aside>
 
     <div class="flex min-w-0 flex-1 flex-col">
+
+        {{-- The sidebar is hidden below the large breakpoint, and without this a
+             phone had no navigation at all. --}}
+        <details class="no-print bg-accent text-white lg:hidden">
+            <summary class="flex cursor-pointer items-center justify-between px-4 py-3 text-sm font-medium">
+                <span class="truncate">{{ $body?->name ?? platform_name() }}</span>
+                <span class="ml-3 shrink-0 text-xs text-white/70">{{ __('Menu') }}</span>
+            </summary>
+            @include('layouts.partials.console-nav')
+            <form method="POST" action="{{ route('logout') }}" class="border-t border-white/15 px-5 py-3 text-xs">
+                @csrf
+                <button type="submit" class="underline-offset-2 hover:underline">{{ __('Sign out') }}</button>
+            </form>
+        </details>
 
         {{-- Header. The accent rule beneath the title is the only place a body's
              colour touches the content area — enough to make the page theirs,

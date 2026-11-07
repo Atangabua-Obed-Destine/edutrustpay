@@ -20,11 +20,12 @@ class FindingController extends Controller
             ->with('institution', 'resolver')
             ->when($status !== 'all', fn ($q) => $q->where('status', $status))
             ->bySeverity()
-            ->paginate(25)
+            ->paginate(200)
             ->withQueryString();
 
         return view('body.findings.index', [
             'findings' => $findings,
+            'groups' => Finding::grouped($findings->getCollection()),
             'status' => $status,
             'openFindingCount' => Finding::query()->open()->count(),
             'counts' => [

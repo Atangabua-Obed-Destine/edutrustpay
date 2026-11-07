@@ -37,10 +37,10 @@ class CredentialController extends Controller
         ]);
 
         return redirect()
-            ->route('admin.institutions.show', $institution)
+            ->to(manage_route('institutions.show', $institution))
             // Flashed, not stored. This is the only moment it exists in
             // readable form anywhere in the platform.
-            ->with('secret', ['key_id' => $issued['credential']->key_id, 'secret' => $issued['secret']])
+            ->with('secret', ['key_id' => $issued['credential']->key_id, 'secret' => $issued['secret'], 'ref' => $institution->uuid])
             ->with('success', __('Credential issued for :name.', ['name' => $institution->name]));
     }
 
@@ -71,11 +71,11 @@ class CredentialController extends Controller
         ]);
 
         return redirect()
-            ->route('admin.institutions.show', $institution)
-            ->with('secret', ['key_id' => $issued['credential']->key_id, 'secret' => $issued['secret']])
+            ->to(manage_route('institutions.show', $institution))
+            ->with('secret', ['key_id' => $issued['credential']->key_id, 'secret' => $issued['secret'], 'ref' => $institution->uuid])
             ->with('warning', __(
-                'The previous key :key still works until the institution has deployed the new one. Revoke it once they confirm.',
-                ['key' => $credential->key_id]
+                'The previous key :key keeps working for :hours hours so the institution can deploy the new one. Revoke it sooner once they confirm.',
+                ['key' => $credential->key_id, 'hours' => InstitutionCredential::GRACE_HOURS]
             ));
     }
 
@@ -102,7 +102,7 @@ class CredentialController extends Controller
         $remaining = $institution->credentials()->active()->count();
 
         return redirect()
-            ->route('admin.institutions.show', $institution)
+            ->to(manage_route('institutions.show', $institution))
             ->with($remaining === 0 ? 'warning' : 'success', $remaining === 0
                 // Worth saying plainly: from the console this institution will
                 // now look exactly like one that has gone quiet.

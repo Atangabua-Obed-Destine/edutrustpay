@@ -4,27 +4,35 @@
 @section('subtitle', $institution->body->name . ' · ' . $institution->system . ' · ' . str_replace('_', ' ', $institution->type))
 
 @section('header-actions')
-    <a href="{{ route('admin.institutions.edit', $institution) }}"
-       class="rounded border border-rule-strong px-3 py-1.5 text-sm font-medium hover:bg-surface-sunk">
-        {{ __('Edit') }}
-    </a>
+    @unless (request()->routeIs('admin.*'))
+        <a href="{{ route('body.institutions.show', $institution) }}"
+           class="rounded border border-rule-strong px-3 py-1.5 text-sm font-medium hover:bg-surface-sunk">
+            {{ __('See its figures') }}
+        </a>
+    @endunless
+    @can('institution.update')
+        <a href="{{ manage_route('institutions.edit', $institution) }}"
+           class="rounded border border-rule-strong px-3 py-1.5 text-sm font-medium hover:bg-surface-sunk">
+            {{ __('Edit') }}
+        </a>
+    @endcan
 @endsection
 
 @section('content')
 
     <x-breadcrumb :items="[
-        __('Institutions') => route('admin.institutions.index'),
-        $institution->body->name => route('admin.bodies.show', $institution->body),
+        __('Institutions') => manage_route('institutions.index'),
+        $institution->body->name => request()->routeIs('admin.*') ? route('admin.bodies.show', $institution->body) : null,
         $institution->name => null,
     ]" />
 
     @if ($checklist['blocking'])
-        {{-- Two steps decide whether any of the rest is worth anything, so they
-             are said out loud rather than left as unticked boxes among nine. --}}
+        {{-- Said out loud rather than left as an unticked box among nine: an
+             unmapped chart of accounts is what makes schools incomparable. --}}
         <div class="mb-6 rounded border border-amber-300 bg-amber-50 px-4 py-3">
             <p class="text-sm font-semibold text-amber-900">{{ __('Onboarding is not finished') }}</p>
             <p class="mt-1 text-sm text-amber-800">
-                {{ __('Still outstanding: :items. Until these are done, reports from here may arrive but cannot be consolidated meaningfully.', ['items' => implode('; ', $checklist['blocking'])]) }}
+                {{ __('Still outstanding: :items. Until this is done, this school\'s figures may not compare fairly with other schools.', ['items' => implode('; ', $checklist['blocking'])]) }}
             </p>
         </div>
     @endif
@@ -34,8 +42,8 @@
 
             {{-- CAPABILITIES: the most consequential screen in the operator area. --}}
             <x-card :title="__('What this institution can report')"
-                    :subtitle="__('A capability not declared shows on the console as “not yet reporting”, never as zero. That is usually what you want.')">
-                <form method="POST" action="{{ route('admin.institutions.capabilities', $institution) }}">
+                    :subtitle="__('Fills in by itself as reports arrive. Anything not reported shows as “not yet reporting”, never as zero.')">
+                <form method="POST" action="{{ manage_route('institutions.capabilities', $institution) }}">
                     @csrf @method('PUT')
 
                     <div class="grid gap-2 sm:grid-cols-2">
@@ -80,14 +88,17 @@
                         @endforeach
                     </div>
 
-                    <button type="submit"
-                            class="mt-4 rounded bg-accent px-3 py-1.5 text-sm font-semibold text-white">
-                        {{ __('Save capabilities') }}
-                    </button>
+                    @can('capability.declare')
+                        <button type="submit"
+                                class="mt-4 rounded bg-accent px-3 py-1.5 text-sm font-semibold text-white">
+                            {{ __('Save capabilities') }}
+                        </button>
+                    @endcan
                 </form>
             </x-card>
 
             {{-- CREDENTIALS --}}
+            @can('credential.view')
             <x-card :title="__('API credentials')"
                     :subtitle="__('Rotation and revocation are one click. A departing bursar holding a live key is a real risk.')">
                 @if ($credentials->isEmpty())
@@ -115,7 +126,11 @@
                                             {{ $credential->last_used_at?->diffForHumans() ?? __('never') }}
                                         </td>
                                         <td class="px-4 py-2">
-                                            @if ($credential->isActive())
+                                            @if ($credential->isInGracePeriod())
+                                                <span class="text-xs text-amber-700" title="{{ $credential->revoked_reason }}">
+                                                    {{ __('replaced, works until :date', ['date' => $credential->graceEndsAt()->toDayDateTimeString()]) }}
+                                                </span>
+                                            @elseif ($credential->isActive())
                                                 <span class="text-xs text-emerald-700">{{ __('active') }}</span>
                                             @else
                                                 <span class="text-xs text-ink-muted" title="{{ $credential->revoked_reason }}">
@@ -126,15 +141,19 @@
                                         <td class="px-4 py-2 text-right">
                                             @if ($credential->isActive())
                                                 <div class="flex justify-end gap-2">
-                                                    <form method="POST" action="{{ route('admin.credentials.rotate', [$institution, $credential]) }}"
+                                                    @if (! $credential->isInGracePeriod() && auth()->user()->can('credential.rotate'))
+                                                    <form method="POST" action="{{ manage_route('credentials.rotate', [$institution, $credential]) }}"
                                                           data-confirm="{{ __('Issue a replacement key? The current one keeps working until you revoke it.') }}">
                                                         @csrf
                                                         <button type="submit" class="text-xs text-ink-soft hover:underline">{{ __('Rotate') }}</button>
                                                     </form>
+                                                    @endif
+                                                    @can('credential.revoke')
                                                     <button type="button" class="text-xs text-rose-600 hover:underline"
                                                             onclick="document.getElementById('revoke-{{ $credential->id }}').hidden = false">
                                                         {{ __('Revoke') }}
                                                     </button>
+                                                    @endcan
                                                 </div>
                                             @endif
                                         </td>
@@ -143,7 +162,7 @@
                                     @if ($credential->isActive())
                                         <tr id="revoke-{{ $credential->id }}" hidden>
                                             <td colspan="5" class="bg-rose-50 px-4 py-3">
-                                                <form method="POST" action="{{ route('admin.credentials.revoke', [$institution, $credential]) }}"
+                                                <form method="POST" action="{{ manage_route('credentials.revoke', [$institution, $credential]) }}"
                                                       class="flex flex-wrap items-end gap-2">
                                                     @csrf
                                                     <div class="min-w-64 flex-1">
@@ -174,7 +193,8 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('admin.credentials.store', $institution) }}" class="flex flex-wrap items-end gap-2">
+                @can('credential.issue')
+                <form method="POST" action="{{ manage_route('credentials.store', $institution) }}" class="flex flex-wrap items-end gap-2">
                     @csrf
                     <div class="min-w-56 flex-1">
                         <label for="label" class="block text-xs text-ink-muted">{{ __('Label (optional)') }}</label>
@@ -185,7 +205,9 @@
                         {{ __('Issue credential') }}
                     </button>
                 </form>
+                @endcan
             </x-card>
+            @endcan
 
             {{-- ONBOARDING --}}
             <x-card :title="__('Onboarding')"
@@ -197,8 +219,8 @@
                 <ul class="space-y-2">
                     @foreach ($checklist['steps'] as $step)
                         <li class="flex items-start gap-3 rounded border border-rule px-3 py-2">
-                            @if ($step->manual)
-                                <form method="POST" action="{{ route('admin.institutions.onboarding', $institution) }}" class="pt-0.5">
+                            @if ($step->manual && auth()->user()->can('institution.update'))
+                                <form method="POST" action="{{ manage_route('institutions.onboarding', $institution) }}" class="pt-0.5">
                                     @csrf
                                     <input type="hidden" name="step" value="{{ $step->key }}">
                                     <input type="hidden" name="done" value="{{ $step->done ? 0 : 1 }}">
@@ -266,7 +288,11 @@
                             @if ($institution->isSilent())
                                 <span class="text-rose-600">{{ __('silent') }}</span>
                             @else
-                                <span class="text-emerald-700">{{ __('current') }}</span>
+                                @if ($institution->last_report_at)
+                                    <span class="text-emerald-700">{{ __('current') }}</span>
+                                @else
+                                    <span class="text-amber-700">{{ __('not reporting yet') }}</span>
+                                @endif
                             @endif
                         </dd>
                     </div>

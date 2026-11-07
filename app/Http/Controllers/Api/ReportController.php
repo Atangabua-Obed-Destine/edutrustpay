@@ -93,7 +93,7 @@ class ReportController extends Controller
             ->first();
 
         if ($existing) {
-            return $this->handleResend($existing, $institution, $period, $sequence, $hash);
+            return $this->handleResend($existing, $institution, $period, $sequence, $hash, $raw);
         }
 
         $report = PeriodReport::withoutBodyScope()->create([
@@ -164,9 +164,17 @@ class ReportController extends Controller
         Institution $institution,
         string $period,
         int $sequence,
-        string $hash
+        string $hash,
+        string $raw
     ): JsonResponse {
-        if ($existing->payload_hash === $hash) {
+        /*
+         * Same figures with a fresher generated_at is still a resend. A school
+         * whose outbox was lost rebuilds its months with new timestamps, and
+         * calling that a conflict would force a restatement of nothing.
+         */
+        $sameFigures = fn (string $json) => array_diff_key(json_decode($json, true) ?: [], ['generated_at' => 1]);
+
+        if ($existing->payload_hash === $hash || $sameFigures($existing->payload) == $sameFigures($raw)) {
             return response()->json([
                 'status' => 'duplicate',
                 'message' => 'This report was already received. Nothing was changed.',
@@ -192,6 +200,12 @@ class ReportController extends Controller
 
         return response()->json([
             'error' => 'sequence_conflict',
+            // So the client can file its correction at the next sequence itself
+            // rather than failing silently in an outbox nobody reads.
+            'current_sequence' => (int) PeriodReport::withoutBodyScope()
+                ->where('institution_id', $institution->id)
+                ->where('period', $period)
+                ->max('sequence'),
             'message' => sprintf(
                 'Period %s sequence %d was already received with different figures. To correct a period, '
                 .'increment the sequence so the change is recorded as a restatement — figures must never '

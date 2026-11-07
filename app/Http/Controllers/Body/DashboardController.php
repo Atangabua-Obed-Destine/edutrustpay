@@ -42,7 +42,7 @@ class DashboardController extends Controller
             'periodOptions' => $this->periodOptions(),
             'institutions' => $institutions,
             'notReporting' => $consolidation->notReporting($institutions),
-            'findings' => Finding::query()->open()->with('institution')->bySeverity()->limit(8)->get(),
+            'findingGroups' => Finding::grouped(Finding::query()->open()->with('institution')->get()),
             'openFindingCount' => Finding::query()->open()->count(),
             'position' => $position,
             'collections' => $consolidation->collections($institutions, $period),

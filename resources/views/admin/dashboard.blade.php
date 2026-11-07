@@ -18,6 +18,40 @@
         @endforeach
     </div>
 
+    @php
+        $queueStuck = $health['oldest'] && $health['oldest']->lt(now()->subMinutes(5));
+        $sweepLate = ! $health['lastSweep'] || $health['lastSweep']->lt(now()->subHours(26));
+    @endphp
+
+    <section class="mb-8">
+        <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('System health') }}</h2>
+        <div class="grid gap-4 sm:grid-cols-3">
+            <div @class(['rounded border bg-surface p-4', 'border-rose-300' => $queueStuck, 'border-rule' => ! $queueStuck])>
+                <p class="text-xs uppercase tracking-wide text-ink-muted">{{ __('Reports waiting to be processed') }}</p>
+                <p class="mt-1 text-2xl font-semibold tabular-nums">{{ $health['queued'] }}</p>
+                <p @class(['mt-1 text-xs', 'font-medium text-rose-700' => $queueStuck, 'text-ink-muted' => ! $queueStuck])>
+                    {{ $queueStuck
+                        ? __('Waiting since :time. The queue worker is not running, so these will not reach the console.', ['time' => $health['oldest']->diffForHumans()])
+                        : __('Reports are accepted instantly and processed in the background.') }}
+                </p>
+            </div>
+            <div @class(['rounded border bg-surface p-4', 'border-rose-300' => $sweepLate, 'border-rule' => ! $sweepLate])>
+                <p class="text-xs uppercase tracking-wide text-ink-muted">{{ __('Daily silence check') }}</p>
+                <p class="mt-1 text-2xl font-semibold">{{ $health['lastSweep']?->diffForHumans() ?? __('never run') }}</p>
+                <p @class(['mt-1 text-xs', 'font-medium text-rose-700' => $sweepLate, 'text-ink-muted' => ! $sweepLate])>
+                    {{ $sweepLate
+                        ? __('The scheduler is not running, so a school that goes silent will not raise a finding.')
+                        : __('Looks for schools that have stopped reporting.') }}
+                </p>
+            </div>
+            <div @class(['rounded border bg-surface p-4', 'border-rose-300' => $health['failed'] > 0, 'border-rule' => $health['failed'] === 0])>
+                <p class="text-xs uppercase tracking-wide text-ink-muted">{{ __('Failed processing jobs') }}</p>
+                <p class="mt-1 text-2xl font-semibold tabular-nums">{{ $health['failed'] }}</p>
+                <p class="mt-1 text-xs text-ink-muted">{{ __('Should stay at zero.') }}</p>
+            </div>
+        </div>
+    </section>
+
     <section class="mb-8">
         <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('Bodies') }}</h2>
         <div class="overflow-hidden rounded border border-rule">

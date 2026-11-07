@@ -1,13 +1,15 @@
 @extends('layouts.console')
 
 @section('title', __('People'))
-@section('subtitle', __('The bodies\' own users. Accounts are created by invitation — no password is ever generated or sent.'))
+@section('subtitle', __('Everyone with access. Accounts are created by invitation — no password is ever generated or sent.'))
 
 @section('header-actions')
-    <a href="{{ route('admin.users.create') }}"
-       class="rounded bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">
-        {{ __('Invite somebody') }}
-    </a>
+    @can('user.invite')
+        <a href="{{ manage_route('users.create') }}"
+           class="rounded bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">
+            {{ __('Invite somebody') }}
+        </a>
+    @endcan
 @endsection
 
 @section('content')
@@ -56,7 +58,7 @@
                                 @endif
                             </td>
                             <td class="px-4 py-2 text-ink-muted">
-                                {{ $user->roles->first()?->display_name ?? $user->role }}
+                                {{ $user->roles->pluck('display_name')->implode(', ') ?: $user->role }}
                             </td>
                             <td class="px-4 py-2">
                                 @if (! $user->is_active)
@@ -71,15 +73,19 @@
                             </td>
                             <td class="px-4 py-2">
                                 <div class="flex justify-end gap-3">
-                                    @unless ($user->invite_accepted_at)
-                                        <form method="POST" action="{{ route('admin.users.reinvite', $user) }}">
+                                    @if ($user->id !== auth()->id() && auth()->user()->can('user.update') && ! $user->isSuperAdmin())
+                                        <a href="{{ manage_route('users.edit', $user) }}" class="text-xs text-ink-soft hover:underline">{{ __('Change roles') }}</a>
+                                    @endif
+
+                                    @if (! $user->invite_accepted_at && auth()->user()->can('user.invite'))
+                                        <form method="POST" action="{{ manage_route('users.reinvite', $user) }}">
                                             @csrf
                                             <button type="submit" class="text-xs text-ink-soft hover:underline">{{ __('New link') }}</button>
                                         </form>
-                                    @endunless
+                                    @endif
 
-                                    @if ($user->id !== auth()->id())
-                                        <form method="POST" action="{{ route('admin.users.toggle', $user) }}"
+                                    @if ($user->id !== auth()->id() && auth()->user()->can('user.deactivate'))
+                                        <form method="POST" action="{{ manage_route('users.toggle', $user) }}"
                                               data-confirm="{{ $user->is_active
                                                   ? __('Deactivate :name? They will not be able to sign in.', ['name' => $user->name])
                                                   : __('Reactivate :name?', ['name' => $user->name]) }}">

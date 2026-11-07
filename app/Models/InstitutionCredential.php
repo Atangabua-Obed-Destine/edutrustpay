@@ -33,6 +33,9 @@ class InstitutionCredential extends Model
 {
     use Auditable;
 
+    /** How long a replaced key keeps working. */
+    public const GRACE_HOURS = 48;
+
     protected $fillable = [
         'institution_id', 'key_id', 'secret_ciphertext', 'label',
         'last_used_at', 'rotated_at', 'revoked_at', 'revoked_reason', 'created_by',
@@ -124,13 +127,39 @@ class InstitutionCredential extends Model
     {
         $issued = static::issue($this->institution, $this->label, $actorId);
 
+        // The old key stays usable for the grace period. A bursary server that
+        // loses power before writing the new secret must not be locked out, and
+        // expireRotated() retires the old key afterwards.
         $this->update([
-            'revoked_at' => now(),
             'revoked_reason' => $reason,
             'rotated_at' => now(),
         ]);
 
         return $issued;
+    }
+
+    public function isInGracePeriod(): bool
+    {
+        return $this->isActive() && $this->rotated_at !== null;
+    }
+
+    public function graceEndsAt(): ?\Carbon\CarbonInterface
+    {
+        return $this->rotated_at?->copy()->addHours(self::GRACE_HOURS);
+    }
+
+    /**
+     * Retire keys whose grace period has run out. Run by edutrustpay:sweep.
+     *
+     * @return int how many keys were retired
+     */
+    public static function expireRotated(): int
+    {
+        return static::query()
+            ->whereNull('revoked_at')
+            ->whereNotNull('rotated_at')
+            ->where('rotated_at', '<=', now()->subHours(self::GRACE_HOURS))
+            ->update(['revoked_at' => now()]);
     }
 
     public function revoke(string $reason, ?int $actorId = null): void

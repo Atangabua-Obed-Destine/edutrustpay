@@ -4,8 +4,10 @@ namespace App\Console\Commands;
 
 use App\Models\Finding;
 use App\Models\Institution;
+use App\Models\InstitutionCredential;
 use App\Services\FindingEngine;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * The staleness sweep.
@@ -20,6 +22,8 @@ use Illuminate\Console\Command;
  */
 class Sweep extends Command
 {
+    public const LAST_RUN_KEY = 'edutrustpay.sweep.last_run';
+
     protected $signature = 'edutrustpay:sweep {--dry-run : Report what would fire without writing findings}';
 
     protected $description = 'Check for institutions that have gone silent and raise findings.';
@@ -35,6 +39,16 @@ class Sweep extends Command
         $before = Finding::withoutBodyScope()->where('rule', 'not_reporting')->count();
 
         $raised = $engine->sweep();
+
+        $retired = InstitutionCredential::expireRotated();
+
+        if ($retired > 0) {
+            $this->line(sprintf('%d replaced key(s) reached the end of their grace period and were retired.', $retired));
+        }
+
+        // Read by the operator's system health panel. A sweep that has stopped
+        // running looks exactly like every institution being fine.
+        Cache::forever(self::LAST_RUN_KEY, now()->toIso8601String());
 
         $new = Finding::withoutBodyScope()->where('rule', 'not_reporting')->count() - $before;
 

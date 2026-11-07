@@ -21,6 +21,36 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Finding extends Model
 {
+    /**
+     * Collapse findings into one entry per institution and control.
+     *
+     * A control that fires every month produces one finding per month, correctly,
+     * since each month can be answered separately. Read as a flat list it buried
+     * everything else: 24 near-identical cards pushed the money off the first
+     * screen, and a limit of 8 hid the second school entirely.
+     *
+     * @param  iterable<int, self>  $findings
+     * @return \Illuminate\Support\Collection<int, object>
+     */
+    public static function grouped(iterable $findings): \Illuminate\Support\Collection
+    {
+        $rank = ['critical' => 0, 'high' => 1, 'medium' => 2, 'low' => 3];
+
+        return collect($findings)
+            ->groupBy(fn (self $f) => $f->institution_id.'|'.$f->rule)
+            ->map(function ($group) use ($rank) {
+                $ordered = $group->sortByDesc('period')->values();
+
+                return (object) [
+                    'latest' => $ordered->first(),
+                    'findings' => $ordered,
+                    'severity' => $ordered->sortBy(fn (self $f) => $rank[$f->severity] ?? 9)->first()->severity,
+                ];
+            })
+            ->sortBy(fn ($g) => ($rank[$g->severity] ?? 9).'|'.$g->latest->institution?->name)
+            ->values();
+    }
+
     use Auditable;
     use BelongsToBody;
 

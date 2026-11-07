@@ -35,73 +35,63 @@ if (! function_exists('console_name')) {
 
 if (! function_exists('ohada_group_name')) {
     /**
-     * The plain name of an OHADA account group.
+     * A safe description of an account group: its OHADA class, nothing finer.
      *
-     * The contract carries two-digit groups because that is the coarsest level
-     * every source system can agree on. But "70" is not a thing a bursary head
-     * reads; "Sales of goods and services" is. Without this the console shows a
-     * column of numbers beside a column of numbers and asks the reader to know
-     * the chart of accounts by heart.
-     *
-     * SYSCOHADA revised (2017), classes 6 and 7 in full — those are the two the
-     * income and expenditure statement is built from — plus the class-heading
-     * fallbacks for anything else that appears.
-     *
-     * Unknown groups fall back to the class name rather than to an empty
-     * string: a group this list has not met is still better described as
-     * "Financial" than as nothing at all.
+     * This used to print the textbook SYSCOHADA name for each group, and on real
+     * data that was false. PAX HIGHER INSTITUTE posts tuition to 711 and subsidies
+     * to 73, so tuition read as "Subsidies and grants" and subsidies as "Change in
+     * stock". edutrustshsm posts tuition to 701. The same two digits mean different
+     * things at different schools, so only the school can name its accounts.
      */
     function ohada_group_name(string $group): string
     {
-        static $groups = [
-            // Class 6 — expenditure
-            '60' => 'Purchases and stock movements',
-            '61' => 'Transport',
-            '62' => 'External services',
-            '63' => 'Other external services',
-            '64' => 'Taxes and duties',
-            '65' => 'Other operating charges',
-            '66' => 'Staff costs',
-            '67' => 'Financial charges',
-            '68' => 'Depreciation and provisions',
-            '69' => 'Tax on profits',
-
-            // Class 7 — income
-            '70' => 'Sales of goods and services',
-            '71' => 'Subsidies and grants',
-            '72' => 'Own production',
-            '73' => 'Change in stock of finished goods',
-            '75' => 'Other operating income',
-            '77' => 'Financial income',
-            '78' => 'Transfers of charges',
-            '79' => 'Reversals of provisions',
-
-            // Groups that turn up in cash, receivables and payables blocks
-            '40' => 'Suppliers and related accounts',
-            '41' => 'Customers and related accounts',
-            '42' => 'Staff',
-            '43' => 'Social security bodies',
-            '44' => 'State and public bodies',
-            '52' => 'Banks',
-            '57' => 'Cash on hand',
-        ];
-
-        if (isset($groups[$group])) {
-            return __($groups[$group]);
-        }
-
         static $classes = [
             '1' => 'Capital and long-term resources',
             '2' => 'Fixed assets',
             '3' => 'Stocks',
             '4' => 'Third parties',
             '5' => 'Treasury',
-            '6' => 'Charges',
+            '6' => 'Expenditure',
             '7' => 'Income',
             '8' => 'Other charges and income',
             '9' => 'Analytical accounts',
         ];
 
         return __($classes[mb_substr($group, 0, 1)] ?? 'Unclassified');
+    }
+}
+
+if (! function_exists('money_text')) {
+    /**
+     * An amount as a reader would write it in a sentence: "1 155 341".
+     */
+    function money_text(string|int|float|null $value): string
+    {
+        return number_format((float) $value, 0, '.', ' ');
+    }
+}
+
+if (! function_exists('manage_route')) {
+    /**
+     * A management route on whichever side the current page is on.
+     *
+     * The operator and a body's administrators use the same screens for schools
+     * and people. The operator's are under admin.*, a body's under body.manage.*,
+     * and a form must post back to the side it came from.
+     *
+     * @param  mixed  $parameters
+     */
+    function manage_route(string $name, $parameters = []): string
+    {
+        if (request()->routeIs('admin.*')) {
+            return route('admin.'.$name, $parameters);
+        }
+
+        // A body has one list of its institutions, the one it already reads.
+        if ($name === 'institutions.index') {
+            return route('body.institutions.index');
+        }
+
+        return route('body.manage.'.$name, $parameters);
     }
 }

@@ -73,9 +73,9 @@ class DrillThroughService
                 'shape' => 'range',
             ],
             'receivables_aging' => [
-                'label' => 'Receivables ageing',
+                'label' => 'Student fee ageing',
                 'blurb' => 'Who owes what, by age, as at month end.',
-                'path' => 'admin/accounting-reports/receivables-aging',
+                'path' => 'admin/accounting-reports/student-fee-aging',
                 'shape' => 'as_of',
             ],
             'cash_flow' => [

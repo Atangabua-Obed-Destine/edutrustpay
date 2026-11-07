@@ -8,6 +8,7 @@ use App\Models\Body;
 use App\Models\Institution;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\BodyContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -34,11 +35,12 @@ class UserController extends Controller
     {
         return view('admin.users.index', [
             'users' => User::query()
+                ->accessible()
                 ->with('body', 'roles', 'institution')
                 ->when($request->filled('body'), fn ($q) => $q->where('body_id', $request->integer('body')))
                 ->orderBy('name')
                 ->get(),
-            'bodies' => Body::orderBy('path')->get(),
+            'bodies' => $this->availableBodies(),
             'filters' => ['body' => $request->query('body')],
         ]);
     }
@@ -46,10 +48,14 @@ class UserController extends Controller
     public function create(Request $request)
     {
         return view('admin.users.form', [
-            'user' => new User(['body_id' => $request->integer('body') ?: null, 'is_active' => true]),
-            'bodies' => Body::orderBy('path')->get(),
-            'roles' => Role::orderBy('display_name')->get(),
-            'institutions' => Institution::withoutBodyScope()->orderBy('name')->get(),
+            'user' => new User([
+                'body_id' => $request->integer('body') ?: (BodyContext::isSuperAdmin() ? null : BodyContext::current()),
+                'is_active' => true,
+            ]),
+            'bodies' => $this->availableBodies(),
+            'roles' => $this->assignableRoles($request),
+            'selectedRoles' => [],
+            'institutions' => Institution::query()->with('body')->orderBy('name')->get(),
         ]);
     }
 
@@ -71,7 +77,7 @@ class UserController extends Controller
             'invite_sent_at' => now(),
         ]);
 
-        $user->roles()->sync([$data['role_id']]);
+        $user->roles()->sync($data['role_ids']);
 
         AuditLog::log('user.invited', User::class, $user->id, null, [
             'email' => $user->email,
@@ -80,7 +86,7 @@ class UserController extends Controller
         ]);
 
         return redirect()
-            ->route('admin.users.index', ['body' => $user->body_id])
+            ->to(manage_route('users.index', ['body' => $user->body_id]))
             ->with('invite', [
                 'name' => $user->name,
                 'url' => route('invite.show', $user->invite_token),
@@ -92,8 +98,10 @@ class UserController extends Controller
     /**
      * Issue a fresh invitation, invalidating any earlier one.
      */
-    public function reinvite(User $user)
+    public function reinvite(Request $request, User $user)
     {
+        $this->guardTarget($request, $user);
+
         if ($user->invite_accepted_at) {
             return back()->with('error', __(':name has already accepted their invitation. Deactivate the account instead if they should no longer have access.', ['name' => $user->name]));
         }
@@ -118,6 +126,8 @@ class UserController extends Controller
      */
     public function toggle(Request $request, User $user)
     {
+        $this->guardTarget($request, $user);
+
         if ($user->id === $request->user()->id) {
             return back()->with('error', __('You cannot deactivate your own account.'));
         }
@@ -132,19 +142,120 @@ class UserController extends Controller
     }
 
     /**
+     * Change what somebody may do. A person may hold several roles.
+     */
+    public function edit(Request $request, User $user)
+    {
+        $this->guardTarget($request, $user);
+
+        return view('admin.users.roles', [
+            'user' => $user->load('roles', 'body'),
+            'roles' => $this->assignableRoles($request, $user->body),
+            'selectedRoles' => $user->roles->pluck('id')->all(),
+            'institutions' => Institution::query()->with('body')->orderBy('name')->get(),
+        ]);
+    }
+
+    public function update(Request $request, User $user)
+    {
+        $this->guardTarget($request, $user);
+
+        if ($user->id === $request->user()->id) {
+            return back()->with('error', __('You cannot change your own roles. Ask another administrator.'));
+        }
+
+        $request->merge(['name' => $user->name, 'body_id' => $user->body_id]);
+
+        $data = $this->validated($request, $user);
+
+        $before = $user->roles()->pluck('name')->all();
+
+        $user->forceFill(['role' => $data['role'], 'institution_id' => $data['institution_id']])->save();
+        $user->roles()->sync($data['role_ids']);
+        $user->forgetPermissions();
+
+        AuditLog::log('user.roles_changed', User::class, $user->id, ['roles' => $before], [
+            'roles' => $user->roles()->pluck('name')->all(),
+        ], $user->body_id);
+
+        return redirect()->to(manage_route('users.index'))
+            ->with('success', __(':name updated.', ['name' => $user->name]));
+    }
+
+    private function availableBodies()
+    {
+        return Body::whereIn('id', BodyContext::accessibleIds())->orderBy('path')->get();
+    }
+
+    /**
+     * Roles this person may hand out: never one granting more than they hold.
+     *
+     * Without this, anyone who can invite people could invite themselves a second
+     * account with every permission.
+     */
+    private function assignableRoles(Request $request, ?Body $forBody = null)
+    {
+        return Role::query()->usable()->with('permissions:id,name')->orderBy('display_name')->get()
+            ->filter(fn (Role $role) => $role->grantsNoMoreThan($request->user()))
+            ->filter(fn (Role $role) => ! $forBody || $role->availableTo($forBody))
+            ->values();
+    }
+
+    /**
+     * Refuse to act on an account outside this person's reach or above their rank.
+     *
+     * Route binding on User is not tenancy scoped, so without this an id in the
+     * URL would reach another diocese's staff. 404 rather than 403, as elsewhere:
+     * a 403 confirms the account exists.
+     */
+    private function guardTarget(Request $request, User $target): void
+    {
+        abort_unless(User::query()->accessible()->whereKey($target->id)->exists(), 404);
+
+        $actor = $request->user();
+
+        if ($actor->isSuperAdmin()) {
+            return;
+        }
+
+        abort_if($target->isSuperAdmin(), 404);
+
+        abort_if(array_diff($target->permissionNames(), $actor->permissionNames()) !== [], 403,
+            'That person holds permissions you do not, so you cannot change their account.');
+    }
+
+    /**
      * @return array<string, mixed>
      */
-    private function validated(Request $request): array
+    private function validated(Request $request, ?User $existing = null): array
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:191'],
-            'email' => ['required', 'email', 'max:191', Rule::unique('users', 'email')],
-            'body_id' => ['required', 'exists:bodies,id'],
-            'role_id' => ['required', 'exists:roles,id'],
+            'email' => array_filter([$existing ? 'nullable' : 'required', 'email', 'max:191', $existing ? null : Rule::unique('users', 'email')]),
+            'body_id' => ['required', Rule::in(BodyContext::accessibleIds())],
+            'role_id' => ['required_without:role_ids', 'nullable', 'exists:roles,id'],
+            'role_ids' => ['required_without:role_id', 'array'],
+            'role_ids.*' => ['integer', 'exists:roles,id'],
             'institution_id' => ['nullable', 'exists:institutions,id'],
-        ], [], ['body_id' => __('body'), 'role_id' => __('role'), 'institution_id' => __('institution')]);
+        ], [], ['body_id' => __('body'), 'role_id' => __('role'), 'role_ids' => __('role'), 'institution_id' => __('institution')]);
 
-        $role = Role::find($data['role_id']);
+        $data['role_ids'] = array_values(array_unique(array_map('intval', array_filter(
+            array_merge($data['role_ids'] ?? [], [$data['role_id'] ?? null])
+        ))));
+
+        $body = Body::find($data['body_id']);
+        $roles = Role::with('permissions:id,name')->whereIn('id', $data['role_ids'])->get();
+
+        foreach ($roles as $candidate) {
+            if (! $candidate->grantsNoMoreThan($request->user()) || ! $candidate->availableTo($body)) {
+                throw ValidationException::withMessages([
+                    'role_ids' => __('You cannot give somebody the role :role.', ['role' => $candidate->display_name]),
+                ]);
+            }
+        }
+
+        // users.role keeps the first role, for the coarse checks and for display.
+        $role = $roles->firstWhere('name', 'institution_liaison') ?? $roles->first();
         $data['role'] = $role->name;
 
         // A `nullable` field that was not submitted at all is absent from the

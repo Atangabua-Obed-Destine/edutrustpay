@@ -70,7 +70,7 @@ class ConsoleTest extends TestCase
             ->assertOk()
             // Never a bare number: brief §7.4 requires coverage to be explicit.
             ->assertSee('Consolidated across', false)
-            ->assertSee('not reporting', false);
+            ->assertSee('has no figure for this', false);
     }
 
     public function test_a_capability_that_was_never_declared_renders_as_words_not_zero(): void

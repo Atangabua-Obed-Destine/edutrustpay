@@ -21,6 +21,13 @@
         </select>
     </form>
 
+    @canany(['institution.update', 'capability.declare', 'credential.view'])
+        <a href="{{ route('body.manage.institutions.show', $institution) }}"
+           class="rounded border border-rule-strong px-3 py-1.5 text-sm font-medium hover:bg-surface-sunk">
+            {{ __('Manage') }}
+        </a>
+    @endcanany
+
     {{-- Two depths below this page, and they answer different questions: what
          exactly arrived for one month, and how the year stands so far. --}}
     <a href="{{ route('body.institutions.monthly', [$institution, $period]) }}"
@@ -48,29 +55,12 @@
              refuse a report. --}}
         @if ($report->warningList())
             <div class="mb-6 rounded border border-rose-200 bg-rose-50 px-4 py-3">
-                <p class="text-sm font-semibold text-rose-900">{{ __('This report disagrees with itself') }}</p>
+                <p class="text-sm font-semibold text-rose-900">{{ __('Points to check in this report') }}</p>
                 <ul class="mt-1 space-y-1 text-sm text-rose-800">
                     @foreach ($report->warningList() as $warning)
                         <li>· {{ $warning['message'] }}</li>
                     @endforeach
                 </ul>
-            </div>
-        @endif
-
-        @if (! empty($trend))
-            <div class="mb-6 rounded border border-rule bg-surface px-4 py-3">
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                        <p class="text-[11px] uppercase tracking-wider text-ink-muted">{{ __('Surplus / deficit over twelve months') }}</p>
-                        <p class="mt-0.5 text-xs text-ink-muted">
-                            {{ __('A break in the line is a month that was never reported, not a month of zero.') }}
-                        </p>
-                    </div>
-                    <div class="text-accent">
-                        <x-sparkline :series="$trend" :width="320" :height="44"
-                                     :label="__('Surplus or deficit by month')" />
-                    </div>
-                </div>
             </div>
         @endif
 

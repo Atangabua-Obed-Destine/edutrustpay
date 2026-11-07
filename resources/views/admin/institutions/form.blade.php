@@ -5,13 +5,13 @@
 @section('content')
 
     <x-breadcrumb :items="array_filter([
-        __('Institutions') => route('admin.institutions.index'),
-        ($institution->exists ? $institution->name : null) => $institution->exists ? route('admin.institutions.show', $institution) : null,
+        __('Institutions') => manage_route('institutions.index'),
+        ($institution->exists ? $institution->name : null) => $institution->exists ? manage_route('institutions.show', $institution) : null,
         ($institution->exists ? __('Edit') : __('New')) => null,
     ])" />
 
     <form method="POST"
-          action="{{ $institution->exists ? route('admin.institutions.update', $institution) : route('admin.institutions.store') }}"
+          action="{{ $institution->exists ? manage_route('institutions.update', $institution) : manage_route('institutions.store') }}"
           class="max-w-3xl space-y-6">
         @csrf
         @if ($institution->exists) @method('PUT') @endif
@@ -45,9 +45,11 @@
                     ]" />
                 </x-field>
 
-                <x-field name="slug" :label="__('Slug')" :hint="__('Optional. Generated from the name if blank.')">
+@if (request()->routeIs('admin.*'))
+                                <x-field name="slug" :label="__('Slug')" :hint="__('Optional. Generated from the name if blank.')">
                     <x-input name="slug" :value="$institution->slug" />
                 </x-field>
+                @endif
 
                 <x-field name="city" :label="__('City')"><x-input name="city" :value="$institution->city" /></x-field>
             </div>
@@ -63,21 +65,16 @@
 
         <x-card :title="__('Connection')">
             <div class="grid gap-4 sm:grid-cols-2">
-                {{-- Push is the only mode that exists. The tunnel is on the
-                     roadmap and is offered here as "not yet available" rather
-                     than hidden, because an operator who has been promised
-                     drill-down should be able to see that it is coming and
-                     that it is not here. --}}
-                <x-field name="connectivity_mode" :label="__('Connectivity')" required
-                         :hint="__('Choose Push. Reports are sent OUT from the institution over HTTPS and nothing reaches in — the only arrangement daily reporting may depend on. A tunnel would add live drill-down on top; it is not built yet.')">
+                <x-field name="connectivity_mode" :label="__('How it runs')" required
+                         :hint="__('Either way it sends its own reports out, so reporting does not depend on the tunnel. The tunnel address only matters for the links below.')">
                     <select name="connectivity_mode" id="connectivity_mode"
                             class="w-full rounded border border-rule-strong bg-surface px-3 py-2 text-sm text-ink
                                    focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent">
                         <option value="push" @selected(old('connectivity_mode', $institution->connectivity_mode ?? 'push') === 'push')>
-                            {{ __('Push over outbound HTTPS') }}
+                            {{ __('Hosted online') }}
                         </option>
-                        <option value="tunnel" disabled>
-                            {{ __('Push, plus a tunnel for drill-down — not yet available') }}
+                        <option value="tunnel" @selected(old('connectivity_mode', $institution->connectivity_mode) === 'tunnel')>
+                            {{ __('Installed on campus, reached online through cloudflared') }}
                         </option>
                     </select>
                 </x-field>
@@ -91,6 +88,7 @@
                      back what actually arrived. Gating on it would take an
                      institution offline for a bookkeeping mismatch, which is a
                      poor trade for no safety. --}}
+                @if (request()->routeIs('admin.*'))
                 <x-field name="contract_version" :label="__('Contract version')" required
                          :hint="__('What this institution reports in. Updated automatically to whatever it actually sends, so during a staged rollout this shows where each one has got to. :n version(s) exist so far.', ['n' => count(\EdutrustPay\Contract\ContractVersion::SUPPORTED)])">
                     <x-select name="contract_version"
@@ -99,8 +97,11 @@
                                   ->mapWithKeys(fn ($v) => [$v => $v . ($v === \EdutrustPay\Contract\ContractVersion::CURRENT ? ' — ' . __('current') : '')])
                                   ->all()" />
                 </x-field>
+                @else
+                    <input type="hidden" name="contract_version" value="{{ $institution->contract_version ?? \EdutrustPay\Contract\ContractVersion::CURRENT }}">
+                @endif
 
-                <x-field name="endpoint" :label="__('Their system URL')" :hint="__('Optional. Used only to link out for line detail — EdutrustPay never reaches in.')" class="sm:col-span-2">
+                <x-field name="endpoint" :label="__('Address of its system')" :hint="__('Optional. Used only to link out for line detail — EdutrustPay never reaches in.')" class="sm:col-span-2">
                     <x-input name="endpoint" type="url" :value="$institution->endpoint" placeholder="https://" />
                 </x-field>
 
@@ -134,7 +135,7 @@
                     class="rounded bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90">
                 {{ $institution->exists ? __('Save changes') : __('Enrol institution') }}
             </button>
-            <a href="{{ $institution->exists ? route('admin.institutions.show', $institution) : route('admin.institutions.index') }}"
+            <a href="{{ $institution->exists ? manage_route('institutions.show', $institution) : manage_route('institutions.index') }}"
                class="text-sm text-ink-muted hover:underline">{{ __('Cancel') }}</a>
         </div>
     </form>

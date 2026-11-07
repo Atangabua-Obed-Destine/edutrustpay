@@ -7,7 +7,7 @@
 
     <div class="grid gap-6 lg:grid-cols-3">
         <div class="lg:col-span-2 space-y-6">
-            @include('body.partials.finding-row', ['finding' => $finding])
+            @include('body.partials.finding-row', ['finding' => $finding, 'hideAnswer' => true])
 
             {{-- The figures behind it, frozen at the moment it fired. A restated
                  period rewrites the numbers underneath; the finding must still
@@ -19,9 +19,9 @@
                     </h2>
                     <dl class="grid gap-2 sm:grid-cols-2">
                         @foreach ($finding->figures as $key => $value)
-                            <div class="rounded border border-rule px-3 py-2">
-                                <dt class="text-xs uppercase tracking-wide text-ink-muted">{{ str_replace('_', ' ', $key) }}</dt>
-                                <dd class="font-medium tabular-nums">{{ is_scalar($value) ? $value : json_encode($value) }}</dd>
+                            <div class="rounded border border-rule px-3 py-2 min-w-0 break-all">
+                                <dt class="text-xs uppercase tracking-wide text-ink-muted min-w-0 break-all">{{ str_replace('_', ' ', $key) }}</dt>
+                                <dd class="font-medium tabular-nums min-w-0 break-all">{{ is_scalar($value) ? $value : json_encode($value) }}</dd>
                             </div>
                         @endforeach
                     </dl>

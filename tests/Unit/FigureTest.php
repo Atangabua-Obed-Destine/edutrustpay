@@ -67,7 +67,7 @@ class FigureTest extends TestCase
         $this->assertFalse($aggregate->isComplete());
 
         $this->assertSame(
-            'Consolidated across 2 of 3 institutions. 1 not reporting.',
+            'Consolidated across 2 of 3 institutions. 1 has no figure for this.',
             $aggregate->coverageStatement()
         );
     }

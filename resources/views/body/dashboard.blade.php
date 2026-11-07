@@ -98,14 +98,14 @@
             @endcan
         </div>
 
-        @if ($findings->isEmpty())
+        @if ($findingGroups->isEmpty())
             <p class="rounded border border-rule bg-surface px-4 py-3 text-sm text-ink-muted">
                 {{ __('No open findings.') }}
             </p>
         @else
             <div class="space-y-2">
-                @foreach ($findings as $finding)
-                    @include('body.partials.finding-row', ['finding' => $finding])
+                @foreach ($findingGroups as $group)
+                    @include('body.partials.finding-group', ['group' => $group])
                 @endforeach
             </div>
         @endif
@@ -137,7 +137,9 @@
                     <p class="text-xs uppercase tracking-wide text-ink-muted">{{ $label }}</p>
                     <p class="mt-1 text-2xl font-semibold tabular-nums text-ink">
                         {{ $position[$key]->formatted() }}
-                        <span class="text-sm font-normal text-ink-muted">{{ config('platform.currency') }}</span>
+                        @if ($position[$key]->hasFigures())
+                            <span class="text-sm font-normal text-ink-muted">{{ config('platform.currency') }}</span>
+                        @endif
                     </p>
                     @unless ($position[$key]->isUnqualified())
                         <p class="mt-1 text-xs font-medium text-amber-700">

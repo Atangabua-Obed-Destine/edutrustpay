@@ -26,18 +26,19 @@
             <p class="mt-1 text-xs opacity-70">
                 {{ $finding->institution->name }}
                 @if ($finding->period) · {{ $finding->period }} @endif
-                · {{ __('rule') }} <code>{{ $finding->rule }}</code>
                 @if ($finding->occurrences > 1)
                     · {{ trans_choice('{1}seen once|[2,*]seen :count times', $finding->occurrences, ['count' => $finding->occurrences]) }}
                 @endif
             </p>
         </div>
 
+        @if (! ($hideAnswer ?? false))
         @can('finding.resolve')
             <a href="{{ route('body.findings.show', $finding) }}"
                class="shrink-0 rounded border border-current/30 px-2.5 py-1 text-xs font-medium hover:bg-black/5">
                 {{ __('Answer') }}
             </a>
         @endcan
+        @endif
     </div>
 </div>

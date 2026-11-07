@@ -46,7 +46,11 @@ return [
          */
         'final_restated' => [
             'enabled' => true,
-            'severity' => 'critical',
+            // Severity is set by the rule: critical for a month declared final,
+            // high or medium for a provisional month changed late.
+            // A provisional month whose ledger changes this long after it ended
+            // is raised too, because some schools never close their periods.
+            'late_after_days' => 30,
         ],
 
         /*

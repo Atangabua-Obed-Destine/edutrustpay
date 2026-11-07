@@ -6,9 +6,12 @@
     @foreach ($items as $label => $url)
         @if ($url && ! $loop->last)
             <a href="{{ $url }}" class="hover:text-ink hover:underline">{{ $label }}</a>
-            <span aria-hidden="true">/</span>
         @else
-            <span class="font-medium text-ink">{{ $label }}</span>
+            <span @class(['font-medium text-ink' => $loop->last])>{{ $label }}</span>
         @endif
+
+        @unless ($loop->last)
+            <span aria-hidden="true">/</span>
+        @endunless
     @endforeach
 </nav>

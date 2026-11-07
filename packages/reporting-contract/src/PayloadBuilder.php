@@ -285,6 +285,37 @@ final class PayloadBuilder
     }
 
     /**
+     * What this institution is actually charging, per class and fee.
+     *
+     * The console compares this with the fee schedule the body set. No student is
+     * named: a row is a class, a fee, an amount and how many pay it. Two rows for
+     * the same class and fee mean people in one class pay different amounts, which
+     * is worth seeing in itself.
+     *
+     * @param  array<int, array{level: string, category: string, amount: Money, students: int}>  $rows
+     */
+    public function feesCharged(string $session, array $rows): self
+    {
+        if ($rows === []) {
+            throw new ContractException('Declaring fees_charged means supplying at least one fee.');
+        }
+
+        foreach ($rows as $row) {
+            if (! ($row['amount'] instanceof Money) || trim((string) $row['level']) === '' || trim((string) $row['category']) === '') {
+                throw new ContractException('Each fee needs a level, a category and a Money amount.');
+            }
+        }
+
+        // Sorted so the same fees always serialise, and sign, the same way.
+        usort($rows, fn (array $a, array $b) => [$a['level'], $a['category'], $a['amount']->value()]
+            <=> [$b['level'], $b['category'], $b['amount']->value()]);
+
+        $this->operational['fees_charged'] = ['session' => $session, 'rows' => array_values($rows)];
+
+        return $this->declare(Capability::FEES_CHARGED);
+    }
+
+    /**
      * Tamper-evidence for the period.
      *
      * ledger_hash is taken over the period's journal lines, so the console can

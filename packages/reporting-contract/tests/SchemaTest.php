@@ -44,6 +44,26 @@ final class SchemaTest extends TestCase
     }
 
     /**
+     * Only a class, a fee, an amount and a head count may travel. A school cannot
+     * add a student's name to a row, however it was built.
+     */
+    public function test_a_fee_row_cannot_carry_anything_about_a_student(): void
+    {
+        $payload = $this->payload('ledger-only');
+        $payload->capabilities[] = 'fees_charged';
+        $payload->operational = (object) ['fees_charged' => (object) [
+            'session' => '2026/2027',
+            'rows' => [(object) ['level' => 'Form 1', 'category' => 'Tuition', 'amount' => '200000.00', 'students' => 1]],
+        ]];
+
+        $this->assertTrue($this->validate($payload)->isValid());
+
+        $payload->operational->fees_charged->rows[0]->student = 'A named child';
+
+        $this->assertFalse($this->validate($payload)->isValid());
+    }
+
+    /**
      * The canary. If this fails, the schema's capability coupling is not being
      * checked at all and every other assertion in this file is worthless.
      */

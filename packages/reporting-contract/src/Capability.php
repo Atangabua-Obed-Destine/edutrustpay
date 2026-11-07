@@ -49,6 +49,9 @@ final class Capability
     /** Ledger hash, reversal and backdating counts — the tamper-evidence block. */
     public const INTEGRITY = 'integrity';
 
+    /** What is actually being charged, per class and fee. Since contract 1.1. */
+    public const FEES_CHARGED = 'fees_charged';
+
     /** Reconciliation against a bank or mobile-money statement. */
     public const BANK_RECON = 'bank_recon';
 
@@ -68,6 +71,7 @@ final class Capability
             self::PAYROLL,
             self::INTEGRITY,
             self::BANK_RECON,
+            self::FEES_CHARGED,
         ];
     }
 
@@ -101,6 +105,7 @@ final class Capability
             self::PAYROLL => ['financial.payroll'],
             self::BANK_RECON => ['financial.bank_recon'],
             self::ENROLMENT => ['operational.enrolment'],
+            self::FEES_CHARGED => ['operational.fees_charged'],
             self::INTEGRITY => ['integrity'],
         ];
     }
@@ -125,7 +130,7 @@ final class Capability
      */
     public static function notApplicableTo(string $institutionType): array
     {
-        return $institutionType === 'business' ? [self::ENROLMENT] : [];
+        return $institutionType === 'business' ? [self::ENROLMENT, self::FEES_CHARGED] : [];
     }
 
     /**

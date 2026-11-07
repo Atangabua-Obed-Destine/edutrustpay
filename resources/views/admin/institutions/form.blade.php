@@ -120,6 +120,11 @@
                               :placeholder="__('— inherit from the body —')"
                               :options="collect(range(1, 12))->mapWithKeys(fn ($m) => [$m => \Carbon\Carbon::create(null, $m, 1)->format('F')])->all()" />
                 </x-field>
+
+                <x-field name="live_from" :label="__('Being migrated? Live from')"
+                         :hint="__('Leave empty if it is already running on the system. Until this date it is not judged on the compliance board.')">
+                    <x-input name="live_from" type="date" :value="$institution->live_from?->format('Y-m-d')" />
+                </x-field>
             </div>
 
             <label class="mt-4 flex items-center gap-2 text-sm text-ink-soft">

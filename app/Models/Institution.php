@@ -25,7 +25,7 @@ class Institution extends Model
     protected $fillable = [
         'body_id', 'uuid', 'name', 'slug', 'type', 'system', 'endpoint',
         'connectivity_mode', 'contract_version', 'city', 'contact_name',
-        'contact_email', 'contact_phone', 'not_reporting_days', 'fiscal_year_start_month',
+        'contact_email', 'contact_phone', 'not_reporting_days', 'fiscal_year_start_month', 'live_from',
         'last_report_at', 'last_heartbeat_at', 'last_period_received', 'is_active',
     ];
 
@@ -37,6 +37,7 @@ class Institution extends Model
             'last_heartbeat_at' => 'datetime',
             'not_reporting_days' => 'integer',
             'fiscal_year_start_month' => 'integer',
+            'live_from' => 'date',
         ];
     }
 

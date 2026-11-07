@@ -7,6 +7,12 @@
             {{ __('Overview') }}
         </x-nav-link>
 
+        @can('compliance.view')
+            <x-nav-link :href="route('body.compliance.index')" :active="request()->routeIs('body.compliance.*')">
+                {{ __('Compliance') }}
+            </x-nav-link>
+        @endcan
+
         @can('finding.view')
             <x-nav-link :href="route('body.findings.index')" :active="request()->routeIs('body.findings.*')"
                         :badge="$openFindingCount ?? null">

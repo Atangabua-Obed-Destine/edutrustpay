@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Body;
 use App\Http\Controllers\Controller;
 use App\Models\Finding;
 use App\Models\Institution;
+use App\Services\ComplianceService;
 use App\Services\ConsolidationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -42,6 +43,7 @@ class DashboardController extends Controller
             'periodOptions' => $this->periodOptions(),
             'institutions' => $institutions,
             'notReporting' => $consolidation->notReporting($institutions),
+            'compliance' => $request->user()->can('compliance.view') ? app(ComplianceService::class)->board($institutions) : null,
             'findingGroups' => Finding::grouped(Finding::query()->open()->with('institution')->get()),
             'openFindingCount' => Finding::query()->open()->count(),
             'position' => $position,

@@ -9,6 +9,7 @@ use EdutrustPay\Contract\Capability;
 use EdutrustPay\Contract\Exceptions\CapabilityMismatchException;
 use EdutrustPay\Contract\Exceptions\ContractException;
 use EdutrustPay\Contract\Exceptions\InvalidAmountException;
+use EdutrustPay\Contract\Fingerprint;
 use EdutrustPay\Contract\Money;
 use EdutrustPay\Contract\PayloadBuilder;
 use EdutrustPay\Contract\Signer;
@@ -133,6 +134,68 @@ final class ContractTest extends TestCase
         $this->expectException(CapabilityMismatchException::class);
 
         PayloadBuilder::for(TestVectors::INSTITUTION_REF, '2026-08')->build();
+    }
+
+    // ---------------------------------------------------------------
+    // Fees charged: what the body compares with its own schedule
+    // ---------------------------------------------------------------
+
+    public function test_fees_charged_is_valid_sorted_and_stated_as_strings(): void
+    {
+        $payload = PayloadBuilder::for(TestVectors::INSTITUTION_REF, '2026-10')
+            ->status('provisional')
+            ->sequence(1)
+            ->generatedAt('2026-11-01T00:00:00Z')
+            ->currency('XAF')
+            ->feesCharged('2026/2027', [
+                ['level' => 'Form 2', 'category' => 'Tuition', 'amount' => Money::of('210000.00'), 'students' => 12],
+                ['level' => 'Form 1', 'category' => 'Tuition', 'amount' => Money::of('200000.00'), 'students' => 30],
+            ])
+            ->build();
+
+        $this->assertContains(Capability::FEES_CHARGED, $payload['capabilities']);
+        $this->assertTrue((new Validator())->validate($payload)['valid']);
+
+        $rows = Canonical::decode(Canonical::encode($payload))['operational']['fees_charged']['rows'];
+
+        $this->assertSame('Form 1', $rows[0]['level'], 'The same fees must always sign the same way.');
+        $this->assertSame('200000.00', $rows[0]['amount']);
+    }
+
+    public function test_a_change_in_fees_refiles_an_open_month_but_not_a_closed_one(): void
+    {
+        $report = fn (string $status, string $amount) => PayloadBuilder::for(TestVectors::INSTITUTION_REF, '2026-10')
+            ->status($status)
+            ->sequence(1)
+            ->generatedAt('2026-11-01T00:00:00Z')
+            ->currency('XAF')
+            ->feesCharged('2026/2027', [
+                ['level' => 'Form 1', 'category' => 'Tuition', 'amount' => Money::of($amount), 'students' => 30],
+            ])
+            ->build();
+
+        $filed = fn (string $status) => Canonical::encode($report($status, '200000.00'));
+
+        $this->assertFalse(Fingerprint::needsRefiling($filed('provisional'), $report('provisional', '200000.00')));
+        $this->assertTrue(Fingerprint::needsRefiling($filed('provisional'), $report('provisional', '250000.00')));
+        $this->assertFalse(Fingerprint::needsRefiling($filed('final'), $report('final', '250000.00')));
+    }
+
+    public function test_declaring_fees_charged_with_no_fees_is_refused(): void
+    {
+        // Saying "we charge nothing" and "we cannot say" are different facts.
+        $this->expectException(ContractException::class);
+
+        PayloadBuilder::for(TestVectors::INSTITUTION_REF, '2026-10')->feesCharged('2026/2027', []);
+    }
+
+    public function test_a_report_on_the_previous_contract_version_is_still_valid(): void
+    {
+        // Schools upgrade when they can.
+        $payload = $this->fixture('full-capability')['payload'];
+        $payload['contract_version'] = '1.0';
+
+        $this->assertTrue((new Validator())->validate($payload)['valid']);
     }
 
     // ---------------------------------------------------------------

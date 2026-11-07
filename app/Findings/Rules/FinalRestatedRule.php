@@ -6,6 +6,7 @@ use App\Findings\FindingDraft;
 use App\Findings\Rule;
 use App\Findings\RuleContext;
 use Carbon\Carbon;
+use EdutrustPay\Contract\Fingerprint;
 use EdutrustPay\Contract\Money;
 
 /**
@@ -48,6 +49,13 @@ class FinalRestatedRule implements Rule
         $previous = $report->supersedes;
 
         if (! $previous) {
+            return null;
+        }
+
+        // Refiled with only snapshots or the contract version different: the
+        // month itself did not change, so there is nothing to explain.
+        if ($previous->status === 'final' && $previous->payload !== '{}'
+            && Fingerprint::ofJson($previous->payload) === Fingerprint::ofJson($report->payload)) {
             return null;
         }
 

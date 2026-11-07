@@ -85,6 +85,24 @@
         @endif
     </section>
 
+    {{-- Rules the body set, for those who can see them. --}}
+    @if ($compliance && $compliance['regulations']->isNotEmpty())
+        <section class="mb-8">
+            <div class="mb-3 flex items-center justify-between">
+                <h2 class="text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('Compliance') }}</h2>
+                <a href="{{ route('body.compliance.index') }}" class="text-sm text-ink-muted hover:underline">{{ __('See the board') }}</a>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-3">
+                @foreach ([['breach', __('Breaches'), 'text-rose-700'], ['unknown', __('Cannot be checked'), 'text-amber-700'], ['complies', __('Complying'), 'text-emerald-700']] as [$key, $label, $colour])
+                    <a href="{{ route('body.compliance.index') }}" class="rounded border border-rule bg-surface p-4 hover:bg-surface-sunk">
+                        <p class="text-xs uppercase tracking-wide text-ink-muted">{{ $label }}</p>
+                        <p class="mt-1 text-2xl font-semibold tabular-nums {{ $compliance['totals'][$key] > 0 ? $colour : '' }}">{{ $compliance['totals'][$key] }}</p>
+                    </a>
+                @endforeach
+            </div>
+        </section>
+    @endif
+
     {{-- 2. FINDINGS — controls that fired, most severe first. --}}
     <section class="mb-8">
         <div class="mb-3 flex items-center justify-between">

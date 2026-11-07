@@ -44,6 +44,7 @@ class InstitutionRequest extends FormRequest
             'not_reporting_days' => ['nullable', 'integer', 'between:1,365'],
             // Nullable means "inherit the body's"; the form says so.
             'fiscal_year_start_month' => ['nullable', 'integer', 'between:1,12'],
+            'live_from' => ['nullable', 'date'],
             'is_active' => ['boolean'],
         ];
     }

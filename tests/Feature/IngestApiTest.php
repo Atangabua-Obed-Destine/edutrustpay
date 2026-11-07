@@ -9,6 +9,7 @@ use App\Models\InstitutionCredential;
 use App\Models\PeriodReport;
 use App\Models\SyncEvent;
 use EdutrustPay\Contract\Canonical;
+use EdutrustPay\Contract\ContractVersion;
 use EdutrustPay\Contract\Money;
 use EdutrustPay\Contract\PayloadBuilder;
 use EdutrustPay\Contract\Signer;
@@ -59,7 +60,7 @@ class IngestApiTest extends TestCase
     {
         $response = $this->push($this->payload());
 
-        $response->assertStatus(202)->assertJson(['status' => 'accepted', 'contract_version' => '1.0']);
+        $response->assertStatus(202)->assertJson(['status' => 'accepted', 'contract_version' => ContractVersion::CURRENT]);
 
         $this->assertDatabaseHas('period_reports', [
             'institution_id' => $this->institution->id,
@@ -341,12 +342,18 @@ class IngestApiTest extends TestCase
         $this->assertDatabaseHas('sync_events', ['type' => SyncEvent::HEARTBEAT]);
     }
 
+    public function test_a_school_still_on_the_previous_contract_is_accepted(): void
+    {
+        // Schools upgrade when they can, so 1.0 has to keep working.
+        $this->push(['contract_version' => '1.0'] + $this->payload())->assertStatus(202);
+    }
+
     public function test_the_contract_endpoint_is_readable_without_a_signature(): void
     {
         // A client that cannot sign is exactly the one that needs to read this.
         $this->getJson('/api/v1/contract')
             ->assertStatus(200)
-            ->assertJson(['contract_version' => '1.0'])
+            ->assertJson(['contract_version' => ContractVersion::CURRENT])
             ->assertJsonStructure(['capabilities', 'signing' => ['algorithm', 'headers'], 'schema']);
     }
 

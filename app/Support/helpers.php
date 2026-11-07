@@ -71,6 +71,16 @@ if (! function_exists('money_text')) {
     }
 }
 
+if (! function_exists('period_text')) {
+    /**
+     * A reporting month in words: "2026-10" becomes "October 2026".
+     */
+    function period_text(string $period): string
+    {
+        return \Carbon\Carbon::createFromFormat('!Y-m', $period)->translatedFormat('F Y');
+    }
+}
+
 if (! function_exists('manage_route')) {
     /**
      * A management route on whichever side the current page is on.

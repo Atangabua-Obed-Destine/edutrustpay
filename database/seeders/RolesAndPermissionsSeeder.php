@@ -33,6 +33,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'Consolidation' => ['view', 'export'],
         'User' => ['view', 'invite', 'update', 'deactivate'],
         'Role' => ['view', 'manage'],
+        'Compliance' => ['view', 'manage', 'follow_up', 'waive'],
         'Audit' => ['view'],
         'Settings' => ['view', 'update'],
     ];
@@ -57,6 +58,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'finding.view', 'finding.resolve',
                 'consolidation.view', 'consolidation.export',
                 'credential.view', 'audit.view',
+                'compliance.view',
             ],
         ],
         'education_secretary' => [
@@ -68,6 +70,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'finding.view', 'finding.resolve',
                 'consolidation.view', 'consolidation.export',
                 'audit.view',
+                'compliance.view', 'compliance.manage', 'compliance.follow_up', 'compliance.waive',
             ],
         ],
         'auditor' => [
@@ -87,6 +90,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'finding.view',
                 'consolidation.view', 'consolidation.export',
                 'credential.view', 'audit.view', 'user.view',
+                'compliance.view',
             ],
         ],
         'institution_liaison' => [

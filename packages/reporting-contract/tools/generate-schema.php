@@ -140,6 +140,30 @@ $operational = [
         ]),
         'collected' => $money,
         'collection_rate' => $rate,
+        'fees_charged' => [
+            'type' => 'object',
+            'additionalProperties' => false,
+            'required' => ['session', 'rows'],
+            'description' => 'What is actually being charged, per class and fee. No student is named.',
+            'properties' => [
+                'session' => ['type' => 'string', 'minLength' => 1],
+                'rows' => [
+                    'type' => 'array',
+                    'minItems' => 1,
+                    'items' => [
+                        'type' => 'object',
+                        'additionalProperties' => false,
+                        'required' => ['level', 'category', 'amount', 'students'],
+                        'properties' => [
+                            'level' => ['type' => 'string', 'minLength' => 1],
+                            'category' => ['type' => 'string', 'minLength' => 1],
+                            'amount' => $money,
+                            'students' => ['type' => 'integer', 'minimum' => 0],
+                        ],
+                    ],
+                ],
+            ],
+        ],
         'cash_share' => array_merge($rate, [
             'description' => 'Proportion taken as physical cash. The exposure measure for interception.',
         ]),

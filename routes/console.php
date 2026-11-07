@@ -19,6 +19,12 @@ use Illuminate\Support\Facades\Schedule;
 |
 */
 
+// Reports are accepted instantly and processed here, so a school on a phone
+// hotspot is not kept waiting. Exits when the queue is empty.
+Schedule::command('queue:work --stop-when-empty --max-time=55 --tries=3')
+    ->everyMinute()
+    ->withoutOverlapping(5);
+
 Schedule::command('edutrustpay:sweep')
     ->dailyAt('06:30')
     ->withoutOverlapping()

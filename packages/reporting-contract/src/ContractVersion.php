@@ -17,10 +17,10 @@ namespace EdutrustPay\Contract;
 final class ContractVersion
 {
     /** The version this package implements. */
-    public const CURRENT = '1.0';
+    public const CURRENT = '1.1';
 
     /** Versions this package can still read. */
-    public const SUPPORTED = ['1.0'];
+    public const SUPPORTED = ['1.0', '1.1'];
 
     public static function supports(string $version): bool
     {

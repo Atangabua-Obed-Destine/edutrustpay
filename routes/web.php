@@ -9,6 +9,8 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\InvitationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Body\CapabilityMatrixController;
+use App\Http\Controllers\Body\ComplianceController;
+use App\Http\Controllers\Body\RegulationController;
 use App\Http\Controllers\Body\ConsolidationController;
 use App\Http\Controllers\Body\DashboardController as BodyDashboard;
 use App\Http\Controllers\Body\FindingController;
@@ -103,6 +105,29 @@ Route::middleware(['auth', EnsureBodyView::class])->prefix('body')->name('body.'
     // who can close the findings they are auditing is not an auditor.
     Route::post('findings/{finding}/resolve', [FindingController::class, 'resolve'])
         ->middleware('permission:finding.resolve')->name('findings.resolve');
+
+    /*
+     * The rules a body sets, and how its schools measure up. The body console's
+     * reason to exist for an Education Secretary.
+     */
+    Route::prefix('compliance')->name('compliance.')->group(function () {
+        Route::get('/', [ComplianceController::class, 'index'])->middleware('permission:compliance.view')->name('index');
+
+        Route::get('rules', [RegulationController::class, 'index'])->middleware('permission:compliance.view')->name('regulations.index');
+        Route::get('rules/create', [RegulationController::class, 'create'])->middleware('permission:compliance.manage')->name('regulations.create');
+        Route::post('rules', [RegulationController::class, 'store'])->middleware('permission:compliance.manage')->name('regulations.store');
+        Route::get('rules/{regulation}/edit', [RegulationController::class, 'edit'])->middleware('permission:compliance.manage')->name('regulations.edit');
+        Route::put('rules/{regulation}', [RegulationController::class, 'update'])->middleware('permission:compliance.manage')->name('regulations.update');
+        Route::post('rules/{regulation}/toggle', [RegulationController::class, 'toggle'])->middleware('permission:compliance.manage')->name('regulations.toggle');
+
+        Route::get('{regulation}/{institution}', [ComplianceController::class, 'show'])->whereNumber('regulation')->middleware('permission:compliance.view')->name('show');
+        Route::post('{regulation}/{institution}/mappings', [ComplianceController::class, 'saveMappings'])->whereNumber('regulation')->middleware('permission:compliance.manage')->name('mappings');
+        Route::post('{regulation}/{institution}/waiver', [ComplianceController::class, 'waive'])->whereNumber('regulation')->middleware('permission:compliance.waive')->name('waiver');
+        Route::post('{regulation}/{institution}/waiver/{waiver}/revoke', [ComplianceController::class, 'revokeWaiver'])->whereNumber('regulation')->middleware('permission:compliance.waive')->name('waiver.revoke');
+        Route::post('{regulation}/{institution}/attest', [ComplianceController::class, 'attest'])->whereNumber('regulation')->middleware('permission:compliance.follow_up')->name('attest');
+        Route::post('{regulation}/{institution}/follow-up', [ComplianceController::class, 'openCase'])->whereNumber('regulation')->middleware('permission:compliance.follow_up')->name('cases.open');
+        Route::post('{regulation}/{institution}/follow-up/{case}/close', [ComplianceController::class, 'closeCase'])->whereNumber('regulation')->middleware('permission:compliance.follow_up')->name('cases.close');
+    });
 
     /*
      * The body runs its own schools and staff. Same screens as the operator's,

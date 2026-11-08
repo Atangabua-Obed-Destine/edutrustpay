@@ -16,7 +16,7 @@
         @can('finding.view')
             <x-nav-link :href="route('body.findings.index')" :active="request()->routeIs('body.findings.*')"
                         :badge="$openFindingCount ?? null">
-                {{ __('Findings') }}
+                {{ __('To look into') }}
             </x-nav-link>
         @endcan
 

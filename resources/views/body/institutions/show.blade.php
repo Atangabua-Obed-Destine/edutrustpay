@@ -1,11 +1,20 @@
 @extends('layouts.console')
 
+@php
+    $types = ['school_basic' => __('Primary or secondary school'), 'school_higher' => __('Higher institute'), 'business' => __('Business')];
+    $eventNames = [
+        'received' => [__('Received'), 'bg-emerald-100 text-emerald-800'],
+        'rejected' => [__('Refused'), 'bg-rose-100 text-rose-800'],
+        'restated' => [__('Corrected'), 'bg-amber-100 text-amber-800'],
+        'heartbeat' => [__('Checked in'), 'bg-surface-sunk text-ink-soft'],
+        'stale' => [__('Gone quiet'), 'bg-amber-100 text-amber-800'],
+        'recovered' => [__('Back in touch'), 'bg-emerald-100 text-emerald-800'],
+    ];
+    $toneDot = ['good' => 'bg-emerald-500', 'warn' => 'bg-amber-500', 'bad' => 'bg-rose-600', 'muted' => 'bg-rule-strong'];
+@endphp
+
 @section('title', $institution->name)
-@section('subtitle', __(':system · :type · :body', [
-    'system' => $institution->system,
-    'type' => str_replace('_', ' ', $institution->type),
-    'body' => $institution->body->name,
-]))
+@section('subtitle', ($types[$institution->type] ?? $institution->type).' · '.$institution->body->name)
 
 @section('header-actions')
     <form method="GET" class="flex items-center gap-2">
@@ -13,10 +22,10 @@
         <select name="period" id="period" onchange="this.form.submit()"
                 class="rounded border border-rule-strong bg-surface px-2 py-1.5 text-sm">
             @foreach ($history as $row)
-                <option value="{{ $row->period }}" @selected($row->period === $period)>{{ $row->period }}</option>
+                <option value="{{ $row->period }}" @selected($row->period === $period)>{{ period_text($row->period) }}</option>
             @endforeach
             @if ($history->doesntContain('period', $period))
-                <option value="{{ $period }}" selected>{{ $period }}</option>
+                <option value="{{ $period }}" selected>{{ period_text($period) }}</option>
             @endif
         </select>
     </form>
@@ -27,32 +36,54 @@
             {{ __('Manage') }}
         </a>
     @endcanany
-
-    {{-- Two depths below this page, and they answer different questions: what
-         exactly arrived for one month, and how the year stands so far. --}}
-    <a href="{{ route('body.institutions.monthly', [$institution, $period]) }}"
-       class="rounded border border-rule-strong px-3 py-1.5 text-sm font-medium hover:bg-surface-sunk">
-        {{ __('Full return') }}
-    </a>
-
-    <a href="{{ route('body.institutions.annual', $institution) }}?period={{ $period }}"
-       class="rounded bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">
-        {{ __('Year to date') }}
-    </a>
 @endsection
 
 @section('content')
 
-    @if (! $report)
-        <div class="mb-6 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800
-                   ">
-            {{ __('No report has been received for :period. This is an absence of information, not a set of zeroes.', ['period' => $period]) }}
-        </div>
-    @else
+    {{-- 1. HOW IS THIS SCHOOL DOING, IN WORDS. --}}
+    <section class="mb-6 rounded border border-rule bg-surface px-5 py-4">
+        <ul class="space-y-2.5 text-[15px] leading-snug text-ink">
+            @foreach ($headlines as $line)
+                <li class="flex items-start gap-3">
+                    <span class="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full {{ $toneDot[$line->tone] }}" aria-hidden="true"></span>
+                    @if ($line->href)
+                        <a href="{{ $line->href }}" class="underline-offset-2 hover:underline">{{ $line->text }}</a>
+                    @else
+                        <span>{{ $line->text }}</span>
+                    @endif
+                </li>
+            @endforeach
+        </ul>
+    </section>
 
-        {{-- Warnings raised by the contract validator at ingest. These were
-             ACCEPTED and stored, then turned into findings — never a reason to
-             refuse a report. --}}
+    {{-- 2. WHERE TO GO NEXT. --}}
+    <section class="mb-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        @can('daybook.view')
+            <a href="{{ route('body.institutions.daybook', ['institution' => $institution, 'period' => $period]) }}"
+               class="rounded border border-rule bg-surface px-4 py-3 transition hover:bg-surface-sunk">
+                <span class="font-serif text-base text-ink">{{ __('Daybook') }}</span>
+                <span class="mt-0.5 block text-xs text-ink-muted">{{ __('Every movement of money in the month, line by line.') }}</span>
+            </a>
+        @endcan
+        <a href="{{ route('body.institutions.budget', ['institution' => $institution, 'period' => $period]) }}"
+           class="rounded border border-rule bg-surface px-4 py-3 transition hover:bg-surface-sunk">
+            <span class="font-serif text-base text-ink">{{ __('Budget sheet') }}</span>
+            <span class="mt-0.5 block text-xs text-ink-muted">{{ __('Each budget line against what has been spent so far.') }}</span>
+        </a>
+        <a href="{{ route('body.institutions.annual', $institution) }}?period={{ $period }}"
+           class="rounded border border-rule bg-surface px-4 py-3 transition hover:bg-surface-sunk">
+            <span class="font-serif text-base text-ink">{{ __('The year so far') }}</span>
+            <span class="mt-0.5 block text-xs text-ink-muted">{{ __('The months added up, in the shape the bursar reads.') }}</span>
+        </a>
+        <a href="{{ route('body.institutions.monthly', [$institution, $period]) }}"
+           class="rounded border border-rule bg-surface px-4 py-3 transition hover:bg-surface-sunk">
+            <span class="font-serif text-base text-ink">{{ __('Everything sent for :month', ['month' => period_text($period)]) }}</span>
+            <span class="mt-0.5 block text-xs text-ink-muted">{{ __('The full monthly report, including what it does not send.') }}</span>
+        </a>
+    </section>
+
+    @if ($report)
+        {{-- Warnings raised at ingest. Accepted and stored, never a reason to refuse. --}}
         @if ($report->warningList())
             <div class="mb-6 rounded border border-rose-200 bg-rose-50 px-4 py-3">
                 <p class="text-sm font-semibold text-rose-900">{{ __('Points to check in this report') }}</p>
@@ -64,12 +95,13 @@
             </div>
         @endif
 
-        <div class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {{-- 3. THE MONTH IN FOUR FIGURES. --}}
+        <div class="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             @foreach ([
-                ['surplus_deficit', __('Surplus / deficit'), \EdutrustPay\Contract\Capability::LEDGER],
+                ['surplus_deficit', __('Income less spending'), \EdutrustPay\Contract\Capability::LEDGER],
                 ['cash_closing', __('Cash at month end'), \EdutrustPay\Contract\Capability::LEDGER],
-                ['receivables_total', __('Receivables'), \EdutrustPay\Contract\Capability::RECEIVABLES],
-                ['budgeted', __('Budgeted'), \EdutrustPay\Contract\Capability::BUDGET],
+                ['collected', __('Fees collected so far'), \EdutrustPay\Contract\Capability::ENROLMENT],
+                ['receivables_total', __('Fees owed'), \EdutrustPay\Contract\Capability::RECEIVABLES],
             ] as [$column, $label, $capability])
                 <div class="rounded border border-rule bg-surface p-4">
                     <p class="text-xs uppercase tracking-wide text-ink-muted">{{ $label }}</p>
@@ -79,61 +111,85 @@
                 </div>
             @endforeach
         </div>
+    @endif
 
-        {{-- The report stops at the OHADA group. Below that are the daybook lines,
-             and links out to the school's own system for everything else. --}}
-        <section class="mb-8 grid gap-6 lg:grid-cols-2">
-            @foreach ([['income', __('Income by OHADA group')], ['expenditure', __('Expenditure by OHADA group')]] as [$section, $heading])
-                <div>
-                    <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ $heading }}</h2>
+    {{-- 4. WHAT TO ASK THIS SCHOOL ABOUT. --}}
+    @if ($findingGroups->isNotEmpty())
+        <section class="mb-8">
+            <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('To look into') }}</h2>
+            <div class="space-y-2">
+                @foreach ($findingGroups as $group)
+                    @include('body.partials.finding-compact', ['group' => $group])
+                @endforeach
+            </div>
+        </section>
+    @endif
+
+    @if ($report)
+        {{--
+            5. BY ACCOUNT CLASS.
+
+            The report stops at the OHADA account class. Schools name and use the
+            classes in their own way (one may book tuition under 71, another under
+            70), so no name is invented here: the daybook and budget sheet say what
+            the money actually was.
+        --}}
+        <section class="mb-8">
+            <h2 class="mb-1 text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('By account class') }}</h2>
+            <p class="mb-3 text-xs text-ink-muted">{{ __('OHADA account classes, as this school\'s books group them: 70 to 79 are income, 60 to 69 spending. For what the money actually was, open the daybook or budget sheet.') }}</p>
+            <div class="grid gap-6 lg:grid-cols-2">
+                @foreach ([['income', __('Income')], ['expenditure', __('Spending')]] as [$section, $heading])
+                    @php $sectionTotal = collect($$section)->sum(fn ($m) => (float) $m->value()); @endphp
                     <div class="overflow-hidden rounded border border-rule">
                         <table class="min-w-full divide-y divide-rule text-sm">
+                            <thead class="bg-surface-sunk text-left text-xs uppercase tracking-wide text-ink-muted">
+                                <tr><th class="px-4 py-2 font-semibold" colspan="3">{{ $heading }}</th></tr>
+                            </thead>
                             <tbody class="divide-y divide-rule bg-surface">
                                 @forelse ($$section as $group => $money)
                                     <tr>
-                                        <td class="px-4 py-2 font-mono text-xs text-ink-muted">{{ $group }}</td>
-                                        <td class="px-4 py-2 text-right tabular-nums">{{ number_format((float) $money->value(), 0, '.', ' ') }}</td>
+                                        <td class="px-4 py-2 text-ink-soft">{{ __('Class :code', ['code' => $group]) }}</td>
+                                        <td class="px-4 py-2 text-right tabular-nums">{{ money_text($money->value()) }}</td>
+                                        <td class="w-16 px-4 py-2 text-right text-xs tabular-nums text-ink-muted">{{ $sectionTotal > 0 ? round((float) $money->value() / $sectionTotal * 100).'%' : '' }}</td>
                                     </tr>
                                 @empty
-                                    <tr><td class="px-4 py-3 text-sm italic text-ink-muted">{{ __('Nothing reported in this section.') }}</td></tr>
+                                    <tr><td class="px-4 py-3 text-sm italic text-ink-muted">{{ __('Nothing recorded in :month.', ['month' => period_text($period)]) }}</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
-                </div>
-            @endforeach
+                @endforeach
+            </div>
         </section>
 
-        {{-- Restatements: superseded versions are RETAINED and stay visible.
-             That is the difference between restating and overwriting. --}}
+        {{-- Corrections are kept, never overwritten. Shown only when there were any. --}}
         @if ($versions->count() > 1)
             <section class="mb-8">
-                <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">
-                    {{ __('Versions of :period', ['period' => $period]) }}
-                </h2>
-                <div class="overflow-hidden rounded border border-amber-200">
-                    <table class="min-w-full divide-y divide-amber-200 text-sm">
-                        <thead class="bg-amber-50 text-left text-xs uppercase tracking-wide text-amber-800">
+                <h2 class="mb-1 text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __(':month was sent :count times', ['month' => period_text($period), 'count' => $versions->count()]) }}</h2>
+                <p class="mb-3 text-xs text-ink-muted">{{ __('Each time the school\'s figures for a month change, it sends the month again. Every version is kept, so a change can always be seen.') }}</p>
+                <div class="overflow-x-auto rounded border border-rule">
+                    <table class="min-w-full divide-y divide-rule text-sm">
+                        <thead class="bg-surface-sunk text-left text-xs uppercase tracking-wide text-ink-muted">
                             <tr>
-                                <th class="px-4 py-2 font-semibold">{{ __('Sequence') }}</th>
-                                <th class="px-4 py-2 font-semibold">{{ __('Status') }}</th>
-                                <th class="px-4 py-2 font-semibold">{{ __('Generated') }}</th>
-                                <th class="px-4 py-2 text-right font-semibold">{{ __('Surplus') }}</th>
-                                <th class="px-4 py-2 font-semibold">{{ __('Standing') }}</th>
+                                <th class="px-4 py-2 font-semibold">{{ __('Version') }}</th>
+                                <th class="px-4 py-2 font-semibold">{{ __('Sent') }}</th>
+                                <th class="px-4 py-2 font-semibold">{{ __('The month was') }}</th>
+                                <th class="px-4 py-2 text-right font-semibold">{{ __('Income less spending') }}</th>
+                                <th class="px-4 py-2 font-semibold"></th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-amber-100 bg-surface">
+                        <tbody class="divide-y divide-rule bg-surface">
                             @foreach ($versions as $version)
                                 <tr>
                                     <td class="px-4 py-2 tabular-nums">{{ $version->sequence }}</td>
-                                    <td class="px-4 py-2">{{ $version->status }}</td>
                                     <td class="px-4 py-2 text-ink-muted">{{ $version->generated_at->toDayDateTimeString() }}</td>
-                                    <td class="px-4 py-2 text-right tabular-nums">{{ $version->surplus_deficit ?? '—' }}</td>
-                                    <td class="px-4 py-2">
+                                    <td class="px-4 py-2 text-ink-soft">{{ $version->status === 'final' ? __('closed') : __('still open') }}</td>
+                                    <td class="px-4 py-2 text-right tabular-nums">{{ $version->surplus_deficit !== null ? money_text($version->surplus_deficit) : '—' }}</td>
+                                    <td class="px-4 py-2 text-xs">
                                         @if ($version->is_current)
-                                            <span class="text-xs font-medium text-emerald-700">{{ __('current') }}</span>
+                                            <span class="font-medium text-emerald-700">{{ __('in use') }}</span>
                                         @else
-                                            <span class="text-xs text-ink-muted">{{ __('superseded, retained') }}</span>
+                                            <span class="text-ink-muted">{{ __('replaced, kept') }}</span>
                                         @endif
                                     </td>
                                 </tr>
@@ -145,11 +201,9 @@
         @endif
     @endif
 
-    {{-- Trend: a step change is a signal. --}}
+    {{-- 6. MONTH BY MONTH. A step change is a signal; a missing month is a gap, not a zero. --}}
     <section class="mb-8">
-        <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">
-            {{ __('Surplus trend') }}
-        </h2>
+        <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('Income less spending, month by month') }}</h2>
         <div class="overflow-x-auto rounded border border-rule bg-surface p-4">
             <div class="flex min-w-max items-end gap-1">
                 @php
@@ -166,48 +220,33 @@
                     <div class="flex w-12 flex-col items-center gap-1">
                         <div class="flex h-20 w-full items-end justify-center">
                             @if ($has)
-                                <div @class([
-                                        'w-6 rounded-t',
-                                        'bg-emerald-400' => $value >= 0,
-                                        'bg-rose-400' => $value < 0,
-                                     ])
+                                <div @class(['w-6 rounded-t', 'bg-emerald-400' => $value >= 0, 'bg-rose-400' => $value < 0])
                                      style="height: {{ $height }}px"
-                                     title="{{ $point->period }}: {{ $point->figure->formatted() }}"></div>
+                                     title="{{ period_text($point->period) }}: {{ $point->figure->formatted() }}"></div>
                             @else
-                                {{-- A month with no report is a GAP, not a zero-height bar
-                                     sitting on the axis. A reader scanning this must not
-                                     mistake silence for a flat month. --}}
                                 <div class="w-6 border-b-2 border-dashed border-rule-strong"
-                                     title="{{ $point->period }}: {{ $point->figure->label() }}"></div>
+                                     title="{{ period_text($point->period) }}: {{ $point->figure->label() }}"></div>
                             @endif
                         </div>
-                        <span class="text-[10px] text-ink-muted">{{ substr($point->period, 2) }}</span>
+                        <span class="text-[10px] text-ink-muted">{{ \Carbon\Carbon::createFromFormat('!Y-m', $point->period)->translatedFormat('M y') }}</span>
                     </div>
                 @endforeach
             </div>
         </div>
+        <p class="mt-2 text-xs text-ink-muted">{{ __('Green is more income than spending, red the reverse. A dashed gap is a month with no figures, not a month of zero.') }}</p>
     </section>
 
-    {{-- The sync log: rejected pushes are as informative as accepted ones. --}}
-    <section>
-        <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">
-            {{ __('Recent activity') }}
-        </h2>
-        <div class="overflow-hidden rounded border border-rule">
+    {{-- 7. WHAT HAS ARRIVED FROM THIS SCHOOL. Refusals matter as much as arrivals. --}}
+    <section class="mb-8">
+        <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('Recently from this school') }}</h2>
+        <div class="overflow-x-auto rounded border border-rule">
             <table class="min-w-full divide-y divide-rule text-sm">
                 <tbody class="divide-y divide-rule bg-surface">
                     @forelse ($events as $event)
+                        @php [$eventLabel, $eventClass] = $eventNames[$event->type] ?? [ucfirst($event->type), 'bg-surface-sunk text-ink-soft']; @endphp
                         <tr>
-                            <td class="px-4 py-2 text-xs text-ink-muted">{{ $event->created_at?->diffForHumans() }}</td>
-                            <td class="px-4 py-2">
-                                <span @class([
-                                    'rounded px-1.5 py-0.5 text-[11px] font-medium',
-                                    'bg-emerald-100 text-emerald-800' => $event->type === 'received',
-                                    'bg-rose-100 text-rose-800' => $event->type === 'rejected',
-                                    'bg-amber-100 text-amber-800' => $event->type === 'restated',
-                                    'bg-surface-sunk text-ink-soft' => in_array($event->type, ['heartbeat', 'stale', 'recovered']),
-                                ])>{{ $event->type }}</span>
-                            </td>
+                            <td class="whitespace-nowrap px-4 py-2 text-xs text-ink-muted">{{ $event->created_at?->diffForHumans() }}</td>
+                            <td class="px-4 py-2"><span class="rounded px-1.5 py-0.5 text-[11px] font-medium {{ $eventClass }}">{{ $eventLabel }}</span></td>
                             <td class="px-4 py-2 text-ink-soft">{{ $event->summary }}</td>
                         </tr>
                     @empty
@@ -218,21 +257,7 @@
         </div>
     </section>
 
-    <section class="mt-8">
-        <a href="{{ route('body.institutions.budget', ['institution' => $institution, 'period' => $period]) }}"
-           class="mb-4 block rounded border border-rule bg-surface px-4 py-3 transition hover:bg-surface-sunk">
-            <span class="font-serif text-base text-ink">{{ __('Budget sheet') }}</span>
-            <span class="mt-0.5 block text-xs text-ink-muted">{{ __('Each budget line against what has been spent or received so far this year.') }}</span>
-        </a>
-
-        @can('daybook.view')
-            <a href="{{ route('body.institutions.daybook', ['institution' => $institution, 'period' => $period]) }}"
-               class="mb-4 block rounded border border-rule bg-surface px-4 py-3 transition hover:bg-surface-sunk">
-                <span class="font-serif text-base text-ink">{{ __('Daybook') }}</span>
-                <span class="mt-0.5 block text-xs text-ink-muted">{{ __('Every movement of money in the month, line by line, here in the console.') }}</span>
-            </a>
-        @endcan
-
+    <section>
         <x-drill-through :links="$drillThrough" :institution="$institution" :period="$period" />
     </section>
 

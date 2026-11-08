@@ -1,7 +1,7 @@
 @extends('layouts.console')
 
-@section('title', __('Findings'))
-@section('subtitle', __('Controls that fired, most severe first'))
+@section('title', __('To look into'))
+@section('subtitle', __('What the system noticed and cannot explain, most serious first'))
 
 @section('header-actions')
     <nav class="flex gap-1 text-sm">
@@ -25,9 +25,10 @@
             {{ __('Nothing here.') }}
         </p>
     @else
+        <p class="mb-3 text-sm text-ink-muted">{{ __('These are questions to ask, not proof of anything. Open one to read it, and answer it once you know what happened. Each one is a school and a kind of question; it may cover several months.') }}</p>
         <div class="space-y-2">
             @foreach ($groups as $group)
-                @include('body.partials.finding-group', ['group' => $group])
+                @include('body.partials.finding-compact', ['group' => $group])
             @endforeach
         </div>
 

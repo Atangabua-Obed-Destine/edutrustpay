@@ -28,11 +28,9 @@ class FindingController extends Controller
             'groups' => Finding::grouped($findings->getCollection()),
             'status' => $status,
             'openFindingCount' => Finding::grouped(Finding::query()->open()->with('institution')->get())->count(),
-            'counts' => [
-                Finding::OPEN => Finding::query()->where('status', Finding::OPEN)->count(),
-                Finding::EXPLAINED => Finding::query()->where('status', Finding::EXPLAINED)->count(),
-                Finding::ACCEPTED => Finding::query()->where('status', Finding::ACCEPTED)->count(),
-            ],
+            'counts' => collect([Finding::OPEN, Finding::EXPLAINED, Finding::ACCEPTED])->mapWithKeys(fn (string $s) => [
+                $s => Finding::grouped(Finding::query()->where('status', $s)->with('institution')->get())->count(),
+            ])->all(),
         ]);
     }
 

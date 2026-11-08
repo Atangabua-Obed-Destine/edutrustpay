@@ -1,7 +1,7 @@
 @extends('layouts.console')
 
 @section('title', $finding->title)
-@section('subtitle', $finding->institution->name . ($finding->period ? ' · ' . $finding->period : ''))
+@section('subtitle', $finding->institution->name . ($finding->period ? ' · ' . period_text($finding->period) : ''))
 
 @section('content')
 
@@ -18,13 +18,14 @@
                         {{ __('The figures behind it') }}
                     </h2>
                     <dl class="grid gap-2 sm:grid-cols-2">
-                        @foreach ($finding->figures as $key => $value)
-                            <div class="rounded border border-rule px-3 py-2 min-w-0 break-all">
-                                <dt class="text-xs uppercase tracking-wide text-ink-muted min-w-0 break-all">{{ str_replace('_', ' ', $key) }}</dt>
-                                <dd class="font-medium tabular-nums min-w-0 break-all">{{ is_scalar($value) ? $value : json_encode($value) }}</dd>
+                        @foreach ($finding->figureLines() as $label => $value)
+                            <div class="min-w-0 rounded border border-rule px-3 py-2">
+                                <dt class="text-xs text-ink-muted">{{ $label }}</dt>
+                                <dd class="min-w-0 break-words font-medium tabular-nums">{{ $value }}</dd>
                             </div>
                         @endforeach
                     </dl>
+                    <p class="mt-3 text-xs text-ink-muted">{{ __('As they stood when this was noticed. They are kept as they were even if the school sends the month again.') }}</p>
                 </div>
             @endif
 
@@ -43,7 +44,8 @@
                           class="space-y-3 rounded border border-rule bg-surface p-4">
                         @csrf
 
-                        <h2 class="text-sm font-semibold text-ink">{{ __('Answer this finding') }}</h2>
+                        <h2 class="text-sm font-semibold text-ink">{{ __('Answer this') }}</h2>
+                        <p class="text-xs text-ink-muted">{{ __('Once you know what happened, record it here. It stays on record with your name.') }}</p>
 
                         {{-- No "dismiss". A finding is answered, never made to
                              disappear — and the name of whoever answered it stays. --}}
@@ -73,7 +75,7 @@
                     </form>
                 @else
                     <p class="rounded border border-rule bg-surface p-4 text-sm text-ink-muted">
-                        {{ __('You can see this finding but not answer it. Answering belongs to the people accountable for the money.') }}
+                        {{ __('You can read this but not answer it. Answering belongs to the people accountable for the money.') }}
                     </p>
                 @endcan
             @else

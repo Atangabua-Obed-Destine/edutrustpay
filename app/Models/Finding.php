@@ -161,6 +161,58 @@ class Finding extends Model
         };
     }
 
+    /**
+     * The figures behind this finding, with names a reader can follow and amounts
+     * written as amounts. Internal fingerprints are left out: they mean nothing
+     * to a person, and the versions on the school's page show the change.
+     *
+     * @return array<string, string>
+     */
+    public function figureLines(): array
+    {
+        $money = fn ($v) => money_text($v);
+        $percent = fn ($v) => round((float) $v * ((float) $v <= 1 ? 100 : 1)).'%';
+        $plain = fn ($v) => is_scalar($v) ? (string) $v : json_encode($v);
+
+        $known = [
+            'period' => [__('Month'), fn ($v) => period_text((string) $v)],
+            'backdated_entries' => [__('Entries added after the month ended'), $plain],
+            'journal_entry_count' => [__('Entries in the month'), $plain],
+            'share_percent' => [__('Share of the month\'s entries'), fn ($v) => $v.'%'],
+            'reversals' => [__('Entries reversed'), $plain],
+            'previous_sequence' => [__('Earlier version'), $plain],
+            'new_sequence' => [__('New version'), $plain],
+            'previous_surplus' => [__('Income less spending, before'), $money],
+            'new_surplus' => [__('Income less spending, after'), $money],
+            'surplus_movement' => [__('Change'), $money],
+            'days_between' => [__('Days between the two'), $plain],
+            'cash_share' => [__('Taken as physical cash'), $percent],
+            'threshold' => [__('Raised above'), $percent],
+            'rise_from_earlier' => [__('Rise on earlier months'), $percent],
+            'collected' => [__('Collected so far'), $money],
+            'enrolment' => [__('Students'), $plain],
+            'expected_fees' => [__('Fees billed so far'), $money],
+            'shortfall' => [__('Difference'), $money],
+            'collection_rate' => [__('Collected, as a share of fees billed'), $percent],
+            'minimum_rate' => [__('Raised below'), $percent],
+            'difference' => [__('Out of balance by'), $money],
+            'days_silent' => [__('Days with nothing received'), $plain],
+        ];
+
+        $lines = [];
+
+        foreach ((array) $this->figures as $key => $value) {
+            if (str_ends_with((string) $key, '_hash') || $value === null) {
+                continue;
+            }
+
+            [$label, $format] = $known[$key] ?? [ucfirst(str_replace('_', ' ', (string) $key)), $plain];
+            $lines[$label] = $format($value);
+        }
+
+        return $lines;
+    }
+
     public function severityRank(): int
     {
         $rank = array_search($this->severity, self::SEVERITIES, true);

@@ -13,7 +13,7 @@
         <div class="min-w-0">
             <p class="text-sm font-semibold">
                 {{ $finding->title }}
-                <span class="ml-2 rounded bg-black/10 px-1.5 py-0.5 text-[11px] font-medium uppercase tracking-wide">
+                <span class="ml-2 rounded bg-black/10 px-1.5 py-0.5 text-[11px] font-medium">
                     {{ \App\Models\Finding::severityLabel($finding->severity) }}
                 </span>
             </p>
@@ -25,7 +25,7 @@
 
             <p class="mt-1 text-xs opacity-70">
                 {{ $finding->institution->name }}
-                @if ($finding->period) · {{ $finding->period }} @endif
+                @if ($finding->period) · {{ period_text($finding->period) }} @endif
                 @if ($finding->occurrences > 1)
                     · {{ trans_choice('{1}seen once|[2,*]seen :count times', $finding->occurrences, ['count' => $finding->occurrences]) }}
                 @endif

@@ -29,6 +29,11 @@ final class Fingerprint
             $payload['contract_version'],
             $payload['capabilities'],
             $payload['operational']['fees_charged'],
+            // A school naming or renaming its account groups is not a change to
+            // its figures. Counting it would refile every closed month the day
+            // the names first appear, and each refile of a closed month raises
+            // a finding.
+            $payload['financial']['group_names'],
             $payload['financial']['receivables'],
             $payload['financial']['payables'],
             $payload['integrity']['audit_events']
@@ -51,6 +56,9 @@ final class Fingerprint
      * is not reopened for that: its books did not change, and the next month's
      * report carries the new fees anyway.
      *
+     * The school's names for its account groups follow the same rule: an open
+     * month carries a new name across, a closed month is left alone.
+     *
      * @param  string  $filedJson  the report as it was last delivered
      * @param  array<string, mixed>  $payload  the report as it stands now
      */
@@ -63,8 +71,16 @@ final class Fingerprint
             return true;
         }
 
-        return ($filed['status'] ?? null) !== 'final'
-            && json_encode($filed['operational']['fees_charged'] ?? null)
-                !== json_encode($current['operational']['fees_charged'] ?? null);
+        if (($filed['status'] ?? null) === 'final') {
+            return false;
+        }
+
+        foreach ([['operational', 'fees_charged'], ['financial', 'group_names']] as [$block, $key]) {
+            if (json_encode($filed[$block][$key] ?? null) !== json_encode($current[$block][$key] ?? null)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

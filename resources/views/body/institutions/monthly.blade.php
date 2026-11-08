@@ -4,6 +4,7 @@
 
 @php
     $month = period_text($period);
+    $classNames = $institution->accountClassNames();
     // The same words for "this school doesn't send that" in every card below.
     $notSent = fn (string $what) => __(':school doesn\'t send :what. It is missing, not zero.', ['school' => $institution->name, 'what' => $what]);
 @endphp
@@ -110,7 +111,7 @@
                     {{ $notSent(__('its income and spending')) }}
                 </p>
             @else
-                <p class="mb-3 text-xs text-ink-muted">{{ __('By OHADA account class, as this school\'s books group them: 70 to 79 are income, 60 to 69 spending. For what the money actually was, open the daybook.') }}</p>
+                <p class="mb-3 text-xs text-ink-muted">{{ __('By OHADA account class, as this school\'s books group them: 70 to 79 are income, 60 to 69 spending. The names are the school\'s own, from its chart of accounts. For what the money actually was, open the daybook.') }}</p>
 
                 <div class="grid gap-6 lg:grid-cols-2">
                     @foreach ([['income', __('Income')], ['expenditure', __('Spending')]] as [$section, $heading])
@@ -126,7 +127,7 @@
                                 <tbody class="divide-y divide-rule">
                                     @forelse ($$section as $group => $money)
                                         <tr>
-                                            <td class="px-4 py-2 text-ink-soft">{{ __('Class :code', ['code' => $group]) }}</td>
+                                            <td class="px-4 py-2 text-ink-soft">{{ class_label($group, $classNames[$group] ?? null) }}</td>
                                             <td class="w-16 px-2 py-2 text-right text-xs tabular-nums text-ink-muted">{{ $sectionTotal > 0 ? round((float) $money->value() / $sectionTotal * 100).'%' : '' }}</td>
                                             <td class="px-4 py-2 text-right tabular-nums">{{ money_text($money->value()) }}</td>
                                         </tr>

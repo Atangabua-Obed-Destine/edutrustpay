@@ -5,6 +5,7 @@
     $yearStart = period_text($statement['fiscal_start']);
     $income = $statement['sections']['income'];
     $spending = $statement['sections']['expenditure'];
+    $classNames = $institution->accountClassNames();
 @endphp
 
 @section('title', __('The year so far'))
@@ -148,7 +149,7 @@
                             <tbody class="divide-y divide-rule">
                                 @foreach ($section['rows'] as $row)
                                     <tr>
-                                        <td class="px-4 py-2 text-ink-soft">{{ __('Class :code', ['code' => $row->group]) }}</td>
+                                        <td class="px-4 py-2 text-ink-soft">{{ class_label($row->group, $classNames[$row->group] ?? null) }}</td>
                                         <td class="px-4 py-2 text-right"><x-figure :figure="$row->month" /></td>
                                         <td class="px-4 py-2 text-right tabular-nums text-ink-soft">{{ money_text($row->brought->value()) }}</td>
                                         <td class="px-4 py-2 text-right font-medium tabular-nums">{{ money_text($row->cumulative->value()) }}</td>
@@ -184,7 +185,7 @@
 
     <p class="border-t border-rule pt-4 text-xs text-ink-muted">
         {{ __('Added up from the monthly reports this school sent, not read from its books.') }}
-        {{ __('Account classes are OHADA classes as the school uses them: 70 to 79 income, 60 to 69 spending.') }}
+        {{ __('Account classes are OHADA classes as the school uses them: 70 to 79 income, 60 to 69 spending. The names are the school\'s own, from its chart of accounts.') }}
         @can('daybook.view')
             {{ __('For what the money actually was, open the') }}
             <a href="{{ route('body.institutions.daybook', ['institution' => $institution, 'period' => $period]) }}" class="underline hover:text-ink">{{ __('daybook') }}</a>;

@@ -237,6 +237,10 @@ final class Validator
             }
         }
 
+        if (array_key_exists('group_names', $financial)) {
+            $this->checkGroupNames($payload, $financial);
+        }
+
         foreach (['surplus_deficit'] as $key) {
             if (isset($financial[$key])) {
                 $this->checkMoneyString($financial[$key], "financial.$key");
@@ -278,6 +282,46 @@ final class Validator
         }
 
         $this->checkSurplus($financial);
+    }
+
+    /**
+     * The school's own names for its account groups. Words only, one per
+     * two-digit group.
+     *
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $financial
+     */
+    private function checkGroupNames(array $payload, array $financial): void
+    {
+        $version = is_string($payload['contract_version'] ?? null) ? $payload['contract_version'] : '0';
+
+        if (version_compare($version, ContractVersion::GROUP_NAMES_FROM, '<')) {
+            $this->errors[] = sprintf('financial.group_names arrived in contract %s; this report says %s.', ContractVersion::GROUP_NAMES_FROM, $version);
+
+            return;
+        }
+
+        if (! in_array(Capability::LEDGER, (array) ($payload['capabilities'] ?? []), true)) {
+            $this->errors[] = 'financial.group_names describes the ledger, so capability "ledger" must be declared.';
+        }
+
+        if (! is_array($financial['group_names'])) {
+            $this->errors[] = 'financial.group_names must be a map of two-digit OHADA group to name.';
+
+            return;
+        }
+
+        foreach ($financial['group_names'] as $group => $name) {
+            if (preg_match('/^\d{2}$/', (string) $group) !== 1) {
+                $this->errors[] = sprintf('financial.group_names is keyed by two-digit OHADA group; got "%s".', (string) $group);
+
+                continue;
+            }
+
+            if (! is_string($name) || trim($name) === '' || mb_strlen($name) > PayloadBuilder::GROUP_NAME_MAX) {
+                $this->errors[] = sprintf('financial.group_names.%s must be a name of 1 to %d characters.', (string) $group, PayloadBuilder::GROUP_NAME_MAX);
+            }
+        }
     }
 
     /**

@@ -82,6 +82,13 @@ $financial = [
     'properties' => [
         'income_by_group' => $groupMap,
         'expenditure_by_group' => $groupMap,
+        'group_names' => [
+            'type' => 'object',
+            'description' => 'Since 1.2. The institution\'s own name for each of its income and spending groups, from its own chart of accounts, whether or not the group has an amount this month: closed months are never filed again, so this is how earlier months get their names. Optional: absent means unnamed.',
+            'propertyNames' => ['pattern' => '^[0-9]{2}$'],
+            'patternProperties' => ['^[0-9]{2}$' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 120]],
+            'additionalProperties' => false,
+        ],
         'surplus_deficit' => $money,
         'cash' => [
             'type' => 'object',

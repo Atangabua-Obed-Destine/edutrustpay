@@ -70,6 +70,7 @@ $fixtures['full-capability'] = [
             ['opening' => $m('2300000.00'), 'movement' => $m('1040000.00'), 'closing' => $m('3340000.00')],
             ['total_debits' => $m('12480000.00'), 'total_credits' => $m('12480000.00'), 'journal_entry_count' => 431, 'unposted_count' => 2]
         )
+        ->groupNames(['70' => 'Ventes', '71' => 'Scolarites', '75' => 'Autres Produits', '60' => 'Achats', '62' => 'Services Exterieurs', '66' => 'Charges de Personnel', '79' => 'Reprises de provisions'])
         ->receivables($m('5400000.00'), ['0_30' => $m('2000000.00'), '31_60' => $m('1500000.00'), '61_90' => $m('900000.00'), '90_plus' => $m('1000000.00')])
         ->payables($m('1200000.00'), ['0_30' => $m('800000.00'), '31_60' => $m('400000.00'), '61_90' => $m('0.00'), '90_plus' => $m('0.00')])
         ->budget($m('5000000.00'), $m('4200000.00'))

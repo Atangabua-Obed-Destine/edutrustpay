@@ -69,6 +69,27 @@ class ConsolidationController extends Controller
             'income' => $consolidation->byOhadaGroup($institutions, $period, 'income'),
             'expenditure' => $consolidation->byOhadaGroup($institutions, $period, 'expenditure'),
             'notReporting' => $consolidation->notReporting($institutions),
+            'classNames' => $this->classNames($institutions),
         ];
+    }
+
+    /**
+     * Each group's names across the schools, as the schools word them. Schools
+     * name their own books, so one class may read differently at two schools;
+     * every distinct name is kept rather than one chosen for them.
+     *
+     * @return array<string, string>
+     */
+    private function classNames($institutions): array
+    {
+        $names = [];
+
+        foreach ($institutions as $institution) {
+            foreach ($institution->accountClassNames() as $group => $name) {
+                $names[$group][mb_strtolower($name)] ??= $name;
+            }
+        }
+
+        return array_map(fn (array $distinct) => implode(' / ', $distinct), $names);
     }
 }

@@ -1,21 +1,21 @@
 {
     "name": "empty-groups",
     "description": "A dormant month: no income and no expenditure in any OHADA group. Group maps must serialise as {} not [].",
-    "contract_version": "1.1",
+    "contract_version": "1.2",
     "signing": {
         "note": "The secret below is a published test vector, not a credential.",
         "secret": "edutrustpay-test-vector-secret-do-not-use-in-production",
         "timestamp": "2026-09-02T08:15:00Z",
         "signature_base": "timestamp . \".\" . canonical_json",
-        "signature": "sha256=aff62ef0991b54c8a4d916165b70875a69c5d2947339db384ca18c64087d44eb"
+        "signature": "sha256=1010db2b23cf128e81d3daae843351a526bbc86ec6f2feaff34a9d1f998d5e09"
     },
     "expected_warnings": [],
-    "canonical_json": "{\"capabilities\":[\"ledger\"],\"contract_version\":\"1.1\",\"currency\":\"XAF\",\"financial\":{\"cash\":{\"closing\":\"500000.00\",\"movement\":\"0.00\",\"opening\":\"500000.00\"},\"control\":{\"journal_entry_count\":0,\"total_credits\":\"0.00\",\"total_debits\":\"0.00\",\"unposted_count\":0},\"expenditure_by_group\":{},\"income_by_group\":{},\"surplus_deficit\":\"0.00\"},\"generated_at\":\"2026-06-01T05:00:00Z\",\"institution_ref\":\"66666666-7777-8888-9999-000000000000\",\"period\":\"2026-05\",\"sequence\":1,\"status\":\"final\"}",
+    "canonical_json": "{\"capabilities\":[\"ledger\"],\"contract_version\":\"1.2\",\"currency\":\"XAF\",\"financial\":{\"cash\":{\"closing\":\"500000.00\",\"movement\":\"0.00\",\"opening\":\"500000.00\"},\"control\":{\"journal_entry_count\":0,\"total_credits\":\"0.00\",\"total_debits\":\"0.00\",\"unposted_count\":0},\"expenditure_by_group\":{},\"income_by_group\":{},\"surplus_deficit\":\"0.00\"},\"generated_at\":\"2026-06-01T05:00:00Z\",\"institution_ref\":\"66666666-7777-8888-9999-000000000000\",\"period\":\"2026-05\",\"sequence\":1,\"status\":\"final\"}",
     "payload": {
         "capabilities": [
             "ledger"
         ],
-        "contract_version": "1.1",
+        "contract_version": "1.2",
         "currency": "XAF",
         "financial": {
             "cash": {

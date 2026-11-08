@@ -189,10 +189,90 @@ final class ContractTest extends TestCase
         PayloadBuilder::for(TestVectors::INSTITUTION_REF, '2026-10')->feesCharged('2026/2027', []);
     }
 
+    // ---------------------------------------------------------------
+    // Group names: the school's own words for its own account groups
+    // ---------------------------------------------------------------
+
+    private function namedLedger(array $names, string $status = 'provisional', string $income = '100000.00'): array
+    {
+        $m = fn (string $v) => Money::of($v);
+
+        return PayloadBuilder::for(TestVectors::INSTITUTION_REF, '2026-10')
+            ->status($status)
+            ->sequence(1)
+            ->generatedAt('2026-11-01T00:00:00Z')
+            ->currency('XAF')
+            ->ledger(
+                ['71' => $m($income)],
+                ['60' => $m('40000.00')],
+                $m($income)->subtract($m('40000.00')),
+                ['opening' => $m('0.00'), 'movement' => $m($income)->subtract($m('40000.00')), 'closing' => $m($income)->subtract($m('40000.00'))],
+                ['total_debits' => $m('140000.00'), 'total_credits' => $m('140000.00'), 'journal_entry_count' => 2, 'unposted_count' => 0]
+            )
+            ->groupNames($names)
+            ->build();
+    }
+
+    public function test_group_names_cover_the_schools_whole_chart_in_a_fixed_order(): void
+    {
+        // 79 has no amount this month, and is still named: a closed month is
+        // never filed again, so this is how its earlier use gets a name.
+        $payload = $this->namedLedger(['79' => 'Reprises de provisions', '71' => '  Scolarites ', '60' => 'Achats']);
+
+        $names = Canonical::decode(Canonical::encode($payload))['financial']['group_names'];
+
+        $this->assertSame(['60' => 'Achats', '71' => 'Scolarites', '79' => 'Reprises de provisions'], $names);
+        $this->assertTrue((new Validator())->validate(Canonical::decode(Canonical::encode($payload)))['valid']);
+    }
+
+    public function test_a_new_group_name_refiles_an_open_month_but_never_a_closed_one(): void
+    {
+        // The day a school starts sending names, its closed months must not all
+        // look changed: each refile of a closed month raises a finding.
+        $filed = Canonical::encode($this->namedLedger(['71' => 'Scolarites']));
+        $filedFinal = Canonical::encode($this->namedLedger(['71' => 'Scolarites'], 'final'));
+
+        $this->assertFalse(Fingerprint::needsRefiling($filed, $this->namedLedger(['71' => 'Scolarites'])));
+        $this->assertTrue(Fingerprint::needsRefiling($filed, $this->namedLedger(['71' => 'Frais de scolarite'])));
+        $this->assertFalse(Fingerprint::needsRefiling($filedFinal, $this->namedLedger(['71' => 'Frais de scolarite'], 'final')));
+
+        // And the console's "a closed month was changed" check sees no change.
+        $this->assertSame(Fingerprint::ofJson($filedFinal), Fingerprint::of($this->namedLedger(['71' => 'Frais de scolarite'], 'final')));
+    }
+
+    public function test_group_names_are_refused_on_an_older_contract_or_when_malformed(): void
+    {
+        $payload = Canonical::decode(Canonical::encode($this->namedLedger(['71' => 'Scolarites'])));
+
+        $older = $payload;
+        $older['contract_version'] = '1.1';
+        $this->assertFalse((new Validator())->validate($older)['valid']);
+
+        $stray = $payload;
+        $stray['financial']['group_names']['7'] = 'Produits';
+        $this->assertFalse((new Validator())->validate($stray)['valid']);
+
+        $blank = $payload;
+        $blank['financial']['group_names']['71'] = ' ';
+        $this->assertFalse((new Validator())->validate($blank)['valid']);
+    }
+
+    public function test_group_names_need_the_ledger(): void
+    {
+        $this->expectException(CapabilityMismatchException::class);
+
+        PayloadBuilder::for(TestVectors::INSTITUTION_REF, '2026-10')
+            ->status('provisional')->sequence(1)->generatedAt('2026-11-01T00:00:00Z')->currency('XAF')
+            ->feesCharged('2026/2027', [['level' => 'Form 1', 'category' => 'Tuition', 'amount' => Money::of('200000.00'), 'students' => 1]])
+            ->groupNames(['71' => 'Scolarites'])
+            ->build();
+    }
+
     public function test_a_report_on_the_previous_contract_version_is_still_valid(): void
     {
         // Schools upgrade when they can.
         $payload = $this->fixture('full-capability')['payload'];
+        unset($payload['financial']['group_names']);
         $payload['contract_version'] = '1.0';
 
         $this->assertTrue((new Validator())->validate($payload)['valid']);

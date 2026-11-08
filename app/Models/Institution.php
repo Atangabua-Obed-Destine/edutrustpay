@@ -220,6 +220,44 @@ class Institution extends Model
      * The report that currently stands for a period — the highest sequence
      * received, with any superseded versions retained but not current.
      */
+    /** @var array<string, string>|null */
+    protected ?array $classNamesCache = null;
+
+    /**
+     * The school's own name for each account group, as its latest reports give
+     * them ("71" => "Scolarites").
+     *
+     * Each report carries the school's whole list, and the latest name wins, so
+     * a month sent before the school sent names still reads with them; it is the
+     * same chart of accounts. A group the school has never named has no entry,
+     * and is shown by its number alone.
+     *
+     * @return array<string, string>
+     */
+    public function accountClassNames(): array
+    {
+        if ($this->classNamesCache !== null) {
+            return $this->classNamesCache;
+        }
+
+        $names = [];
+
+        $lists = $this->periodReports()
+            ->where('is_current', true)
+            ->whereNotNull('group_names')
+            ->orderBy('period')
+            ->orderBy('sequence')
+            ->pluck('group_names');
+
+        foreach ($lists as $list) {
+            foreach ((array) $list as $group => $name) {
+                $names[(string) $group] = (string) $name;
+            }
+        }
+
+        return $this->classNamesCache = $names;
+    }
+
     public function reportFor(string $period): ?PeriodReport
     {
         return $this->periodReports()

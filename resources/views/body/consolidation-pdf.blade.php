@@ -70,7 +70,7 @@
     <tbody>
         @forelse ($income as $group => $aggregate)
             <tr>
-                <td>{{ __('Class :code', ['code' => $group]) }}</td>
+                <td>{{ class_label($group, $classNames[$group] ?? null) }}</td>
                 <td class="num">{{ $aggregate->formatted() }}</td>
                 <td class="num">{{ $aggregate->coveredCount() }}</td>
             </tr>
@@ -99,7 +99,7 @@
     <tbody>
         @forelse ($expenditure as $group => $aggregate)
             <tr>
-                <td>{{ __('Class :code', ['code' => $group]) }}</td>
+                <td>{{ class_label($group, $classNames[$group] ?? null) }}</td>
                 <td class="num">{{ $aggregate->formatted() }}</td>
                 <td class="num">{{ $aggregate->coveredCount() }}</td>
             </tr>

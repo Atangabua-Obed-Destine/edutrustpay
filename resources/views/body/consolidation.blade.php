@@ -56,7 +56,7 @@
                         <tbody class="divide-y divide-rule bg-surface">
                             @forelse ($$section as $group => $aggregate)
                                 <tr>
-                                    <td class="px-4 py-2 text-ink-soft">{{ __('Class :code', ['code' => $group]) }}</td>
+                                    <td class="px-4 py-2 text-ink-soft">{{ class_label($group, $classNames[$group] ?? null) }}</td>
                                     <td class="px-4 py-2 text-right tabular-nums">{{ $aggregate->formatted() }}</td>
                                     <td class="px-4 py-2 text-right text-xs text-ink-muted">{{ $aggregate->coveredCount() }}</td>
                                 </tr>
@@ -139,7 +139,7 @@
     @endif
 
     <p class="mt-8 border-t border-rule pt-4 text-xs text-ink-muted">
-        {{ __('Added up from the monthly reports the schools sent, not read from their books. Account classes are OHADA classes as each school uses them: 70 to 79 income, 60 to 69 spending. Schools may book the same kind of money under different classes, so compare schools by class with care; the daybooks show what the money was.') }}
+        {{ __('Added up from the monthly reports the schools sent, not read from their books. Account classes are OHADA classes as each school uses them: 70 to 79 income, 60 to 69 spending. The names are the schools\' own, and where two schools name a class differently both names are shown. Schools may book the same kind of money under different classes, so compare schools by class with care; the daybooks show what the money was.') }}
     </p>
 
 @endsection

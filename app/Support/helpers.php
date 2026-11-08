@@ -71,6 +71,22 @@ if (! function_exists('money_text')) {
     }
 }
 
+if (! function_exists('class_label')) {
+    /**
+     * An OHADA account group as a reader sees it: "Class 71 · Scolarites" when
+     * the school has named it, "Class 71" when it has not. The name is always
+     * the school's own; the console never supplies one.
+     */
+    function class_label(string $group, ?string $name = null): string
+    {
+        $name = $name !== null ? trim($name) : '';
+
+        return $name === ''
+            ? __('Class :code', ['code' => $group])
+            : __('Class :code · :name', ['code' => $group, 'name' => $name]);
+    }
+}
+
 if (! function_exists('period_text')) {
     /**
      * A reporting month in words: "2026-10" becomes "October 2026".

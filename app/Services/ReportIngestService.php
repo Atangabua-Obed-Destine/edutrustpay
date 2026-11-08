@@ -124,6 +124,11 @@ class ReportIngestService
             }
         }
 
+        // The school's own names for its account groups, since contract 1.2.
+        if (isset($financial['group_names'])) {
+            $values['group_names'] = array_map(fn ($name) => mb_substr((string) $name, 0, 120), (array) $financial['group_names']);
+        }
+
         $report->forceFill($values)->saveQuietly();
     }
 

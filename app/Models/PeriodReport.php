@@ -32,7 +32,7 @@ class PeriodReport extends Model
     protected $fillable = [
         'institution_id', 'body_id', 'period', 'status', 'sequence',
         'supersedes_id', 'superseded_by_id', 'is_current',
-        'contract_version', 'currency', 'capabilities',
+        'contract_version', 'currency', 'capabilities', 'group_names',
         'payload', 'payload_hash', 'signature', 'key_id',
         'generated_at', 'received_at', 'processed_at', 'warnings',
         'surplus_deficit', 'cash_opening', 'cash_movement', 'cash_closing',
@@ -73,6 +73,7 @@ class PeriodReport extends Model
     {
         $casts = [
             'capabilities' => 'array',
+            'group_names' => 'array',
             'warnings' => 'array',
             'is_current' => 'boolean',
             'sequence' => 'integer',

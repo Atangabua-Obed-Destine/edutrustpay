@@ -126,6 +126,7 @@
     @endif
 
     @if ($report)
+        @php $classNames = $institution->accountClassNames(); @endphp
         {{--
             5. BY ACCOUNT CLASS.
 
@@ -136,7 +137,7 @@
         --}}
         <section class="mb-8">
             <h2 class="mb-1 text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('By account class') }}</h2>
-            <p class="mb-3 text-xs text-ink-muted">{{ __('OHADA account classes, as this school\'s books group them: 70 to 79 are income, 60 to 69 spending. For what the money actually was, open the daybook or budget sheet.') }}</p>
+            <p class="mb-3 text-xs text-ink-muted">{{ __('OHADA account classes, as this school\'s books group them: 70 to 79 are income, 60 to 69 spending. The names are the school\'s own, from its chart of accounts. For what the money actually was, open the daybook or budget sheet.') }}</p>
             <div class="grid gap-6 lg:grid-cols-2">
                 @foreach ([['income', __('Income')], ['expenditure', __('Spending')]] as [$section, $heading])
                     @php $sectionTotal = collect($$section)->sum(fn ($m) => (float) $m->value()); @endphp
@@ -148,7 +149,7 @@
                             <tbody class="divide-y divide-rule bg-surface">
                                 @forelse ($$section as $group => $money)
                                     <tr>
-                                        <td class="px-4 py-2 text-ink-soft">{{ __('Class :code', ['code' => $group]) }}</td>
+                                        <td class="px-4 py-2 text-ink-soft">{{ class_label($group, $classNames[$group] ?? null) }}</td>
                                         <td class="px-4 py-2 text-right tabular-nums">{{ money_text($money->value()) }}</td>
                                         <td class="w-16 px-4 py-2 text-right text-xs tabular-nums text-ink-muted">{{ $sectionTotal > 0 ? round((float) $money->value() / $sectionTotal * 100).'%' : '' }}</td>
                                     </tr>

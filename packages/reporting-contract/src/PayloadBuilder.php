@@ -54,6 +54,11 @@ final class PayloadBuilder
     /** @var array<string, mixed>|null */
     private ?array $integrity = null;
 
+    /** @var array<string, string> */
+    private array $groupNames = [];
+
+    public const GROUP_NAME_MAX = 120;
+
     /** @var array<string, bool> capability => declared */
     private array $declared = [];
 
@@ -184,6 +189,40 @@ final class PayloadBuilder
         $this->financial['control'] = $control;
 
         return $this->declare(Capability::LEDGER);
+    }
+
+    /**
+     * The school's own name for each OHADA group it uses, from its own chart of
+     * accounts ("71" => "Scolarites").
+     *
+     * Schools book the same kind of money under different groups, so a fixed
+     * list of names on the console would mislabel someone. These are the
+     * school's words for its own books.
+     *
+     * Send the names of all the groups the school uses for income and spending,
+     * not only this month's: a closed month is never filed again, so names sent
+     * only with the groups in use would leave the rest of the year unnamed. They
+     * are sorted, so the same chart always produces the same bytes.
+     *
+     * @param  array<string, string>  $names  two-digit group => name
+     */
+    public function groupNames(array $names): self
+    {
+        foreach ($names as $group => $name) {
+            if (preg_match('/^\d{2}$/', (string) $group) !== 1) {
+                throw new ContractException(sprintf('group_names is keyed by two-digit OHADA group, got "%s".', (string) $group));
+            }
+
+            $name = is_string($name) ? trim((string) preg_replace('/\s+/u', ' ', $name)) : '';
+
+            if ($name === '' || mb_strlen($name) > self::GROUP_NAME_MAX) {
+                throw new ContractException(sprintf('group_names["%s"] must be a name of 1 to %d characters.', (string) $group, self::GROUP_NAME_MAX));
+            }
+
+            $this->groupNames[(string) $group] = $name;
+        }
+
+        return $this;
     }
 
     /**
@@ -385,8 +424,20 @@ final class PayloadBuilder
             'capabilities' => $capabilities,
         ];
 
-        if ($this->financial !== []) {
-            $payload['financial'] = $this->financial;
+        if ($this->groupNames !== [] && ! isset($this->declared[Capability::LEDGER])) {
+            throw new CapabilityMismatchException('Group names describe the ledger, so they need the ledger to be reported too.');
+        }
+
+        $financial = $this->financial;
+
+        if ($this->groupNames !== []) {
+            $names = $this->groupNames;
+            ksort($names, SORT_STRING);
+            $financial['group_names'] = self::asMap($names);
+        }
+
+        if ($financial !== []) {
+            $payload['financial'] = $financial;
         }
 
         if ($this->operational !== []) {

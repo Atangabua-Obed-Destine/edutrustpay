@@ -288,6 +288,37 @@ class IngestApiTest extends TestCase
         $this->assertNull($report->receivables_total);
     }
 
+    public function test_the_schools_own_group_names_are_kept_and_used_for_every_month(): void
+    {
+        $named = $this->payload();
+        // 73 has no amount in September and is named all the same.
+        $named['financial']['group_names'] = (object) ['70' => 'Ventes', '71' => 'Scolarites', '73' => 'Subventions'];
+        $named['period'] = '2026-09';
+
+        $this->push($this->payload())->assertStatus(202);   // August, before names
+        $this->push($named)->assertStatus(202);              // September, with names
+
+        $september = PeriodReport::withoutBodyScope()->where('period', '2026-09')->first();
+        $this->assertSame(['70' => 'Ventes', '71' => 'Scolarites', '73' => 'Subventions'], $september->group_names);
+        $this->assertNull(PeriodReport::withoutBodyScope()->where('period', '2026-08')->value('group_names'));
+
+        // August arrived without names, and still reads with the school's names;
+        // 60 was never named, so it is shown by its number alone.
+        $names = $this->institution->fresh()->accountClassNames();
+        $this->assertSame('Scolarites', $names['71']);
+        $this->assertArrayNotHasKey('60', $names);
+        $this->assertSame('Class 71 · Scolarites', class_label('71', 'Scolarites'));
+        $this->assertSame('Class 60', class_label('60', null));
+    }
+
+    public function test_a_school_cannot_send_group_names_on_an_older_contract(): void
+    {
+        $payload = ['contract_version' => '1.1'] + $this->payload();
+        $payload['financial']['group_names'] = (object) ['71' => 'Scolarites'];
+
+        $this->push($payload)->assertStatus(422);
+    }
+
     public function test_an_undeclared_capability_leaves_its_columns_null_rather_than_zero(): void
     {
         $this->push($this->payload())->assertStatus(202);

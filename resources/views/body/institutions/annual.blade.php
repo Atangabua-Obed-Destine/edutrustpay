@@ -1,25 +1,32 @@
 @extends('layouts.console')
 
-@section('title', __('Year to date'))
-@section('subtitle', $institution->name . ' · ' . __('fiscal year opening :month', ['month' => $statement['fiscal_start']]))
+@php
+    $month = period_text($period);
+    $yearStart = period_text($statement['fiscal_start']);
+    $income = $statement['sections']['income'];
+    $spending = $statement['sections']['expenditure'];
+@endphp
+
+@section('title', __('The year so far'))
+@section('subtitle', $institution->name . ' · ' . __('school year starting :month', ['month' => $yearStart]))
 
 @section('header-actions')
     <form method="GET" class="flex items-center gap-2">
-        <label for="period" class="text-sm text-ink-muted">{{ __('As at') }}</label>
+        <label for="period" class="text-sm text-ink-muted">{{ __('Up to') }}</label>
         <select name="period" id="period" onchange="this.form.submit()"
                 class="rounded border border-rule-strong bg-surface px-2 py-1.5 text-sm">
             @foreach ($history as $row)
-                <option value="{{ $row->period }}" @selected($row->period === $period)>{{ $row->period }}</option>
+                <option value="{{ $row->period }}" @selected($row->period === $period)>{{ period_text($row->period) }}</option>
             @endforeach
             @if ($history->doesntContain('period', $period))
-                <option value="{{ $period }}" selected>{{ $period }}</option>
+                <option value="{{ $period }}" selected>{{ $month }}</option>
             @endif
         </select>
     </form>
 
     <a href="{{ route('body.institutions.monthly', [$institution, $period]) }}"
        class="rounded border border-rule-strong px-3 py-1.5 text-sm font-medium hover:bg-surface-sunk">
-        {{ __('This month in full') }}
+        {{ __('Everything sent for :month', ['month' => $month]) }}
     </a>
 
     <button type="button" onclick="window.print()"
@@ -32,140 +39,158 @@
 
     <x-breadcrumb :items="[
         __('Institutions') => route('body.institutions.index'),
-        $institution->name => route('body.institutions.show', $institution),
-        __('Year to date') => null,
+        $institution->name => route('body.institutions.show', ['institution' => $institution, 'period' => $period]),
+        __('The year so far') => null,
     ]" />
 
     {{--
-        This is deliberately the same five-column shape the institution's own
-        bursar reads every month in their daybook — budget, this month, brought
-        forward, cumulative, balance. Inventing a different layout here would
-        mean the body and the institution discussing the same year in two
-        different vocabularies.
+        The months added up, in the columns the school's own bursar reads every
+        month: this month, the months before it, and the year so far. Inventing a
+        different layout would mean the body and the school discussing the same
+        year in two vocabularies. The budget lives on the budget sheet, which the
+        school sends separately and which carries its real budget lines.
 
-        The budget column is absent until the contract carries a year-to-date
-        budget block; see the note beneath the table rather than a blank column
-        that looks like a figure nobody filled in.
+        Which months arrived comes first, above any total: the school's own books
+        always have every month, the console may not, and a year-so-far that
+        quietly skipped a month would be a confident wrong number.
     --}}
-
-    {{-- ══════════════════════════════════════════════════════════════
-         Coverage first, and above the figures.
-
-         The institution's own daybook always has all of its own months, so it
-         never has to ask whether the year is complete. This does. A cumulative
-         that quietly skipped an unreported month would be a confident wrong
-         number — exactly what this platform exists to prevent — so the gap is
-         stated before anyone reads a total, not in a footnote after.
-         ══════════════════════════════════════════════════════════════ --}}
     @php $elapsed = count($statement['elapsed']); @endphp
 
-    <div class="mb-6 rounded border-l-4 px-4 py-3 text-sm
+    <div class="mb-4 rounded border-l-4 px-4 py-3 text-sm
                 {{ $statement['complete'] ? 'border-emerald-400 bg-emerald-50 text-emerald-900' : 'border-amber-400 bg-amber-50 text-amber-900' }}">
         <p class="font-medium">{{ $annual->coverageStatement($elapsed, $statement['missing']) }}</p>
 
         @unless ($statement['complete'])
             <p class="mt-1 text-xs">
-                {{ __('Every cumulative figure below excludes those months. They are an absence of information, not zero — so the year-to-date totals are a floor, not a measurement.') }}
+                {{ __('The totals below leave those months out. They are missing, not zero, so the real totals for the year are higher than shown.') }}
             </p>
         @endunless
     </div>
 
-    {{-- The year at a glance: which months arrived and which did not. Twelve
-         cells say more than a sentence, and they are the reason somebody
-         clicks through to a specific month. --}}
-    <div class="mb-8 flex flex-wrap gap-1.5">
-        @foreach ($statement['months'] as $month)
+    {{-- The year at a glance. A month that arrived opens that month. --}}
+    <div class="mb-2 flex flex-wrap gap-1.5">
+        @foreach ($statement['months'] as $m)
             @php
-                $isFuture = $month > $statement['period'];
-                $isMissing = in_array($month, $statement['missing'], true);
+                $label = \Carbon\Carbon::createFromFormat('!Y-m', $m)->translatedFormat('M Y');
+                $isFuture = $m > $statement['period'];
+                $isMissing = in_array($m, $statement['missing'], true);
             @endphp
 
             @if ($isFuture)
-                <span class="rounded border border-dashed border-rule px-2 py-1 text-xs text-ink-muted opacity-50"
-                      title="{{ __('Not yet elapsed') }}">{{ $month }}</span>
+                <span class="rounded border border-dashed border-rule px-2 py-1 text-xs text-ink-muted opacity-60"
+                      title="{{ __('Still to come') }}">{{ $label }}</span>
             @elseif ($isMissing)
                 <span class="rounded border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-900"
-                      title="{{ __('No report received') }}">{{ $month }}</span>
+                      title="{{ __('Nothing arrived for this month') }}">{{ $label }}</span>
             @else
-                <a href="{{ route('body.institutions.monthly', [$institution, $month]) }}"
-                   class="rounded border border-emerald-300 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-900 hover:bg-emerald-100"
-                   title="{{ __('Reported — open this month\'s return') }}">{{ $month }}</a>
+                <a href="{{ route('body.institutions.monthly', [$institution, $m]) }}"
+                   @class([
+                       'rounded border px-2 py-1 text-xs font-medium',
+                       'border-emerald-300 bg-emerald-50 text-emerald-900 hover:bg-emerald-100',
+                       'ring-2 ring-emerald-500' => $m === $period,
+                   ])
+                   title="{{ __('Arrived: open everything sent for this month') }}">{{ $label }}</a>
             @endif
         @endforeach
     </div>
+    <p class="mb-8 text-xs text-ink-muted">{{ __('Green arrived (click to open it), amber is missing, dashed is still to come.') }}</p>
 
-    @foreach ([['income', __('Income')], ['expenditure', __('Expenditure')]] as [$key, $heading])
-        @php $section = $statement['sections'][$key]; @endphp
+    @if (! $statement['sends_ledger'] && $statement['reported'] !== [])
+        <p class="rounded border border-dashed border-rule-strong bg-surface px-4 py-6 text-center text-sm italic text-ink-muted">
+            {{ __(':school sends its monthly report but not its income and spending, so there is nothing here to add up. That is missing information, not a year of zeroes.', ['school' => $institution->name]) }}
+        </p>
+    @elseif ($statement['reported'] === [])
+        <p class="rounded border border-dashed border-rule-strong bg-surface px-4 py-6 text-center text-sm italic text-ink-muted">
+            {{ __('Nothing has arrived for this year yet.') }}
+        </p>
+    @else
+        {{-- The year in three numbers, before the detail. --}}
+        @php
+            $net = (float) $income['totals']->cumulative->value() - (float) $spending['totals']->cumulative->value();
+        @endphp
+        <div class="mb-8 grid gap-4 sm:grid-cols-3">
+            <div class="rounded border border-rule bg-surface p-4">
+                <p class="text-xs uppercase tracking-wide text-ink-muted">{{ __('Income so far') }}</p>
+                <p class="mt-1 text-xl font-semibold tabular-nums">{{ money_text($income['totals']->cumulative->value()) }}</p>
+            </div>
+            <div class="rounded border border-rule bg-surface p-4">
+                <p class="text-xs uppercase tracking-wide text-ink-muted">{{ __('Spending so far') }}</p>
+                <p class="mt-1 text-xl font-semibold tabular-nums">{{ money_text($spending['totals']->cumulative->value()) }}</p>
+            </div>
+            <div class="rounded border border-rule bg-surface p-4">
+                <p class="text-xs uppercase tracking-wide text-ink-muted">{{ __('Income less spending so far') }}</p>
+                <p class="mt-1 text-xl font-semibold tabular-nums {{ $net < 0 ? 'text-rose-700' : '' }}">{{ money_text($net) }}</p>
+            </div>
+        </div>
 
-        <section class="mb-8">
-            <h2 class="mb-3 font-serif text-lg text-ink">{{ $heading }}</h2>
+        @foreach ([['income', __('Income')], ['expenditure', __('Spending')]] as [$key, $heading])
+            @php $section = $statement['sections'][$key]; @endphp
 
-            @if (empty($section['rows']))
-                <p class="rounded border border-dashed border-rule-strong bg-surface px-4 py-6 text-center text-sm italic text-ink-muted">
-                    {{ __('Nothing has been reported under :section in this fiscal year.', ['section' => mb_strtolower($heading)]) }}
-                </p>
-            @else
-                <div class="overflow-x-auto rounded border border-rule bg-surface">
-                    <table class="min-w-full text-sm">
-                        <thead>
-                            <tr class="border-b border-rule bg-surface-sunk text-left text-xs uppercase tracking-wide text-ink-muted">
-                                <th class="px-4 py-2 font-semibold">{{ __('OHADA group') }}</th>
-                                <th class="px-4 py-2 text-right font-semibold">{{ __(':period', ['period' => $statement['period']]) }}</th>
-                                <th class="px-4 py-2 text-right font-semibold">{{ __('Brought forward') }}</th>
-                                <th class="px-4 py-2 text-right font-semibold">{{ __('Cumulative') }}</th>
-                            </tr>
-                        </thead>
+            <section class="mb-8">
+                <h2 class="mb-3 font-serif text-lg text-ink">{{ $heading }}</h2>
 
-                        <tbody class="divide-y divide-rule">
-                            @foreach ($section['rows'] as $row)
-                                <tr>
-                                    <td class="px-4 py-2">
-                                        <span class="font-mono text-xs text-ink-muted">{{ $row->group }}</span>
-                                        <span class="ml-2 text-ink-soft">{{ ohada_group_name($row->group) }}</span>
-                                    </td>
-                                    <td class="px-4 py-2 text-right"><x-figure :figure="$row->month" /></td>
-                                    <td class="px-4 py-2 text-right tabular-nums text-ink-soft">
-                                        {{ number_format((float) $row->brought->value(), 0, '.', ' ') }}
-                                    </td>
-                                    <td class="px-4 py-2 text-right font-medium tabular-nums">
-                                        {{ number_format((float) $row->cumulative->value(), 0, '.', ' ') }}
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-
-                        <tfoot>
-                            <tr class="border-t-2 border-rule-strong font-semibold">
-                                <td class="px-4 py-2">{{ __('Total :section', ['section' => mb_strtolower($heading)]) }}</td>
-                                <td class="px-4 py-2 text-right"><x-figure :figure="$section['totals']->month" /></td>
-                                <td class="px-4 py-2 text-right tabular-nums">
-                                    {{ number_format((float) $section['totals']->brought->value(), 0, '.', ' ') }}
-                                </td>
-                                <td class="px-4 py-2 text-right tabular-nums">
-                                    {{ number_format((float) $section['totals']->cumulative->value(), 0, '.', ' ') }}
-                                </td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-
-                @if (! empty($section['brought_missing']))
-                    <p class="mt-2 text-xs italic text-amber-700">
-                        {{ __('Brought forward covers :n of :total earlier months. Missing: :missing.', [
-                            'n' => $section['brought_months'] - count($section['brought_missing']),
-                            'total' => $section['brought_months'],
-                            'missing' => implode(', ', $section['brought_missing']),
-                        ]) }}
+                @if (empty($section['rows']))
+                    <p class="rounded border border-dashed border-rule-strong bg-surface px-4 py-6 text-center text-sm italic text-ink-muted">
+                        {{ __('None recorded so far this year.') }}
                     </p>
+                @else
+                    <div class="overflow-x-auto rounded border border-rule bg-surface">
+                        <table class="min-w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-rule bg-surface-sunk text-left text-xs uppercase tracking-wide text-ink-muted">
+                                    <th class="px-4 py-2 font-semibold">{{ __('Account class') }}</th>
+                                    <th class="px-4 py-2 text-right font-semibold">{{ $month }}</th>
+                                    <th class="px-4 py-2 text-right font-semibold">{{ __('Earlier months') }}</th>
+                                    <th class="px-4 py-2 text-right font-semibold">{{ __('Year so far') }}</th>
+                                </tr>
+                            </thead>
+
+                            <tbody class="divide-y divide-rule">
+                                @foreach ($section['rows'] as $row)
+                                    <tr>
+                                        <td class="px-4 py-2 text-ink-soft">{{ __('Class :code', ['code' => $row->group]) }}</td>
+                                        <td class="px-4 py-2 text-right"><x-figure :figure="$row->month" /></td>
+                                        <td class="px-4 py-2 text-right tabular-nums text-ink-soft">{{ money_text($row->brought->value()) }}</td>
+                                        <td class="px-4 py-2 text-right font-medium tabular-nums">{{ money_text($row->cumulative->value()) }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+
+                            <tfoot>
+                                <tr class="border-t-2 border-rule-strong font-semibold">
+                                    <td class="px-4 py-2">{{ __('Total') }}</td>
+                                    <td class="px-4 py-2 text-right"><x-figure :figure="$section['totals']->month" /></td>
+                                    <td class="px-4 py-2 text-right tabular-nums">{{ money_text($section['totals']->brought->value()) }}</td>
+                                    <td class="px-4 py-2 text-right tabular-nums">{{ money_text($section['totals']->cumulative->value()) }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    @if (! empty($section['brought_missing']))
+                        <p class="mt-2 text-xs italic text-amber-700">
+                            {{ __('"Earlier months" covers :n of the :total months before :month. Missing: :missing.', [
+                                'n' => $section['brought_months'] - count($section['brought_missing']),
+                                'total' => $section['brought_months'],
+                                'month' => $month,
+                                'missing' => implode(', ', array_map('period_text', $section['brought_missing'])),
+                            ]) }}
+                        </p>
+                    @endif
                 @endif
-            @endif
-        </section>
-    @endforeach
+            </section>
+        @endforeach
+    @endif
 
     <p class="border-t border-rule pt-4 text-xs text-ink-muted">
-        {{ __('Assembled from the monthly returns this institution filed — not read from its books. :platform holds no transactions and is never the authority on an institution\'s ledger; for line detail, open the institution\'s own system.', ['platform' => platform_name()]) }}
-        <br>
-        {{ __('A budget column will appear here once the contract carries a year-to-date budget block. A twelfth of an annual budget is not what anyone budgeted, so nothing is shown rather than something plausible.') }}
+        {{ __('Added up from the monthly reports this school sent, not read from its books.') }}
+        {{ __('Account classes are OHADA classes as the school uses them: 70 to 79 income, 60 to 69 spending.') }}
+        @can('daybook.view')
+            {{ __('For what the money actually was, open the') }}
+            <a href="{{ route('body.institutions.daybook', ['institution' => $institution, 'period' => $period]) }}" class="underline hover:text-ink">{{ __('daybook') }}</a>;
+        @endcan
+        {{ __('for the budget against spending, the') }}
+        <a href="{{ route('body.institutions.budget', ['institution' => $institution, 'period' => $period]) }}" class="underline hover:text-ink">{{ __('budget sheet') }}</a>.
     </p>
 
 @endsection

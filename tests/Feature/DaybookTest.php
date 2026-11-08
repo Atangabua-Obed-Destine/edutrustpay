@@ -215,7 +215,7 @@ class DaybookTest extends TestCase
             ->assertSee('Not every school has sent every month')
             // Fees are all of its income, and every franc with a method was cash.
             ->assertSee('100%')
-            ->assertDontSee('All schools');
+            ->assertDontSee('Total, every school');
     }
 
     public function test_salaries_paid_outside_payroll_are_not_read_as_no_staff_pay(): void

@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>{{ __('Consolidated position') }} — {{ $period }}</title>
+    <title>{{ __('All schools together') }} — {{ period_text($period) }}</title>
     <style>
         /* dompdf: no external stylesheets, no flexbox, no grid. Tables and
            inline styles only. */
@@ -27,8 +27,8 @@
 
 <h1>{{ $body?->name ?? platform_name() }}</h1>
 <p class="muted">
-    {{ __('Consolidated position') }} · {{ __('calendar month') }} {{ $period }} ·
-    {{ __('OHADA classification') }} · {{ config('platform.currency') }}
+    {{ __('All schools together') }} · {{ period_text($period) }} ·
+    {{ __('by OHADA account class') }} · {{ config('platform.currency') }}
 </p>
 
 {{--
@@ -51,31 +51,31 @@
             @foreach ($notReporting as $row)
                 <li>
                     {{ $row->institution->name }} —
-                    {{ $row->never_reported ? __('never reported') : __(':days days silent', ['days' => $row->days_silent]) }}
+                    {{ $row->never_reported ? __('has never sent anything') : __('nothing received for :days days', ['days' => $row->days_silent]) }}
                 </li>
             @endforeach
         </ul>
     @endif
 </div>
 
-<h2>{{ __('Income by OHADA group') }}</h2>
+<h2>{{ __('Income') }}</h2>
 <table>
     <thead>
         <tr>
-            <th style="width: 20%">{{ __('Group') }}</th>
+            <th style="width: 30%">{{ __('Account class') }}</th>
             <th class="num">{{ __('Amount') }}</th>
-            <th class="num" style="width: 22%">{{ __('Institutions reporting') }}</th>
+            <th class="num" style="width: 22%">{{ __('Schools') }}</th>
         </tr>
     </thead>
     <tbody>
         @forelse ($income as $group => $aggregate)
             <tr>
-                <td>{{ $group }}</td>
+                <td>{{ __('Class :code', ['code' => $group]) }}</td>
                 <td class="num">{{ $aggregate->formatted() }}</td>
                 <td class="num">{{ $aggregate->coveredCount() }}</td>
             </tr>
         @empty
-            <tr><td colspan="3" class="muted">{{ __('Nothing reported for this month.') }}</td></tr>
+            <tr><td colspan="3" class="muted">{{ __('None recorded by the schools that sent figures.') }}</td></tr>
         @endforelse
     </tbody>
     <tfoot>
@@ -87,24 +87,24 @@
     </tfoot>
 </table>
 
-<h2>{{ __('Expenditure by OHADA group') }}</h2>
+<h2>{{ __('Spending') }}</h2>
 <table>
     <thead>
         <tr>
-            <th style="width: 20%">{{ __('Group') }}</th>
+            <th style="width: 30%">{{ __('Account class') }}</th>
             <th class="num">{{ __('Amount') }}</th>
-            <th class="num" style="width: 22%">{{ __('Institutions reporting') }}</th>
+            <th class="num" style="width: 22%">{{ __('Schools') }}</th>
         </tr>
     </thead>
     <tbody>
         @forelse ($expenditure as $group => $aggregate)
             <tr>
-                <td>{{ $group }}</td>
+                <td>{{ __('Class :code', ['code' => $group]) }}</td>
                 <td class="num">{{ $aggregate->formatted() }}</td>
                 <td class="num">{{ $aggregate->coveredCount() }}</td>
             </tr>
         @empty
-            <tr><td colspan="3" class="muted">{{ __('Nothing reported for this month.') }}</td></tr>
+            <tr><td colspan="3" class="muted">{{ __('None recorded by the schools that sent figures.') }}</td></tr>
         @endforelse
     </tbody>
     <tfoot>
@@ -116,11 +116,11 @@
     </tfoot>
 </table>
 
-<h2>{{ __('Result') }}</h2>
+<h2>{{ __('The month') }}</h2>
 <table>
     <tbody>
         <tr>
-            <td>{{ __('Surplus / deficit') }}</td>
+            <td>{{ __('Income less spending') }}</td>
             <td class="num">{{ $position['surplus']->formatted() }}</td>
         </tr>
         <tr>
@@ -130,22 +130,20 @@
     </tbody>
 </table>
 
-<h2>{{ __('By institution') }}</h2>
+<h2>{{ __('By school') }}</h2>
 <table>
     <thead>
         <tr>
-            <th>{{ __('Institution') }}</th>
-            <th>{{ __('System') }}</th>
+            <th>{{ __('School') }}</th>
             <th class="num">{{ __('Income') }}</th>
-            <th class="num">{{ __('Expenditure') }}</th>
-            <th class="num">{{ __('Surplus') }}</th>
+            <th class="num">{{ __('Spending') }}</th>
+            <th class="num">{{ __('Income less spending') }}</th>
         </tr>
     </thead>
     <tbody>
         @foreach ($position['rows'] as $row)
             <tr>
                 <td>{{ $row->institution->name }}</td>
-                <td class="muted">{{ $row->institution->system }}</td>
                 {{-- A figure nobody sent prints as words here too. There is no
                      branch in this file that turns an absence into a 0. --}}
                 <td class="num">{{ $row->income->formatted() ?? $row->income->label() }}</td>
@@ -158,8 +156,8 @@
 
 <p class="footnote">
     {{ __('Generated by :platform on :at.', ['platform' => platform_name(), 'at' => $generatedAt->toDayDateTimeString()]) }}
-    {{ __('Figures are consolidated at OHADA class and group level from monthly reports pushed by each institution. EdutrustPay is not the authority on any institution\'s books and holds no line detail: for the entries behind a figure, consult the institution\'s own system.') }}
-    {{ __('Where an institution cannot report a figure it is shown as not reporting, never as zero.') }}
+    {{ __('Added up by OHADA account class from the monthly reports each school sent, not read from their books. Schools may book the same kind of money under different classes. For what the money was, see each school\'s daybook.') }}
+    {{ __('A figure a school does not send is shown as such, never as zero.') }}
 </p>
 
 </body>

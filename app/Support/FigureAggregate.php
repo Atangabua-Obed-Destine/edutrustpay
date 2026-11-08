@@ -155,21 +155,21 @@ final class FigureAggregate
         $total = $this->total_sources();
 
         if ($total === 0) {
-            return __('No institutions reporting.');
+            return __('No schools to add up.');
         }
 
         if ($this->isComplete()) {
             return trans_choice(
-                '{1}Consolidated across the single institution.|[2,*]Consolidated across all :count institutions.',
+                '{1}From the one school.|[2,*]Added up from all :count schools.',
                 $total,
                 ['count' => $total]
             );
         }
 
-        return __('Consolidated across :covered of :total institutions. :missing has no figure for this.', [
-            'covered' => $this->coveredCount(),
-            'total' => $total,
-            'missing' => $this->missingCount(),
-        ]);
+        return trans_choice(
+            '{1}Added up from :covered of :total schools. 1 has no figure for this, so the total leaves it out.|[2,*]Added up from :covered of :total schools. :count have no figure for this, so the total leaves them out.',
+            $this->missingCount(),
+            ['covered' => $this->coveredCount(), 'total' => $total, 'count' => $this->missingCount()]
+        );
     }
 }

@@ -6,6 +6,7 @@ use App\Models\Institution;
 use App\Models\PeriodReport;
 use App\Support\Figure;
 use Carbon\Carbon;
+use EdutrustPay\Contract\Capability;
 use EdutrustPay\Contract\Money;
 
 /**
@@ -124,6 +125,9 @@ class AnnualReturnService
             'missing' => $missing,
             'sections' => $sections,
             'complete' => $missing === [],
+            // A school that does not send income and spending has nothing to add
+            // up, and its statement must say so rather than look like an empty year.
+            'sends_ledger' => $reports->contains(fn (PeriodReport $r) => $r->declares(Capability::LEDGER)),
         ];
     }
 
@@ -222,16 +226,16 @@ class AnnualReturnService
     {
         if ($missing === []) {
             return trans_choice(
-                'Year to date covers the one month elapsed.|Year to date covers all :count months elapsed.',
+                '{1}The one month of the year so far has arrived.|[2,*]All :count months of the year so far have arrived.',
                 $elapsed,
                 ['count' => $elapsed]
             );
         }
 
-        return __('Year to date covers :covered of :total months elapsed. Not reported: :missing.', [
+        return __(':covered of the :total months of the year so far have arrived. Missing: :missing.', [
             'covered' => $elapsed - count($missing),
             'total' => $elapsed,
-            'missing' => implode(', ', $missing),
+            'missing' => implode(', ', array_map('period_text', $missing)),
         ]);
     }
 }

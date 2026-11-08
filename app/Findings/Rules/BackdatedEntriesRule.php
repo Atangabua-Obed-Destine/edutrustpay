@@ -94,7 +94,7 @@ class BackdatedEntriesRule implements Rule
                 [
                     'count' => $report->backdated_entries,
                     'name' => $context->institution->name,
-                    'period' => $report->period,
+                    'period' => period_text($report->period),
                     'share' => $share !== null ? __(', about :share% of the month', ['share' => $share]) : '',
                 ]
             ),

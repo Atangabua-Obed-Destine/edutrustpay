@@ -85,7 +85,7 @@
                 @if ($comparison['totals'])
                     <tfoot class="border-t-2 border-rule-strong bg-surface-sunk font-medium">
                         <tr>
-                            <td class="px-4 py-2 text-ink" colspan="2">{{ __('All schools') }}</td>
+                            <td class="px-4 py-2 text-ink" colspan="2">{{ __('Total, every school') }}</td>
                             <td class="px-4 py-2 text-right tabular-nums">{{ money_text($comparison['totals']->money_in->value()) }}</td>
                             <td class="px-4 py-2 text-right tabular-nums">{{ money_text($comparison['totals']->money_out->value()) }}</td>
                             <td class="px-4 py-2 text-right tabular-nums">{{ money_text($comparison['totals']->difference->value()) }}</td>

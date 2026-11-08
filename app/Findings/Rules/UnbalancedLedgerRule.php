@@ -58,7 +58,7 @@ class UnbalancedLedgerRule implements Rule
                 .'happen by accident, so every figure in this month\'s report should be treated as unsafe '
                 .'until the institution explains it.',
                 [
-                    'period' => $report->period,
+                    'period' => period_text($report->period),
                     'name' => $context->institution->name,
                     'debits' => $debits->value(),
                     'credits' => $credits->value(),

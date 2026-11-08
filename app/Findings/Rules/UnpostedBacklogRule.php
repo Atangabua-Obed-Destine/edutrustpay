@@ -67,7 +67,7 @@ class UnpostedBacklogRule implements Rule
                 [
                     'name' => $context->institution->name,
                     'count' => $current,
-                    'period' => $report->period,
+                    'period' => period_text($report->period),
                     'trend' => $rising
                         ? __(', up from :previous the month before', ['previous' => $history->first()])
                         : '',

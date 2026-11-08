@@ -1,9 +1,14 @@
 @extends('layouts.console')
 
 @use('EdutrustPay\Contract\Capability')
-@use('EdutrustPay\Contract\Money')
 
-@section('title', __('Return for :period', ['period' => $period]))
+@php
+    $month = period_text($period);
+    // The same words for "this school doesn't send that" in every card below.
+    $notSent = fn (string $what) => __(':school doesn\'t send :what. It is missing, not zero.', ['school' => $institution->name, 'what' => $what]);
+@endphp
+
+@section('title', __('Everything sent for :month', ['month' => $month]))
 @section('subtitle', $institution->name . ' · ' . $institution->body->name)
 
 @section('header-actions')
@@ -14,17 +19,17 @@
         <select name="period" id="period" onchange="this.form.requestSubmit()"
                 class="rounded border border-rule-strong bg-surface px-2 py-1.5 text-sm">
             @foreach ($history as $row)
-                <option value="{{ $row->period }}" @selected($row->period === $period)>{{ $row->period }}</option>
+                <option value="{{ $row->period }}" @selected($row->period === $period)>{{ period_text($row->period) }}</option>
             @endforeach
             @if ($history->doesntContain('period', $period))
-                <option value="{{ $period }}" selected>{{ $period }}</option>
+                <option value="{{ $period }}" selected>{{ $month }}</option>
             @endif
         </select>
     </form>
 
     <a href="{{ route('body.institutions.annual', $institution) }}?period={{ $period }}"
        class="rounded border border-rule-strong px-3 py-1.5 text-sm font-medium hover:bg-surface-sunk">
-        {{ __('Year to date') }}
+        {{ __('The year so far') }}
     </a>
 @endsection
 
@@ -32,46 +37,57 @@
 
     <x-breadcrumb :items="[
         __('Institutions') => route('body.institutions.index'),
-        $institution->name => route('body.institutions.show', $institution),
-        __('Return :period', ['period' => $period]) => null,
+        $institution->name => route('body.institutions.show', ['institution' => $institution, 'period' => $period]),
+        $month => null,
     ]" />
 
     @if (! $report)
         <div class="rounded border-l-4 border-amber-400 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            {{ __('No report has been received for :period. This is an absence of information, not a set of zeroes.', ['period' => $period]) }}
+            @if ($period >= now()->format('Y-m'))
+                {{ __(':month has not finished, so no report is due yet.', ['month' => $month]) }}
+            @else
+                {{ __('No report has arrived for :month. That is missing information, not a month of zeroes.', ['month' => $month]) }}
+            @endif
         </div>
     @else
 
         {{-- ══════════════════════════════════════════════════════════
-             Provenance.
+             What arrived, and whether it is still exactly what arrived.
 
-             EdutrustPay is not the authority on an institution's books, but it
-             IS the authority on what it was sent — so the first thing this page
-             establishes is exactly what arrived, when, signed by which key, and
-             whether the stored bytes still hash to what was recorded on
-             receipt. Everything below is only as good as this strip.
+             The console is not the authority on the school's books, but it is
+             the authority on what it was sent. The technical proof (contract,
+             key, hash) is kept, folded away for whoever needs it.
              ══════════════════════════════════════════════════════════ --}}
-        <div class="mb-6 flex flex-wrap items-center gap-x-6 gap-y-2 rounded border border-rule bg-surface-sunk px-4 py-3 text-xs text-ink-soft">
-            <span>
-                <span class="text-ink-muted">{{ __('Status') }}</span>
-                <strong class="ml-1 {{ $report->isFinal() ? 'text-emerald-800' : 'text-amber-800' }}">
-                    {{ $report->isFinal() ? __('final') : __('provisional') }}
-                </strong>
-            </span>
-            <span><span class="text-ink-muted">{{ __('Version') }}</span> <strong class="ml-1">{{ $report->sequence }}</strong></span>
-            <span><span class="text-ink-muted">{{ __('Received') }}</span> <strong class="ml-1">{{ $report->received_at?->toDayDateTimeString() }}</strong></span>
-            <span><span class="text-ink-muted">{{ __('Contract') }}</span> <strong class="ml-1">{{ $report->contract_version }}</strong></span>
-            <span><span class="text-ink-muted">{{ __('Key') }}</span> <strong class="ml-1 font-mono">{{ $report->key_id }}</strong></span>
-            <span class="{{ $report->payloadIsIntact() ? 'text-emerald-800' : 'font-semibold text-rose-700' }}">
+        <section class="mb-6 rounded border border-rule bg-surface px-5 py-4 text-[15px] leading-snug text-ink">
+            <p>
+                {{ __('Sent on :date.', ['date' => $report->generated_at->toDayDateTimeString()]) }}
+                @if ($report->isFinal())
+                    {{ __('The month is closed, so these figures should not change.') }}
+                @else
+                    {{ __('The month is still open, so these figures may still change.') }}
+                @endif
+                @if ($versions->count() > 1)
+                    {{ __('This is version :n; the earlier ones are kept at the foot of the page.', ['n' => $report->sequence]) }}
+                @endif
+            </p>
+            <p class="mt-1.5 text-sm {{ $report->payloadIsIntact() ? 'text-ink-muted' : 'font-semibold text-rose-700' }}">
                 {{ $report->payloadIsIntact()
-                    ? __('Stored payload matches its signature hash.')
-                    : __('STORED PAYLOAD NO LONGER MATCHES ITS HASH.') }}
-            </span>
-        </div>
+                    ? __('It was signed by the school\'s system and has not changed since it arrived.')
+                    : __('Warning: what is stored no longer matches what arrived. Do not rely on these figures until this is explained.') }}
+            </p>
+            <details class="mt-2 text-xs text-ink-muted">
+                <summary class="cursor-pointer select-none">{{ __('Technical details') }}</summary>
+                <dl class="mt-2 grid gap-x-6 gap-y-1 sm:grid-cols-2">
+                    <div><dt class="inline">{{ __('Received') }}:</dt> <dd class="inline">{{ $report->received_at?->toDayDateTimeString() }}</dd></div>
+                    <div><dt class="inline">{{ __('Version') }}:</dt> <dd class="inline">{{ $report->sequence }}</dd></div>
+                    <div><dt class="inline">{{ __('Report format') }}:</dt> <dd class="inline">{{ $report->contract_version }}</dd></div>
+                    <div><dt class="inline">{{ __('Signing key') }}:</dt> <dd class="inline font-mono">{{ $report->key_id }}</dd></div>
+                    <div class="sm:col-span-2 break-all"><dt class="inline">{{ __('Fingerprint of the school\'s books') }}:</dt> <dd class="inline font-mono">{{ $report->ledger_hash ?: '—' }}</dd></div>
+                </dl>
+            </details>
+        </section>
 
-        {{-- Warnings raised by the contract validator at ingest. These were
-             ACCEPTED and stored, then turned into findings — never a reason to
-             refuse a report. --}}
+        {{-- Warnings raised when the report arrived. Accepted and stored, never a reason to refuse. --}}
         @if ($report->warningList())
             <div class="mb-6 rounded border-l-4 border-rose-400 bg-rose-50 px-4 py-3">
                 <p class="text-sm font-semibold text-rose-900">{{ __('Points to check in this report') }}</p>
@@ -83,49 +99,46 @@
             </div>
         @endif
 
-        @php $currency = $report->currency; @endphp
-
         {{-- ══════════════════════════════════════════════════════════
-             Income and expenditure, by OHADA group
+             Money in and out, by account class.
              ══════════════════════════════════════════════════════════ --}}
         <section class="mb-8">
-            <h2 class="mb-3 font-serif text-lg text-ink">{{ __('Income and expenditure') }}</h2>
+            <h2 class="mb-1 font-serif text-lg text-ink">{{ __('Money in and out') }}</h2>
 
             @if (! $report->declares(Capability::LEDGER))
                 <p class="rounded border border-dashed border-rule-strong bg-surface px-4 py-6 text-center text-sm italic text-ink-muted">
-                    {{ __('This institution does not report a ledger yet, so there is no income and expenditure statement — not a statement of zero.') }}
+                    {{ $notSent(__('its income and spending')) }}
                 </p>
             @else
+                <p class="mb-3 text-xs text-ink-muted">{{ __('By OHADA account class, as this school\'s books group them: 70 to 79 are income, 60 to 69 spending. For what the money actually was, open the daybook.') }}</p>
+
                 <div class="grid gap-6 lg:grid-cols-2">
-                    @foreach ([['income', __('Income'), 'expenditure'], ['expenditure', __('Expenditure'), 'income']] as [$section, $heading, $other])
+                    @foreach ([['income', __('Income')], ['expenditure', __('Spending')]] as [$section, $heading])
+                        @php $sectionTotal = collect($$section)->sum(fn ($m) => (float) $m->value()); @endphp
                         <div class="overflow-hidden rounded border border-rule bg-surface">
                             <table class="min-w-full text-sm">
                                 <thead>
                                     <tr class="border-b border-rule bg-surface-sunk text-left text-xs uppercase tracking-wide text-ink-muted">
-                                        <th class="px-4 py-2 font-semibold">{{ $heading }}</th>
-                                        <th class="px-4 py-2 text-right font-semibold">{{ $currency }}</th>
+                                        <th class="px-4 py-2 font-semibold" colspan="2">{{ $heading }}</th>
+                                        <th class="px-4 py-2 text-right font-semibold">{{ $report->currency }}</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-rule">
                                     @forelse ($$section as $group => $money)
                                         <tr>
-                                            <td class="px-4 py-2">
-                                                <span class="font-mono text-xs text-ink-muted">{{ $group }}</span>
-                                                <span class="ml-2 text-ink-soft">{{ ohada_group_name($group) }}</span>
-                                            </td>
-                                            <td class="px-4 py-2 text-right tabular-nums">{{ number_format((float) $money->value(), 0, '.', ' ') }}</td>
+                                            <td class="px-4 py-2 text-ink-soft">{{ __('Class :code', ['code' => $group]) }}</td>
+                                            <td class="w-16 px-2 py-2 text-right text-xs tabular-nums text-ink-muted">{{ $sectionTotal > 0 ? round((float) $money->value() / $sectionTotal * 100).'%' : '' }}</td>
+                                            <td class="px-4 py-2 text-right tabular-nums">{{ money_text($money->value()) }}</td>
                                         </tr>
                                     @empty
-                                        <tr><td colspan="2" class="px-4 py-3 text-sm italic text-ink-muted">{{ __('Nothing reported in this section.') }}</td></tr>
+                                        <tr><td colspan="3" class="px-4 py-3 text-sm italic text-ink-muted">{{ __('None recorded in :month.', ['month' => $month]) }}</td></tr>
                                     @endforelse
                                 </tbody>
                                 @if (count($$section))
                                     <tfoot>
                                         <tr class="border-t-2 border-rule-strong font-semibold">
-                                            <td class="px-4 py-2">{{ __('Total') }}</td>
-                                            <td class="px-4 py-2 text-right tabular-nums">
-                                                {{ number_format((float) Money::sum(array_values($$section))->value(), 0, '.', ' ') }}
-                                            </td>
+                                            <td class="px-4 py-2" colspan="2">{{ __('Total') }}</td>
+                                            <td class="px-4 py-2 text-right tabular-nums">{{ money_text($sectionTotal) }}</td>
                                         </tr>
                                     </tfoot>
                                 @endif
@@ -135,41 +148,37 @@
                 </div>
 
                 <div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    <x-stat :label="__('Surplus / deficit')" :figure="$report->figure('surplus_deficit', Capability::LEDGER)" />
-                    <x-stat :label="__('Cash at month start')" :figure="$report->figure('cash_opening', Capability::LEDGER)" />
-                    <x-stat :label="__('Cash movement')" :figure="$report->figure('cash_movement', Capability::LEDGER)" />
+                    <x-stat :label="__('Income less spending')" :figure="$report->figure('surplus_deficit', Capability::LEDGER)" />
+                    <x-stat :label="__('Cash at the start of the month')" :figure="$report->figure('cash_opening', Capability::LEDGER)" />
+                    <x-stat :label="__('Change in cash')" :figure="$report->figure('cash_movement', Capability::LEDGER)" />
                     <x-stat :label="__('Cash at month end')" :figure="$report->figure('cash_closing', Capability::LEDGER)" />
                 </div>
             @endif
         </section>
 
         {{-- ══════════════════════════════════════════════════════════
-             Ageing. The bar exists because four numbers in a table tell you
-             what the buckets are; the bar tells you that most of the debt is
-             over ninety days old, which is the thing anyone actually wants
-             from an ageing report.
+             Who owes whom, by how long. The bar says at a glance whether
+             most of the debt is old, which is what anyone wants to know.
              ══════════════════════════════════════════════════════════ --}}
         <section class="mb-8 grid gap-6 lg:grid-cols-2">
             @foreach ([
-                ['receivables', __('Receivables'), Capability::RECEIVABLES, __('Owed to this institution — mostly unpaid fees.')],
-                ['payables', __('Payables'), Capability::PAYABLES, __('Owed by this institution to suppliers and staff.')],
-            ] as [$prefix, $heading, $capability, $blurb])
+                ['receivables', __('Owed to the school'), Capability::RECEIVABLES, __('Mostly unpaid fees, by how long they have been owed.'), __('what it is owed')],
+                ['payables', __('Owed by the school'), Capability::PAYABLES, __('To suppliers and staff, by how long it has been owing.'), __('what it owes')],
+            ] as [$prefix, $heading, $capability, $blurb, $what])
                 <x-card :title="$heading" :subtitle="$blurb">
                     @if (! $report->declares($capability))
-                        <p class="text-sm italic text-ink-muted">
-                            {{ __('Not reported. This institution cannot produce :what yet — the console shows that rather than showing zero.', ['what' => mb_strtolower($heading)]) }}
-                        </p>
+                        <p class="text-sm italic text-ink-muted">{{ $notSent($what) }}</p>
                     @else
                         <p class="mb-3 font-serif text-2xl text-ink">
                             <x-figure :figure="$report->figure($prefix.'_total', $capability)" />
-                            <span class="ml-1 text-xs text-ink-muted">{{ $currency }}</span>
+                            <span class="ml-1 text-xs text-ink-muted">{{ $report->currency }}</span>
                         </p>
 
                         <x-bucket-bar :buckets="[
-                            ['label' => __('0–30 days'), 'value' => $report->{$prefix.'_0_30'}],
-                            ['label' => __('31–60'), 'value' => $report->{$prefix.'_31_60'}],
-                            ['label' => __('61–90'), 'value' => $report->{$prefix.'_61_90'}],
-                            ['label' => __('over 90'), 'value' => $report->{$prefix.'_90_plus'}],
+                            ['label' => __('up to 30 days'), 'value' => $report->{$prefix.'_0_30'}],
+                            ['label' => __('31 to 60'), 'value' => $report->{$prefix.'_31_60'}],
+                            ['label' => __('61 to 90'), 'value' => $report->{$prefix.'_61_90'}],
+                            ['label' => __('over 90 days'), 'value' => $report->{$prefix.'_90_plus'}],
                         ]" />
                     @endif
                 </x-card>
@@ -177,38 +186,37 @@
         </section>
 
         {{-- ══════════════════════════════════════════════════════════
-             Enrolment, budget, payroll, bank
+             Fees, budget, staff pay, bank
              ══════════════════════════════════════════════════════════ --}}
         <section class="mb-8 grid gap-6 lg:grid-cols-2">
 
-            <x-card :title="__('Fees and enrolment')"
-                    :subtitle="__('Expected fees are the institution\'s own figure until the body pushes fee structures down.')">
+            <x-card :title="__('Students and fees collected')" :subtitle="__('The school\'s own figures.')">
                 @if (! $report->declares(Capability::ENROLMENT))
-                    <p class="text-sm italic text-ink-muted">{{ __('Enrolment is not reported.') }}</p>
+                    <p class="text-sm italic text-ink-muted">{{ $notSent(__('its student numbers or fees billed against fees collected')) }}</p>
                 @else
                     <dl class="divide-y divide-rule text-sm">
-                        <div class="flex items-baseline justify-between py-2">
+                        <div class="flex items-baseline justify-between gap-4 py-2">
                             <dt class="text-ink-soft">{{ __('Students') }}</dt>
                             <dd class="tabular-nums font-medium">{{ $report->enrolment !== null ? number_format((int) $report->enrolment) : '—' }}</dd>
                         </div>
-                        <div class="flex items-baseline justify-between py-2">
-                            <dt class="text-ink-soft">{{ __('Expected fees') }}</dt>
+                        <div class="flex items-baseline justify-between gap-4 py-2">
+                            <dt class="text-ink-soft">{{ __('Fees billed so far') }}</dt>
                             <dd><x-figure :figure="$report->figure('expected_fees', Capability::ENROLMENT)" /></dd>
                         </div>
-                        <div class="flex items-baseline justify-between py-2">
-                            <dt class="text-ink-soft">{{ __('Collected') }}</dt>
+                        <div class="flex items-baseline justify-between gap-4 py-2">
+                            <dt class="text-ink-soft">{{ __('Collected so far') }}</dt>
                             <dd><x-figure :figure="$report->figure('collected', Capability::ENROLMENT)" /></dd>
                         </div>
-                        <div class="flex items-baseline justify-between py-2">
-                            <dt class="text-ink-soft">{{ __('Collection rate') }}</dt>
+                        <div class="flex items-baseline justify-between gap-4 py-2">
+                            <dt class="text-ink-soft">{{ __('Collected, as a share of fees billed') }}</dt>
                             <dd class="tabular-nums font-medium">
                                 {{ $report->collection_rate !== null ? round((float) $report->collection_rate * 100, 1).'%' : '—' }}
                             </dd>
                         </div>
-                        <div class="flex items-baseline justify-between py-2">
+                        <div class="flex items-baseline justify-between gap-4 py-2">
                             <dt class="text-ink-soft">
-                                {{ __('Received as cash') }}
-                                <span class="block text-xs text-ink-muted">{{ __('Money that never reaches an account cannot be traced by any figure in this report.') }}</span>
+                                {{ __('Taken as physical cash') }}
+                                <span class="block text-xs text-ink-muted">{{ __('Cash that never reaches a bank account is the hardest money to trace.') }}</span>
                             </dt>
                             <dd class="tabular-nums font-medium {{ (float) $report->cash_share >= 0.8 ? 'text-rose-700' : '' }}">
                                 {{ $report->cash_share !== null ? round((float) $report->cash_share * 100, 1).'%' : '—' }}
@@ -218,58 +226,62 @@
                 @endif
             </x-card>
 
-            <x-card :title="__('Budget')" :subtitle="__('Budgeted against actual, for this period.')">
-                @if (! $report->declares(Capability::BUDGET))
-                    <p class="text-sm italic text-ink-muted">
-                        {{ __('Budget is not reported. The institution has a budget; the contract does not yet carry it in a shape this institution can honestly produce.') }}
-                    </p>
-                @else
-                    <dl class="divide-y divide-rule text-sm">
-                        <div class="flex items-baseline justify-between py-2">
+            <x-card :title="__('Budget')">
+                @if ($report->declares(Capability::BUDGET))
+                    <dl class="mb-3 divide-y divide-rule text-sm">
+                        <div class="flex items-baseline justify-between gap-4 py-2">
                             <dt class="text-ink-soft">{{ __('Budgeted') }}</dt>
                             <dd><x-figure :figure="$report->figure('budgeted', Capability::BUDGET)" /></dd>
                         </div>
-                        <div class="flex items-baseline justify-between py-2">
-                            <dt class="text-ink-soft">{{ __('Actual') }}</dt>
+                        <div class="flex items-baseline justify-between gap-4 py-2">
+                            <dt class="text-ink-soft">{{ __('Spent') }}</dt>
                             <dd><x-figure :figure="$report->figure('budget_actual', Capability::BUDGET)" /></dd>
                         </div>
                     </dl>
                 @endif
+                <p class="text-sm text-ink-soft">
+                    {{ __('Each school sends its budget lines separately, as a budget sheet: every line\'s budget against what has been spent so far.') }}
+                </p>
+                <a href="{{ route('body.institutions.budget', ['institution' => $institution, 'period' => $period]) }}"
+                   class="mt-2 inline-block text-sm font-medium text-accent hover:underline">{{ __('Open the budget sheet for :month', ['month' => $month]) }} →</a>
             </x-card>
 
-            <x-card :title="__('Payroll')">
+            <x-card :title="__('Staff pay')">
                 @if (! $report->declares(Capability::PAYROLL))
-                    <p class="text-sm italic text-ink-muted">{{ __('Payroll is not reported.') }}</p>
+                    <p class="text-sm italic text-ink-muted">{{ $notSent(__('its payroll')) }}</p>
                 @else
                     <dl class="divide-y divide-rule text-sm">
-                        <div class="flex items-baseline justify-between py-2">
-                            <dt class="text-ink-soft">{{ __('Staff cost') }}</dt>
+                        <div class="flex items-baseline justify-between gap-4 py-2">
+                            <dt class="text-ink-soft">{{ __('Paid through payroll') }}</dt>
                             <dd><x-figure :figure="$report->figure('staff_cost', Capability::PAYROLL)" /></dd>
                         </div>
-                        <div class="flex items-baseline justify-between py-2">
-                            <dt class="text-ink-soft">{{ __('Statutory liabilities') }}</dt>
+                        <div class="flex items-baseline justify-between gap-4 py-2">
+                            <dt class="text-ink-soft">{{ __('Owed for tax and social insurance') }}</dt>
                             <dd><x-figure :figure="$report->figure('statutory_liabilities', Capability::PAYROLL)" /></dd>
                         </div>
                     </dl>
+                    @if ($report->staff_cost !== null && (float) $report->staff_cost == 0.0)
+                        <p class="mt-2 text-xs text-ink-muted">{{ __('Nothing went through payroll this month. Salaries may have been recorded as ordinary spending instead; the daybook will show.') }}</p>
+                    @endif
                 @endif
             </x-card>
 
-            <x-card :title="__('Bank reconciliation')"
-                    :subtitle="__('The only control that compares the books against a source the bursar does not author.')">
+            <x-card :title="__('Bank statement check')"
+                    :subtitle="__('The one check against a record the bursar does not write.')">
                 @if (! $report->declares(Capability::BANK_RECON))
-                    <p class="text-sm italic text-ink-muted">{{ __('Bank reconciliation is not reported.') }}</p>
+                    <p class="text-sm italic text-ink-muted">{{ $notSent(__('a check of its books against the bank statement')) }}</p>
                 @else
                     <dl class="divide-y divide-rule text-sm">
-                        <div class="flex items-baseline justify-between py-2">
-                            <dt class="text-ink-soft">{{ __('Per the statement') }}</dt>
+                        <div class="flex items-baseline justify-between gap-4 py-2">
+                            <dt class="text-ink-soft">{{ __('The bank statement says') }}</dt>
                             <dd><x-figure :figure="$report->figure('bank_statement_closing', Capability::BANK_RECON)" /></dd>
                         </div>
-                        <div class="flex items-baseline justify-between py-2">
-                            <dt class="text-ink-soft">{{ __('Per the ledger') }}</dt>
+                        <div class="flex items-baseline justify-between gap-4 py-2">
+                            <dt class="text-ink-soft">{{ __('The school\'s books say') }}</dt>
                             <dd><x-figure :figure="$report->figure('bank_ledger_closing', Capability::BANK_RECON)" /></dd>
                         </div>
-                        <div class="flex items-baseline justify-between py-2">
-                            <dt class="font-medium text-ink">{{ __('Divergence') }}</dt>
+                        <div class="flex items-baseline justify-between gap-4 py-2">
+                            <dt class="font-medium text-ink">{{ __('Difference') }}</dt>
                             <dd class="font-semibold {{ (float) $report->bank_divergence != 0.0 ? 'text-rose-700' : 'text-emerald-800' }}">
                                 <x-figure :figure="$report->figure('bank_divergence', Capability::BANK_RECON)" />
                             </dd>
@@ -280,24 +292,65 @@
         </section>
 
         {{-- ══════════════════════════════════════════════════════════
-             Integrity — the tamper-evidence block.
+             What is actually being charged, class by class. No student
+             is named; this is the schedule as the school applies it.
+             ══════════════════════════════════════════════════════════ --}}
+        @php $feesCharged = $report->declares(Capability::FEES_CHARGED) ? ($report->decodedPayload()['operational']['fees_charged'] ?? null) : null; @endphp
+        <section class="mb-8">
+            <h2 class="mb-1 font-serif text-lg text-ink">{{ __('Fees charged') }}</h2>
+            @if (! $feesCharged)
+                <p class="rounded border border-dashed border-rule-strong bg-surface px-4 py-6 text-center text-sm italic text-ink-muted">
+                    {{ $notSent(__('the fees it charges')) }}
+                </p>
+            @else
+                <p class="mb-3 text-xs text-ink-muted">
+                    {{ __('What the school is charging for the :session year, per student, and how many students each fee was charged to. These are what your fee rules are checked against.', ['session' => $feesCharged['session']]) }}
+                </p>
+                <div class="overflow-x-auto rounded border border-rule bg-surface">
+                    <table class="min-w-full divide-y divide-rule text-sm">
+                        <thead class="bg-surface-sunk text-left text-xs uppercase tracking-wide text-ink-muted">
+                            <tr>
+                                <th class="px-4 py-2 font-semibold">{{ __('Class') }}</th>
+                                <th class="px-4 py-2 font-semibold">{{ __('Fee') }}</th>
+                                <th class="px-4 py-2 text-right font-semibold">{{ __('Per student') }}</th>
+                                <th class="px-4 py-2 text-right font-semibold">{{ __('Students') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-rule">
+                            @foreach (collect($feesCharged['rows'])->sortBy(['level', 'category']) as $fee)
+                                <tr>
+                                    <td class="px-4 py-2 text-ink-soft">{{ $fee['level'] }}</td>
+                                    <td class="px-4 py-2">{{ $fee['category'] }}</td>
+                                    <td class="px-4 py-2 text-right tabular-nums">{{ money_text($fee['amount']) }}</td>
+                                    <td class="px-4 py-2 text-right tabular-nums text-ink-muted">{{ number_format((int) $fee['students']) }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </section>
+
+        {{-- ══════════════════════════════════════════════════════════
+             How the books were kept. The school's own account of its
+             bookkeeping this month: counts, not amounts.
              ══════════════════════════════════════════════════════════ --}}
         <section class="mb-8">
-            <x-card :title="__('Integrity')"
-                    :subtitle="__('What the institution says about its own ledger discipline this month.')">
+            <x-card :title="__('How the books were kept')"
+                    :subtitle="__('Counts from the school\'s own system for :month. None of these is wrong in itself; a sudden change is worth asking about.', ['month' => $month])">
                 @if (! $report->declares(Capability::INTEGRITY))
-                    <p class="text-sm italic text-ink-muted">{{ __('Integrity figures are not reported.') }}</p>
+                    <p class="text-sm italic text-ink-muted">{{ $notSent(__('these counts')) }}</p>
                 @else
                     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         @foreach ([
-                            ['journal_entry_count', __('Journal entries'), __('Postings made in the month.')],
-                            ['unposted_count', __('Unposted'), __('Entered but never posted. A backlog here is where an unbalanced month hides.')],
-                            ['reversals', __('Reversals'), __('Legitimate in themselves; a rising rate is the signal.')],
-                            ['backdated_entries', __('Backdated'), __('Dated inside this month but entered after it closed.')],
-                            ['audit_events', __('Audit events'), __('Recorded by the institution\'s own trail.')],
+                            ['journal_entry_count', __('Entries made'), __('Entries recorded in the month.')],
+                            ['unposted_count', __('Entered but never posted'), __('Started and left unfinished. A pile of these can hide a month that does not add up.')],
+                            ['reversals', __('Entries reversed'), __('Normal for correcting mistakes; a rising number is worth asking about.')],
+                            ['backdated_entries', __('Entered late'), __('Dated in this month but typed in after it ended.')],
+                            ['audit_events', __('Actions in the audit trail'), __('Everything the school\'s own system logged.')],
                         ] as [$column, $label, $hint])
                             <div class="rounded border border-rule px-3 py-2">
-                                <p class="text-[11px] uppercase tracking-wider text-ink-muted">{{ $label }}</p>
+                                <p class="text-xs text-ink-muted">{{ $label }}</p>
                                 <p class="mt-0.5 font-serif text-xl text-ink tabular-nums">
                                     {{ $report->{$column} !== null ? number_format((int) $report->{$column}) : '—' }}
                                 </p>
@@ -305,33 +358,30 @@
                             </div>
                         @endforeach
                     </div>
+                @endif
 
-                    <div class="mt-4 border-t border-rule pt-3">
-                        <p class="text-[11px] uppercase tracking-wider text-ink-muted">{{ __('Ledger hash') }}</p>
-                        <p class="mt-1 break-all font-mono text-xs text-ink-soft">{{ $report->ledger_hash ?: __('not reported') }}</p>
-                        <p class="mt-1 text-[11px] text-ink-muted">
-                            {{ __('The institution\'s own fingerprint of its posted ledger for this month. Two months that should be identical and are not will differ here.') }}
+                @if ($report->declares(Capability::LEDGER) && $report->total_debits !== null)
+                    @php $offBy = round((float) $report->total_debits - (float) $report->total_credits, 2); @endphp
+                    <div class="mt-4 border-t border-rule pt-3 text-sm">
+                        <p class="text-ink-soft">
+                            {{ __('Every entry has two sides, and the two sides should add up to the same. This month: :debits on one side, :credits on the other.', [
+                                'debits' => money_text($report->total_debits),
+                                'credits' => money_text($report->total_credits),
+                            ]) }}
+                            @if ($offBy == 0.0)
+                                <span class="font-medium text-emerald-800">{{ __('They balance.') }}</span>
+                            @else
+                                <span class="font-semibold text-rose-700">{{ __('They are out by :amount.', ['amount' => money_text(abs($offBy))]) }}</span>
+                            @endif
                         </p>
-                    </div>
-
-                    <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <p class="text-[11px] uppercase tracking-wider text-ink-muted">{{ __('Total debits') }}</p>
-                            <p class="font-serif text-lg text-ink"><x-figure :figure="$report->figure('total_debits', Capability::LEDGER)" /></p>
-                        </div>
-                        <div>
-                            <p class="text-[11px] uppercase tracking-wider text-ink-muted">{{ __('Total credits') }}</p>
-                            <p class="font-serif text-lg text-ink"><x-figure :figure="$report->figure('total_credits', Capability::LEDGER)" /></p>
-                        </div>
                     </div>
                 @endif
             </x-card>
         </section>
 
-        {{-- Findings raised against this month. --}}
         @if ($findings->isNotEmpty())
             <section class="mb-8">
-                <h2 class="mb-3 font-serif text-lg text-ink">{{ __('Findings for this month') }}</h2>
+                <h2 class="mb-3 font-serif text-lg text-ink">{{ __('To look into for :month', ['month' => $month]) }}</h2>
                 <div class="space-y-2">
                     @foreach ($findings as $finding)
                         @include('body.partials.finding-row', ['finding' => $finding])
@@ -340,44 +390,45 @@
             </section>
         @endif
 
-        {{-- Where this console stops and the institution's own books begin. --}}
         <section class="mb-8">
             <x-drill-through :links="$drillThrough" :institution="$institution" :period="$period" />
         </section>
 
-        {{-- Restatements: superseded versions are RETAINED and stay visible.
-             That is the difference between restating and overwriting. --}}
+        {{-- Corrections are kept, never overwritten. --}}
         @if ($versions->count() > 1)
             <section>
-                <x-card :title="__('Versions of this month')"
-                        :subtitle="__('A restatement supersedes; it never overwrites. Every version this institution filed is still here.')">
+                <h2 class="mb-1 text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __(':month was sent :count times', ['month' => $month, 'count' => $versions->count()]) }}</h2>
+                <p class="mb-3 text-xs text-ink-muted">{{ __('Each time the school\'s figures for a month change, it sends the month again. Every version is kept, so a change can always be seen.') }}</p>
+                <div class="overflow-x-auto rounded border border-rule">
                     <table class="min-w-full divide-y divide-rule text-sm">
-                        <thead class="text-left text-xs uppercase tracking-wide text-ink-muted">
+                        <thead class="bg-surface-sunk text-left text-xs uppercase tracking-wide text-ink-muted">
                             <tr>
-                                <th class="py-2 font-semibold">{{ __('Version') }}</th>
-                                <th class="py-2 font-semibold">{{ __('Status') }}</th>
-                                <th class="py-2 font-semibold">{{ __('Received') }}</th>
-                                <th class="py-2 text-right font-semibold">{{ __('Surplus / deficit') }}</th>
-                                <th class="py-2 text-right font-semibold"></th>
+                                <th class="px-4 py-2 font-semibold">{{ __('Version') }}</th>
+                                <th class="px-4 py-2 font-semibold">{{ __('Sent') }}</th>
+                                <th class="px-4 py-2 font-semibold">{{ __('The month was') }}</th>
+                                <th class="px-4 py-2 text-right font-semibold">{{ __('Income less spending') }}</th>
+                                <th class="px-4 py-2 font-semibold"></th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-rule">
+                        <tbody class="divide-y divide-rule bg-surface">
                             @foreach ($versions as $version)
-                                <tr class="{{ $version->is_current ? '' : 'text-ink-muted' }}">
-                                    <td class="py-2">{{ $version->sequence }}</td>
-                                    <td class="py-2">{{ $version->status }}</td>
-                                    <td class="py-2">{{ $version->received_at?->toDayDateTimeString() }}</td>
-                                    <td class="py-2 text-right tabular-nums">
-                                        {{ $version->surplus_deficit !== null ? number_format((float) $version->surplus_deficit, 0, '.', ' ') : '—' }}
-                                    </td>
-                                    <td class="py-2 text-right text-xs">
-                                        {{ $version->is_current ? __('current') : __('superseded') }}
+                                <tr>
+                                    <td class="px-4 py-2 tabular-nums">{{ $version->sequence }}</td>
+                                    <td class="px-4 py-2 text-ink-muted">{{ $version->generated_at->toDayDateTimeString() }}</td>
+                                    <td class="px-4 py-2 text-ink-soft">{{ $version->status === 'final' ? __('closed') : __('still open') }}</td>
+                                    <td class="px-4 py-2 text-right tabular-nums">{{ $version->surplus_deficit !== null ? money_text($version->surplus_deficit) : '—' }}</td>
+                                    <td class="px-4 py-2 text-xs">
+                                        @if ($version->is_current)
+                                            <span class="font-medium text-emerald-700">{{ __('in use') }}</span>
+                                        @else
+                                            <span class="text-ink-muted">{{ __('replaced, kept') }}</span>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
-                </x-card>
+                </div>
             </section>
         @endif
     @endif

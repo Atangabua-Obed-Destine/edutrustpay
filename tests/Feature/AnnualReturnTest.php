@@ -95,8 +95,8 @@ class AnnualReturnTest extends TestCase
             $statement['missing']
         );
 
-        $this->assertStringContainsString('2026-07', $sentence, 'The missing month is named, not merely counted.');
-        $this->assertStringContainsString('7 of 8', $sentence);
+        $this->assertStringContainsString('July 2026', $sentence, 'The missing month is named, not merely counted.');
+        $this->assertStringContainsString('7 of the 8 months', $sentence);
 
         // And the total is still only what was actually reported — a floor,
         // stated as such, never a guess at what July might have been.
@@ -224,8 +224,54 @@ class AnnualReturnTest extends TestCase
 
         $this->get(route('body.institutions.annual', $this->institution).'?period=2026-08')
             ->assertOk()
-            ->assertSee('Year to date covers')
-            ->assertSee('2026-07');
+            ->assertSee('months of the year so far have arrived')
+            ->assertSee('July 2026');
+    }
+
+    public function test_a_school_that_does_not_send_income_and_spending_is_not_shown_an_empty_year(): void
+    {
+        $this->report('2026-08', income: '300000.00')->forceFill(['capabilities' => ['receivables']])->save();
+        $this->actingAsBursar();
+
+        $statement = $this->annual->build($this->institution, '2026-08');
+        $this->assertFalse($statement['sends_ledger']);
+
+        $this->get(route('body.institutions.annual', $this->institution).'?period=2026-08')
+            ->assertOk()
+            ->assertSee('not its income and spending')
+            ->assertDontSee('Income so far');
+    }
+
+    public function test_a_month_that_is_not_a_month_does_not_break_the_pages(): void
+    {
+        $this->report('2026-08', income: '300000.00');
+        $this->actingAsBursar();
+
+        // Falls back to a real month rather than failing on a bad address.
+        $this->get(route('body.institutions.annual', $this->institution).'?period=nonsense')->assertOk();
+
+        // The route only checks the shape; month 13 is not a month.
+        $this->get(route('body.institutions.monthly', [$this->institution, '2026-13']))->assertNotFound();
+
+        $this->get(route('body.institutions.monthly', [$this->institution, '2026-08']))
+            ->assertOk()
+            ->assertSee('Everything sent for August 2026')
+            ->assertSee('Class 70');
+    }
+
+    private function actingAsBursar(): void
+    {
+        $user = User::create([
+            'name' => 'Bursary Head',
+            'email' => 'bursar2@example.test',
+            'password' => 'password',
+            'role' => 'body_user',
+            'body_id' => $this->institution->body_id,
+        ]);
+        $user->roles()->attach(Role::where('name', 'bursary_head')->firstOrFail()->id);
+
+        $this->actingAs($user);
+        BodyContext::flush();
     }
 
     private function report(string $period, string $income): PeriodReport

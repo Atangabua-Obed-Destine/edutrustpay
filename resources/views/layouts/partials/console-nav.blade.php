@@ -22,7 +22,7 @@
 
         @can('consolidation.view')
             <x-nav-link :href="route('body.consolidation')" :active="request()->routeIs('body.consolidation')">
-                {{ __('Consolidated position') }}
+                {{ __('All schools together') }}
             </x-nav-link>
         @endcan
     </div>
@@ -44,7 +44,7 @@
 
         @can('capability.view')
             <x-nav-link :href="route('body.capabilities')" :active="request()->routeIs('body.capabilities')">
-                {{ __('Capability matrix') }}
+                {{ __('What schools send') }}
             </x-nav-link>
         @endcan
     </div>

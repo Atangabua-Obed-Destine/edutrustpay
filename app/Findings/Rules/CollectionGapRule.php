@@ -75,7 +75,7 @@ class CollectionGapRule implements Rule
                 [
                     'name' => $context->institution->name,
                     'enrolment' => $report->enrolment ?? __('an unstated number of'),
-                    'period' => $report->period,
+                    'period' => period_text($report->period),
                     'expected' => money_text($expected->value()),
                     'collected' => money_text($collected->value()),
                     'shortfall' => money_text($shortfall->value()),

@@ -26,7 +26,7 @@
                     {{ __('In the school\'s own system') }}
                 </h2>
                 <p class="mt-0.5 text-xs text-ink-muted">
-                    {{ __('These open :institution\'s own system in a new tab, for anything beyond the daybook. You will sign in there, under your own name. If the figures there disagree with the ones above, the institution\'s own books are right.', [
+                    {{ __('These open :institution\'s own system in a new tab, for anything beyond the daybook. You will sign in there, under your own name. If the figures there disagree with the ones above, the school\'s own books are right.', [
                         'institution' => $institution->name,
                     ]) }}
                 </p>
@@ -48,11 +48,19 @@
                         <span class="mt-0.5 block text-xs leading-snug text-ink-muted">{{ $link->blurb }}</span>
                     </a>
                 @endforeach
+                {{-- Blank cells to finish the last row, so the grid lines do not
+                     show through as a grey block. --}}
+                @for ($i = 0; $i < (2 - count($links) % 2) % 2; $i++)
+                    <span class="hidden bg-surface sm:block lg:hidden" aria-hidden="true"></span>
+                @endfor
+                @for ($i = 0; $i < (3 - count($links) % 3) % 3; $i++)
+                    <span class="hidden bg-surface lg:block" aria-hidden="true"></span>
+                @endfor
             </div>
 
             @if ($period)
                 <p class="border-t border-rule px-4 py-2 text-[11px] text-ink-muted">
-                    {{ __('Each link opens on :period. If the figures there disagree with the ones above, the institution\'s own books are right and this month should be restated.', ['period' => $period]) }}
+                    {{ __('Each link opens on :period. If the figures there disagree with the ones above, the school\'s own books are right, and the school should send the month again.', ['period' => period_text($period)]) }}
                 </p>
             @endif
         </div>

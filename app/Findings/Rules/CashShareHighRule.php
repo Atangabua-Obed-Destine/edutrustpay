@@ -72,12 +72,12 @@ class CashShareHighRule implements Rule
                 ':name collected :share% of its fees for :period as physical cash:trend. This is not '
                 .'evidence that anything is wrong — cash may be the only practical option here — but it '
                 .'is where the risk sits: money that never reaches an account cannot be traced by any '
-                .'figure in this report, and the books will balance whether or not it arrived. This is '
-                .'the institution to reconcile against a bank or mobile-money statement first.',
+                .'figure in this report, and the books will balance whether or not it arrived. If any '
+                .'school\'s cash is to be checked against a bank or mobile-money statement, start here.',
                 [
                     'name' => $context->institution->name,
                     'share' => round($share * 100),
-                    'period' => $report->period,
+                    'period' => period_text($report->period),
                     'trend' => $rising
                         ? __(', up :rise points on earlier months', ['rise' => round($rise * 100)])
                         : '',

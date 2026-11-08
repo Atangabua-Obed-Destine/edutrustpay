@@ -1,65 +1,129 @@
 @extends('layouts.console')
 
-@section('title', __('Capability matrix'))
-@section('subtitle', __('What each institution can currently report'))
+@use('EdutrustPay\Contract\Capability')
+
+@section('title', __('What each school sends'))
+@section('subtitle', __('And what it does not send yet'))
+
+@php
+    $names = [
+        Capability::LEDGER => [__('Income and spending'), __('Money in and out, by account class, with cash at the start and end of the month.')],
+        Capability::RECEIVABLES => [__('Owed to it'), __('Mostly unpaid fees, by how long they have been owed.')],
+        Capability::PAYABLES => [__('What it owes'), __('To suppliers and staff, by how long.')],
+        Capability::ENROLMENT => [__('Students and fees collected'), __('Student numbers, fees billed and collected, and how much came in as cash.')],
+        Capability::FEES_CHARGED => [__('Fees charged'), __('Each fee per class. Your fee rules are checked against this.')],
+        Capability::PAYROLL => [__('Staff pay'), __('What went through payroll, and what is owed for tax and social insurance.')],
+        Capability::BUDGET => [__('Budget total'), __('A single budget figure in the report. Most schools send the budget sheet instead.')],
+        Capability::BANK_RECON => [__('Bank statement check'), __('The books against the bank\'s own statement.')],
+        Capability::INTEGRITY => [__('How the books were kept'), __('Counts of entries, late entries, reversals and unfinished entries.')],
+    ];
+
+    $cellStyles = [
+        'reporting' => ['bg-emerald-100 text-emerald-800', __('sends'), __('Arrives with the monthly report.')],
+        'declared' => ['bg-amber-100 text-amber-800', __('expected, never sent'), __('It was set up as something this school would send, and nothing has arrived. Either its system cannot produce it yet or the setting is wrong; whoever manages the school\'s connection can say which.')],
+        'not_reporting' => ['bg-surface-sunk text-ink-muted', __('not yet'), __('Its system cannot produce this yet. The gap closes when it can.')],
+        'not_applicable' => ['bg-transparent text-ink-muted opacity-60', __('n/a'), __('Does not apply to this kind of institution, and never will.')],
+    ];
+
+    $order = [Capability::LEDGER, Capability::RECEIVABLES, Capability::PAYABLES, Capability::ENROLMENT, Capability::FEES_CHARGED, Capability::PAYROLL, Capability::BANK_RECON, Capability::INTEGRITY, Capability::BUDGET];
+    // Any capability the contract gains later still gets a column, at the end.
+    $order = array_merge(array_values(array_intersect($order, $capabilities)), array_values(array_diff($capabilities, $order)));
+
+    // A document counts as arriving when the latest one held is no older than this.
+    $recent = now()->subMonths(2)->format('Y-m');
+@endphp
 
 @section('content')
 
     <p class="mb-5 max-w-3xl text-sm text-ink-soft">
-        {{ __('This page explains every "doesn\'t send this" elsewhere in the console. A capability an institution has not declared is a figure it cannot produce — never a zero. Gaps here close as the underlying systems gain modules; a cell marked "not applicable" never will.') }}
+        {{ __('Wherever the console says "doesn\'t send this", this page is the reason. Something a school does not send is missing information, never a zero. Gaps close as a school\'s system gains the part that produces them.') }}
     </p>
-
-    @php
-        $cellStyles = [
-            'reporting'      => ['bg-emerald-100 text-emerald-800', __('reporting')],
-            'declared'       => ['bg-amber-100 text-amber-800', __('declared, not seen')],
-            'not_reporting'  => ['bg-surface-sunk text-ink-muted', __('not yet')],
-            'not_applicable' => ['bg-transparent text-ink-muted opacity-60', __('n/a')],
-        ];
-    @endphp
 
     <div class="overflow-x-auto rounded border border-rule">
         <table class="min-w-full divide-y divide-rule text-sm">
-            <thead class="bg-surface-sunk text-left text-xs uppercase tracking-wide text-ink-muted">
-                <tr>
-                    <th class="px-4 py-2 font-semibold">{{ __('Institution') }}</th>
-                    @foreach ($capabilities as $capability)
-                        <th class="px-3 py-2 text-center font-semibold">{{ str_replace('_', ' ', $capability) }}</th>
+            <thead class="bg-surface-sunk text-xs text-ink-muted">
+                <tr class="text-center">
+                    <th class="px-4 pt-2"></th>
+                    <th class="border-l border-rule px-3 pt-2 font-semibold uppercase tracking-wide" colspan="{{ count($order) }}">{{ __('In the monthly report') }}</th>
+                    <th class="border-l border-rule px-3 pt-2 font-semibold uppercase tracking-wide" colspan="2">{{ __('Sent separately') }}</th>
+                </tr>
+                <tr class="text-left">
+                    <th class="px-4 py-2 font-semibold">{{ __('School') }}</th>
+                    @foreach ($order as $i => $capability)
+                        <th @class(['px-2 py-2 text-center align-bottom font-medium', 'border-l border-rule' => $i === 0])
+                            title="{{ $names[$capability][1] ?? '' }}">{{ $names[$capability][0] ?? str_replace('_', ' ', $capability) }}</th>
                     @endforeach
-                    <th class="px-4 py-2 text-center font-semibold">{{ __('Coverage') }}</th>
+                    <th class="border-l border-rule px-2 py-2 text-center align-bottom font-medium">{{ __('Daybook') }}</th>
+                    <th class="px-2 py-2 text-center align-bottom font-medium">{{ __('Budget sheet') }}</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-rule bg-surface">
                 @foreach ($rows as $row)
+                    @php $id = $row->institution->id; @endphp
                     <tr>
                         <td class="whitespace-nowrap px-4 py-2">
                             <a href="{{ route('body.institutions.show', $row->institution) }}"
                                class="font-medium text-ink hover:underline">{{ $row->institution->name }}</a>
-                            <span class="ml-2 text-xs text-ink-muted">{{ $row->institution->system }}</span>
+                            <span class="block text-xs text-ink-muted">{{ __(':n of :total parts of the report', ['n' => $row->coverage, 'total' => $row->applicable]) }}</span>
                         </td>
 
-                        @foreach ($capabilities as $capability)
+                        @foreach ($order as $i => $capability)
                             @php [$classes, $label] = $cellStyles[$row->cells[$capability]]; @endphp
-                            <td class="px-3 py-2 text-center">
+                            <td @class(['px-2 py-2 text-center', 'border-l border-rule' => $i === 0])>
                                 <span class="inline-block rounded px-1.5 py-0.5 text-[11px] font-medium {{ $classes }}">{{ $label }}</span>
                             </td>
                         @endforeach
 
-                        <td class="px-4 py-2 text-center text-xs font-medium tabular-nums text-ink-soft">
-                            {{ $row->coverage }} / {{ $row->applicable }}
-                        </td>
+                        @foreach ([[$daybooks, 'border-l border-rule'], [$budgetSheets, '']] as [$held, $border])
+                            @php $last = $held[$id] ?? null; @endphp
+                            <td class="px-2 py-2 text-center {{ $border }}">
+                                @if ($last === null)
+                                    <span class="inline-block rounded bg-surface-sunk px-1.5 py-0.5 text-[11px] font-medium text-ink-muted">{{ __('not yet') }}</span>
+                                @else
+                                    <span class="inline-block rounded px-1.5 py-0.5 text-[11px] font-medium {{ $last >= $recent ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
+                                        {{ $last >= $recent ? __('sends') : __('stopped') }}
+                                    </span>
+                                    <span class="block text-[10px] text-ink-muted">{{ __('latest :month', ['month' => \Carbon\Carbon::createFromFormat('!Y-m', $last)->translatedFormat('M Y')]) }}</span>
+                                @endif
+                            </td>
+                        @endforeach
                     </tr>
                 @endforeach
             </tbody>
         </table>
     </div>
 
-    <div class="mt-4 flex flex-wrap gap-3 text-xs text-ink-muted">
-        @foreach ($cellStyles as $state => [$classes, $label])
-            <span class="inline-flex items-center gap-1.5">
-                <span class="inline-block rounded px-1.5 py-0.5 font-medium {{ $classes }}">{{ $label }}</span>
-            </span>
+    <dl class="mt-5 grid max-w-4xl gap-x-8 gap-y-2 text-xs text-ink-muted sm:grid-cols-2">
+        @foreach ($cellStyles as [$classes, $label, $meaning])
+            <div class="flex items-start gap-2">
+                <dt class="shrink-0"><span class="inline-block rounded px-1.5 py-0.5 font-medium {{ $classes }}">{{ $label }}</span></dt>
+                <dd>{{ $meaning }}</dd>
+            </div>
         @endforeach
-    </div>
+        <div class="flex items-start gap-2">
+            <dt class="shrink-0"><span class="inline-block rounded bg-amber-100 px-1.5 py-0.5 font-medium text-amber-800">{{ __('stopped') }}</span></dt>
+            <dd>{{ __('It used to arrive but nothing recent has: the latest month held is shown.') }}</dd>
+        </div>
+    </dl>
+
+    <section class="mt-8 max-w-4xl">
+        <h2 class="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('What each part is') }}</h2>
+        <dl class="grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
+            @foreach ($order as $capability)
+                <div>
+                    <dt class="font-medium text-ink">{{ $names[$capability][0] ?? $capability }}</dt>
+                    <dd class="text-xs text-ink-muted">{{ $names[$capability][1] ?? '' }}</dd>
+                </div>
+            @endforeach
+            <div>
+                <dt class="font-medium text-ink">{{ __('Daybook') }}</dt>
+                <dd class="text-xs text-ink-muted">{{ __('Every movement of money in the month, line by line, with names.') }}</dd>
+            </div>
+            <div>
+                <dt class="font-medium text-ink">{{ __('Budget sheet') }}</dt>
+                <dd class="text-xs text-ink-muted">{{ __('Each budget line against what has been spent so far.') }}</dd>
+            </div>
+        </dl>
+    </section>
 
 @endsection

@@ -75,7 +75,7 @@ class FinalRestatedRule implements Rule
                 .'changes after it was closed is the shape a retro-edited ledger takes.',
                 [
                     'name' => $context->institution->name,
-                    'period' => $report->period,
+                    'period' => period_text($report->period),
                     'originally' => $previous->generated_at->toFormattedDateString(),
                     'again' => $report->generated_at->toFormattedDateString(),
                     'sequence' => $report->sequence,
@@ -155,7 +155,7 @@ class FinalRestatedRule implements Rule
                         .'means the ledger was rebuilt, so ask who did it and why.',
                 [
                     'name' => $context->institution->name,
-                    'period' => $report->period,
+                    'period' => period_text($report->period),
                     'days' => (int) $monthEnd->diffInDays($report->generated_at),
                     'movement' => $movement['sentence'],
                 ]

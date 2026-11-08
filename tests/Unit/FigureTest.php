@@ -67,7 +67,7 @@ class FigureTest extends TestCase
         $this->assertFalse($aggregate->isComplete());
 
         $this->assertSame(
-            'Consolidated across 2 of 3 institutions. 1 has no figure for this.',
+            'Added up from 2 of 3 schools. 1 has no figure for this, so the total leaves it out.',
             $aggregate->coverageStatement()
         );
     }
@@ -102,7 +102,7 @@ class FigureTest extends TestCase
 
         $this->assertTrue($aggregate->isComplete());
         $this->assertTrue($aggregate->isUnqualified());
-        $this->assertSame('Consolidated across all 2 institutions.', $aggregate->coverageStatement());
+        $this->assertSame('Added up from all 2 schools.', $aggregate->coverageStatement());
     }
 
     public function test_a_stale_figure_still_counts_but_flags_the_total(): void
@@ -126,7 +126,7 @@ class FigureTest extends TestCase
         $aggregate = Figure::sum([]);
 
         $this->assertSame('0.00', $aggregate->total()->value());
-        $this->assertSame('No institutions reporting.', $aggregate->coverageStatement());
+        $this->assertSame('No schools to add up.', $aggregate->coverageStatement());
     }
 
     public function test_missing_labels_name_the_institutions_left_out(): void

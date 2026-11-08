@@ -130,9 +130,10 @@ class InstitutionController extends Controller
      */
     public function monthly(Request $request, Institution $institution, string $period, DrillThroughService $drill)
     {
-        $report = $institution->reportFor($period);
+        // The route only checks the shape; "2026-13" is not a month.
+        abort_unless(preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $period), 404);
 
-        abort_if($report === null && ! preg_match('/^\d{4}-\d{2}$/', $period), 404);
+        $report = $institution->reportFor($period);
 
         AuditLog::viewed(Institution::class, $institution->id, ['period' => $period, 'view' => 'return'], $institution->body_id);
 
@@ -159,7 +160,10 @@ class InstitutionController extends Controller
      */
     public function annual(Request $request, Institution $institution, AnnualReturnService $annual)
     {
-        $period = (string) $request->query('period', $institution->last_period_received ?? now()->subMonth()->format('Y-m'));
+        $requested = (string) $request->query('period', '');
+        $period = preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $requested)
+            ? $requested
+            : ($institution->last_period_received ?? now()->subMonth()->format('Y-m'));
 
         AuditLog::viewed(Institution::class, $institution->id, ['period' => $period, 'view' => 'annual'], $institution->body_id);
 

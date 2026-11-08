@@ -128,7 +128,7 @@ class ComplianceService
             return $this->result(self::UNKNOWN, __('The latest fee figures are for :period, before this rule began.', ['period' => period_text($report->period)]), report: $report);
         }
 
-        if (Carbon::createFromFormat('Y-m', $report->period)->startOfMonth()->lt(today()->startOfMonth()->subMonths(self::STALE_AFTER_MONTHS))) {
+        if (Carbon::createFromFormat('!Y-m', $report->period)->startOfMonth()->lt(today()->startOfMonth()->subMonths(self::STALE_AFTER_MONTHS))) {
             return $this->result(self::UNKNOWN, __('The latest fee figures are for :period, too old to rely on.', ['period' => period_text($report->period)]), report: $report);
         }
 

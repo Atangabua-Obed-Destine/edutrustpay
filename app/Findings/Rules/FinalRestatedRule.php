@@ -112,7 +112,16 @@ class FinalRestatedRule implements Rule
     {
         $report = $context->report;
         $days = (int) config('findings.rules.final_restated.late_after_days', 30);
-        $monthEnd = Carbon::createFromFormat('Y-m', $report->period)->endOfMonth();
+        $monthEnd = Carbon::createFromFormat('!Y-m', $report->period)->endOfMonth();
+
+        /*
+         * The earlier version was filed before the month had finished, so of
+         * course the finished month differs from it: the rest of the month had not
+         * happened yet. Saying the books were changed afterwards would be false.
+         */
+        if ($previous->generated_at->lessThanOrEqualTo($monthEnd)) {
+            return null;
+        }
 
         $ledgerMoved = $previous->ledger_hash && $report->ledger_hash
             && $previous->ledger_hash !== $report->ledger_hash;

@@ -13,6 +13,7 @@ use App\Support\BodyContext;
 use App\Support\Figure;
 use EdutrustPay\Contract\Fingerprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 /**
@@ -68,7 +69,7 @@ class EndToEndRegressionTest extends TestCase
 
         $this->get(route('body.dashboard').'?period=2020-01')
             ->assertOk()
-            ->assertSee(__('no figures yet'))
+            ->assertSee(__('no report'))
             ->assertDontSee('>0<', false);
     }
 
@@ -217,6 +218,36 @@ class EndToEndRegressionTest extends TestCase
         );
 
         $this->assertSame('medium', $this->evaluate($second)?->severity);
+    }
+
+    public function test_a_month_first_filed_before_it_ended_was_not_changed_afterwards(): void
+    {
+        [$first, $second] = $this->restatement(
+            ['ledger_hash' => 'sha256:a', 'surplus_deficit' => '100.00', 'journal_entry_count' => 3],
+            ['ledger_hash' => 'sha256:b', 'surplus_deficit' => '900.00', 'journal_entry_count' => 39],
+        );
+
+        // Filed part way through the month, so the rest of the month was still to come.
+        $first->forceFill(['generated_at' => Carbon::createFromFormat('!Y-m', $first->period)->addDays(9)])->save();
+        $second->unsetRelation('supersedes');
+
+        $this->assertNull($this->evaluate($second));
+    }
+
+    public function test_a_rule_judges_its_own_severity_unless_told_otherwise(): void
+    {
+        foreach (config('findings.rules') as $code => $rule) {
+            $this->assertArrayNotHasKey('severity', $rule, "$code would override what the rule itself decides.");
+        }
+    }
+
+    public function test_a_month_is_read_correctly_on_the_31st(): void
+    {
+        $this->travelTo('2026-10-31 10:00:00');
+
+        $this->assertSame('February 2026', period_text('2026-02'));
+
+        $this->travelBack();
     }
 
     public function test_a_change_soon_after_month_end_is_ordinary_bookkeeping(): void

@@ -42,7 +42,7 @@
 
             {{-- CAPABILITIES: the most consequential screen in the operator area. --}}
             <x-card :title="__('What this institution can report')"
-                    :subtitle="__('Fills in by itself as reports arrive. Anything not reported shows as “not yet reporting”, never as zero.')">
+                    :subtitle="__('Fills in by itself as reports arrive. Anything not reported shows as “doesn\'t send this”, never as zero.')">
                 <form method="POST" action="{{ manage_route('institutions.capabilities', $institution) }}">
                     @csrf @method('PUT')
 

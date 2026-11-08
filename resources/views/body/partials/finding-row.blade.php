@@ -14,7 +14,7 @@
             <p class="text-sm font-semibold">
                 {{ $finding->title }}
                 <span class="ml-2 rounded bg-black/10 px-1.5 py-0.5 text-[11px] font-medium uppercase tracking-wide">
-                    {{ $finding->severity }}
+                    {{ \App\Models\Finding::severityLabel($finding->severity) }}
                 </span>
             </p>
 

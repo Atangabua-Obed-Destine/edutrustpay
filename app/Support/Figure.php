@@ -151,7 +151,7 @@ final class Figure
     {
         switch ($this->state) {
             case self::NOT_CAPABLE:
-                return __('not yet reporting');
+                return __('doesn\'t send this');
             case self::NOT_APPLICABLE:
                 return __('not applicable');
             case self::NOT_REPORTED:

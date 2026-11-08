@@ -149,6 +149,18 @@ class Finding extends Model
         return $this->status === self::OPEN;
     }
 
+    /**
+     * What a severity asks of the reader, in words.
+     */
+    public static function severityLabel(string $severity): string
+    {
+        return match ($severity) {
+            'critical' => __('Act now'),
+            'high' => __('Needs action'),
+            default => __('Worth a look'),
+        };
+    }
+
     public function severityRank(): int
     {
         $rank = array_search($this->severity, self::SEVERITIES, true);

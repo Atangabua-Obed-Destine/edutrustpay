@@ -9,12 +9,11 @@ use Carbon\Carbon;
  * Links out to an institution's own system, for the detail this console does
  * not hold.
  *
- * THE ARCHITECTURAL POINT. EdutrustPay receives a signed monthly summary —
- * OHADA group totals, control totals, ageing buckets. It holds no transactions,
- * no student names, no invoice lines, and it never will (brief §13). So when
- * somebody at the body asks "what is behind this month's staff costs", the
- * honest answer is not to fetch it; it is to send them to the institution's own
- * daybook, where the institution's own login decides what they may see.
+ * THE ARCHITECTURAL POINT. EdutrustPay receives a signed monthly summary and each
+ * school's daybook lines. It holds nothing else: no invoices, no receipts, no
+ * student records. So for detail beyond the daybook, the honest answer is not to
+ * fetch it; it is to send them to the institution's own system, where the
+ * institution's own login decides what they may see.
  *
  * THE BROWSER GOES, NOT THE SERVER. This produces a plain URL. The console
  * makes no request, holds no credential for the far end, and needs no inbound

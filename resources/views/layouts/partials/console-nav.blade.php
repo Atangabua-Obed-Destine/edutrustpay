@@ -36,6 +36,12 @@
             </x-nav-link>
         @endcan
 
+        @can('daybook.compare')
+            <x-nav-link :href="route('body.daybook.compare')" :active="request()->routeIs('body.daybook.*')">
+                {{ __('Compare schools') }}
+            </x-nav-link>
+        @endcan
+
         @can('capability.view')
             <x-nav-link :href="route('body.capabilities')" :active="request()->routeIs('body.capabilities')">
                 {{ __('Capability matrix') }}

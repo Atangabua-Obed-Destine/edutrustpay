@@ -6,7 +6,7 @@
 @section('content')
 
     <p class="mb-5 max-w-3xl text-sm text-ink-soft">
-        {{ __('This page explains every "not yet reporting" elsewhere in the console. A capability an institution has not declared is a figure it cannot produce — never a zero. Gaps here close as the underlying systems gain modules; a cell marked "not applicable" never will.') }}
+        {{ __('This page explains every "doesn\'t send this" elsewhere in the console. A capability an institution has not declared is a figure it cannot produce — never a zero. Gaps here close as the underlying systems gain modules; a cell marked "not applicable" never will.') }}
     </p>
 
     @php

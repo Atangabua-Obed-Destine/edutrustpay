@@ -80,8 +80,8 @@
             @endforeach
         </div>
 
-        {{-- Drill-down stops at the OHADA group. Below that, the console links
-             out: EdutrustPay does not hold the rows (brief §13). --}}
+        {{-- The report stops at the OHADA group. Below that are the daybook lines,
+             and links out to the school's own system for everything else. --}}
         <section class="mb-8 grid gap-6 lg:grid-cols-2">
             @foreach ([['income', __('Income by OHADA group')], ['expenditure', __('Expenditure by OHADA group')]] as [$section, $heading])
                 <div>
@@ -219,6 +219,14 @@
     </section>
 
     <section class="mt-8">
+        @can('daybook.view')
+            <a href="{{ route('body.institutions.daybook', ['institution' => $institution, 'period' => $period]) }}"
+               class="mb-4 block rounded border border-rule bg-surface px-4 py-3 transition hover:bg-surface-sunk">
+                <span class="font-serif text-base text-ink">{{ __('Daybook') }}</span>
+                <span class="mt-0.5 block text-xs text-ink-muted">{{ __('Every movement of money in the month, line by line, here in the console.') }}</span>
+            </a>
+        @endcan
+
         <x-drill-through :links="$drillThrough" :institution="$institution" :period="$period" />
     </section>
 

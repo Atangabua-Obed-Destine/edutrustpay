@@ -48,7 +48,7 @@ class FigureTest extends TestCase
         // "not yet reporting" will change; "not applicable" never will. A console
         // that rendered a pharmacy's enrolment as a gap that might close would
         // teach people to ignore the capability matrix.
-        $this->assertSame('not yet reporting', Figure::notCapable()->label());
+        $this->assertSame("doesn't send this", Figure::notCapable()->label());
         $this->assertSame('not applicable', Figure::notApplicable()->label());
         $this->assertSame('no report', Figure::notReported()->label());
     }
@@ -138,7 +138,7 @@ class FigureTest extends TestCase
         ]);
 
         $this->assertSame(
-            ['Kumbo Hospital' => 'not yet reporting', 'St Joseph Primary' => 'no report'],
+            ['Kumbo Hospital' => "doesn't send this", 'St Joseph Primary' => 'no report'],
             $aggregate->missingLabels()
         );
     }

@@ -51,6 +51,7 @@ foreach ($school in $Schools) {
     $label = Split-Path $school -Leaf
     Write-Output "School: $school"
     Add-Task "$label report" $school 'edutrustpay:report --months=3' (New-ScheduledTaskTrigger -Daily -At '03:00')
+    Add-Task "$label daybook" $school 'edutrustpay:daybook --months=3' (New-ScheduledTaskTrigger -Daily -At '03:15')
     Add-Task "$label deliver" $school 'edutrustpay:flush' (Every 60)
     Add-Task "$label heartbeat" $school 'edutrustpay:heartbeat' (New-ScheduledTaskTrigger -Daily -At '05:30')
 }

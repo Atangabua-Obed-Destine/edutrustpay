@@ -7,6 +7,7 @@ use App\Models\Finding;
 use App\Models\Institution;
 use App\Services\ComplianceService;
 use App\Services\ConsolidationService;
+use App\Services\OverviewService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
@@ -15,20 +16,18 @@ use Illuminate\Support\Carbon;
  *
  * ORDERED BY WHAT NEEDS ATTENTION, NOT BY WHAT IS EASY TO RENDER (brief §10):
  *
- *   1. who has not reported        — the most valuable widget on the platform
- *   2. findings                    — controls that fired, most severe first
- *   3. coverage statement          — "consolidated across 7 of 9"
- *   4. consolidated position       — income, expenditure, surplus, cash
- *   5. collection rates and arrears
- *   6. budget versus actual
+ *   1. in words: who reported, who is breaking a rule, what to look into
+ *   2. one row per school, so a problem has a name beside it
+ *   3. findings, most serious first
+ *   4. the money and fees, school by school, totalled only when all sent them
+ *   5. budget against actual, once anyone sends it
  *
- * The consolidated total is deliberately NOT first. A bursary head who opens
- * this page and sees a healthy-looking number before they see that two
- * institutions have gone quiet has been misled by the layout.
+ * No total comes first. Someone who sees a healthy-looking number before they
+ * see that two schools have gone quiet has been misled by the layout.
  */
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request, ConsolidationService $consolidation)
+    public function __invoke(Request $request, ConsolidationService $consolidation, OverviewService $overview)
     {
         $period = $this->resolvePeriod($request);
 
@@ -38,16 +37,23 @@ class DashboardController extends Controller
 
         $position = $consolidation->position($institutions, $period);
 
+        $notReporting = $consolidation->notReporting($institutions);
+        $compliance = $request->user()->can('compliance.view') ? app(ComplianceService::class)->board($institutions) : null;
+        $findingGroups = Finding::grouped(Finding::query()->open()->with('institution')->get());
+        $collections = $consolidation->collections($institutions, $period);
+
         return view('body.dashboard', [
             'period' => $period,
             'periodOptions' => $this->periodOptions(),
             'institutions' => $institutions,
-            'notReporting' => $consolidation->notReporting($institutions),
-            'compliance' => $request->user()->can('compliance.view') ? app(ComplianceService::class)->board($institutions) : null,
-            'findingGroups' => Finding::grouped(Finding::query()->open()->with('institution')->get()),
-            'openFindingCount' => Finding::query()->open()->count(),
+            'overview' => $overview->build($institutions, $period, $position, $collections, $compliance, $findingGroups, $notReporting),
+            'notReporting' => $notReporting,
+            'compliance' => $compliance,
+            'findingGroups' => $findingGroups,
+            // Issues, not months: one finding seen for twelve months is one thing to ask about.
+            'openFindingCount' => $findingGroups->count(),
             'position' => $position,
-            'collections' => $consolidation->collections($institutions, $period),
+            'collections' => $collections,
             'budget' => $consolidation->budget($institutions, $period),
         ]);
     }

@@ -10,6 +10,7 @@ use App\Http\Controllers\Auth\InvitationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Body\CapabilityMatrixController;
 use App\Http\Controllers\Body\ComplianceController;
+use App\Http\Controllers\Body\DaybookController as BodyDaybookController;
 use App\Http\Controllers\Body\RegulationController;
 use App\Http\Controllers\Body\ConsolidationController;
 use App\Http\Controllers\Body\DashboardController as BodyDashboard;
@@ -91,6 +92,9 @@ Route::middleware(['auth', EnsureBodyView::class])->prefix('body')->name('body.'
         Route::get('institutions/{institution}/return/{period}', [InstitutionController::class, 'monthly'])
             ->where('period', '[0-9]{4}-[0-9]{2}')
             ->name('institutions.monthly');
+        Route::get('institutions/{institution}/daybook', [BodyDaybookController::class, 'show'])
+            ->middleware('permission:daybook.view')
+            ->name('institutions.daybook');
     });
 
     Route::get('capabilities', CapabilityMatrixController::class)
@@ -110,6 +114,10 @@ Route::middleware(['auth', EnsureBodyView::class])->prefix('body')->name('body.'
      * The rules a body sets, and how its schools measure up. The body console's
      * reason to exist for an Education Secretary.
      */
+    Route::get('daybook/compare', [BodyDaybookController::class, 'compare'])
+        ->middleware('permission:daybook.compare')
+        ->name('daybook.compare');
+
     Route::prefix('compliance')->name('compliance.')->group(function () {
         Route::get('/', [ComplianceController::class, 'index'])->middleware('permission:compliance.view')->name('index');
 

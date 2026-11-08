@@ -27,7 +27,7 @@ class FindingController extends Controller
             'findings' => $findings,
             'groups' => Finding::grouped($findings->getCollection()),
             'status' => $status,
-            'openFindingCount' => Finding::query()->open()->count(),
+            'openFindingCount' => Finding::grouped(Finding::query()->open()->with('institution')->get())->count(),
             'counts' => [
                 Finding::OPEN => Finding::query()->where('status', Finding::OPEN)->count(),
                 Finding::EXPLAINED => Finding::query()->where('status', Finding::EXPLAINED)->count(),

@@ -191,6 +191,7 @@ class ConsolidationService
                 'expected' => $expected[$name],
                 'collected' => $collected[$name],
                 'receivables' => $receivables[$name],
+                'owed_over_90' => $ageing['90_plus'][$name],
                 'collection_rate' => $report && $report->declares(Capability::ENROLMENT)
                     ? $report->collection_rate
                     : null,

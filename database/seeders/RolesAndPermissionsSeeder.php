@@ -34,6 +34,8 @@ class RolesAndPermissionsSeeder extends Seeder
         'User' => ['view', 'invite', 'update', 'deactivate'],
         'Role' => ['view', 'manage'],
         'Compliance' => ['view', 'manage', 'follow_up', 'waive'],
+        // Separate because view reads lines that name people, and compare does not.
+        'Daybook' => ['view', 'compare'],
         'Audit' => ['view'],
         'Settings' => ['view', 'update'],
     ];
@@ -59,6 +61,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'consolidation.view', 'consolidation.export',
                 'credential.view', 'audit.view',
                 'compliance.view',
+                'daybook.view', 'daybook.compare',
             ],
         ],
         'education_secretary' => [
@@ -70,6 +73,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'finding.view', 'finding.resolve',
                 'consolidation.view', 'consolidation.export',
                 'audit.view',
+                'daybook.view', 'daybook.compare',
                 'compliance.view', 'compliance.manage', 'compliance.follow_up', 'compliance.waive',
             ],
         ],
@@ -91,6 +95,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'consolidation.view', 'consolidation.export',
                 'credential.view', 'audit.view', 'user.view',
                 'compliance.view',
+                'daybook.view', 'daybook.compare',
             ],
         ],
         'institution_liaison' => [

@@ -67,7 +67,7 @@ class AnnualReturnService
     public function fiscalYearStart(Institution $institution, string $period): Carbon
     {
         $startMonth = $institution->fiscalYearStartMonth();
-        $cursor = Carbon::createFromFormat('Y-m', $period)->startOfMonth();
+        $cursor = Carbon::createFromFormat('!Y-m', $period)->startOfMonth();
 
         $start = $cursor->copy()->month($startMonth)->startOfMonth();
 

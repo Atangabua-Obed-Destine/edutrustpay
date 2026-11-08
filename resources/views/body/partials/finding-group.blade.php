@@ -18,9 +18,9 @@
     <details class="rounded border {{ $classes }}">
         <summary class="cursor-pointer px-4 py-3">
             <span class="text-sm font-semibold">{{ $latest->institution->name }}: {{ $latest->title }}</span>
-            <span class="ml-2 rounded bg-black/10 px-1.5 py-0.5 text-[11px] font-medium uppercase tracking-wide">{{ $group->severity }}</span>
+            <span class="ml-2 rounded bg-black/10 px-1.5 py-0.5 text-[11px] font-medium tracking-wide">{{ \App\Models\Finding::severityLabel($group->severity) }}</span>
             <span class="ml-2 text-xs font-medium">{{ __(':count months', ['count' => $count]) }}</span>
-            <span class="mt-1 block text-xs opacity-70">{{ __('Latest shown. :months', ['months' => $group->findings->pluck('period')->filter()->sort()->implode(', ')]) }}</span>
+            <span class="mt-1 block text-xs opacity-70">{{ __('Most recent shown. :months', ['months' => $group->findings->pluck('period')->filter()->sort()->implode(', ')]) }}</span>
             <span class="mt-1 block text-sm font-normal opacity-90">{{ $latest->explanation }}</span>
         </summary>
 

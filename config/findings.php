@@ -14,6 +14,8 @@ return [
     |
     | Severity ordering drives the console's landing page, which is ordered by
     | what needs attention rather than by what is easy to render (brief §10).
+    | Each rule works out its own severity from the facts. Setting 'severity' on
+    | a rule here overrides that for every case, so do it only deliberately.
     |
     */
 
@@ -32,7 +34,6 @@ return [
          */
         'not_reporting' => [
             'enabled' => true,
-            'severity' => 'high',
             'days' => 35,
         ],
 
@@ -59,7 +60,6 @@ return [
          */
         'unbalanced_ledger' => [
             'enabled' => true,
-            'severity' => 'critical',
         ],
 
         /*
@@ -72,7 +72,6 @@ return [
          */
         'backdated_entries' => [
             'enabled' => true,
-            'severity' => 'high',
             'threshold' => 1,
         ],
 
@@ -83,7 +82,6 @@ return [
          */
         'unposted_backlog' => [
             'enabled' => true,
-            'severity' => 'medium',
             'threshold' => 10,
         ],
 
@@ -92,14 +90,12 @@ return [
          * Catches fraud models C and D — cash never entered, and students who
          * attend but were never enrolled.
          *
-         * Only trustworthy once the body pushes fee templates down and the
-         * institution reports enrolment against them; until then expected_fees
-         * is a figure the institution chose, and comparing it to collected
-         * proves nothing. 0.70 is a starting point, not a finding of fact.
+         * expected_fees is a figure the institution chose, so comparing it to
+         * collected proves nothing by itself. 0.70 is a starting point, not a
+         * finding of fact.
          */
         'collection_gap' => [
             'enabled' => true,
-            'severity' => 'high',
             'min_collection_rate' => '0.70',
         ],
 
@@ -119,7 +115,6 @@ return [
          */
         'cash_share_high' => [
             'enabled' => true,
-            'severity' => 'high',
             'threshold' => '0.80',
             // Also fire below the threshold when the share is rising steadily,
             // because the trend is the earlier signal.

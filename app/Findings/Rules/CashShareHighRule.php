@@ -64,7 +64,9 @@ class CashShareHighRule implements Rule
 
         return new FindingDraft(
             rule: $this->code(),
-            severity: $share >= 0.95 ? 'high' : 'medium',
+            // Never more than worth a look: the finding itself says this is not
+            // evidence of anything, only where tracing the money is hardest.
+            severity: 'medium',
             title: __(':share% of collections are physical cash', ['share' => round($share * 100)]),
             explanation: __(
                 ':name collected :share% of its fees for :period as physical cash:trend. This is not '

@@ -65,13 +65,13 @@ class CollectionGapRule implements Rule
 
         return new FindingDraft(
             rule: $this->code(),
-            severity: $rate < $minimum / 2 ? 'critical' : 'high',
+            // A prompt to ask, so it never claims to be the most serious kind.
+            severity: $rate < $minimum / 2 ? 'high' : 'medium',
             title: __('Collection is :rate% of what enrolment implies', ['rate' => round($rate * 100)]),
             explanation: __(
                 ':name reported :enrolment students for :period, implying :expected in fees, but collected '
-                .':collected — a shortfall of :shortfall.:cash This is only as good as the fee structure '
-                .'behind it: until the body pushes fee templates down, expected fees are the institution\'s '
-                .'own number, and this is a prompt to ask rather than evidence.',
+                .':collected — a shortfall of :shortfall.:cash Expected fees are the school\'s own figure, '
+                .'so this is a prompt to ask rather than evidence.',
                 [
                     'name' => $context->institution->name,
                     'enrolment' => $report->enrolment ?? __('an unstated number of'),

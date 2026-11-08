@@ -7,10 +7,9 @@
 {{--
     Where the console stops and the institution's own books begin.
 
-    This platform receives a signed monthly summary — group totals, control
-    totals, ageing buckets. It holds no transactions and no names, and it never
-    will. So the drill-down chain ends here and hands over rather than
-    pretending to go deeper.
+    This platform receives a signed monthly summary and each school's daybook
+    lines, and nothing else. So for any other detail the drill-down chain ends here
+    and hands over rather than pretending to go deeper.
 
     The BROWSER follows these links, not the server: the console makes no
     request, holds no credential for the far end, and needs no way in. That is
@@ -24,12 +23,11 @@
         <div class="rounded border border-rule bg-surface">
             <header class="border-b border-rule px-4 py-3">
                 <h2 class="font-serif text-base leading-tight text-ink">
-                    {{ __('The detail behind these figures') }}
+                    {{ __('In the school\'s own system') }}
                 </h2>
                 <p class="mt-0.5 text-xs text-ink-muted">
-                    {{ __('Opens :institution\'s own system in a new tab. You will sign in there, under your own name — :platform holds none of this detail and is never the authority on an institution\'s books.', [
+                    {{ __('These open :institution\'s own system in a new tab, for anything beyond the daybook. You will sign in there, under your own name. If the figures there disagree with the ones above, the institution\'s own books are right.', [
                         'institution' => $institution->name,
-                        'platform' => platform_name(),
                     ]) }}
                 </p>
             </header>

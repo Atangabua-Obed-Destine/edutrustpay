@@ -63,14 +63,55 @@ class ConsoleTest extends TestCase
     // What the console says
     // ---------------------------------------------------------------
 
-    public function test_the_dashboard_states_coverage_alongside_the_total(): void
+    public function test_the_overview_does_not_pass_off_a_partial_total_as_the_whole(): void
     {
         $this->actingAsBodyUser('bursary_head', $this->bamenda)
             ->get(route('body.dashboard', ['period' => now()->subMonth()->format('Y-m')]))
             ->assertOk()
             // Never a bare number: brief §7.4 requires coverage to be explicit.
-            ->assertSee('Consolidated across', false)
-            ->assertSee('has no figure for this', false);
+            ->assertSee('only 1 of 2 sent');
+    }
+
+    public function test_the_overview_totals_a_figure_once_every_school_has_sent_it(): void
+    {
+        $this->pushMonths($this->silent, 3);
+
+        $this->actingAsBodyUser('bursary_head', $this->bamenda)
+            ->get(route('body.dashboard', ['period' => now()->subMonth()->format('Y-m')]))
+            ->assertOk()
+            ->assertDontSee('only 1 of 2 sent');
+    }
+
+    public function test_the_overview_says_in_words_who_reported_and_who_did_not(): void
+    {
+        $month = now()->subMonth();
+
+        $this->actingAsBodyUser('bursary_head', $this->bamenda)
+            ->get(route('body.dashboard', ['period' => $month->format('Y-m')]))
+            ->assertOk()
+            ->assertSee('1 of 2')
+            ->assertSee('Still missing: St Augustine College')
+            ->assertSee($month->format('F Y'))
+            ->assertDontSee('Buea Diocesan Clinic');
+    }
+
+    public function test_a_month_still_running_is_not_reported_as_missing(): void
+    {
+        $this->pushMonths($this->silent, 3);
+
+        $this->actingAsBodyUser('bursary_head', $this->bamenda)
+            ->get(route('body.dashboard', ['period' => now()->addMonth()->format('Y-m')]))
+            ->assertOk()
+            ->assertSee('has not finished, so no report is due yet')
+            ->assertDontSee('Still missing');
+    }
+
+    public function test_the_overview_says_so_when_no_rule_has_been_set(): void
+    {
+        $this->actingAsBodyUser('bursary_head', $this->bamenda)
+            ->get(route('body.dashboard'))
+            ->assertOk()
+            ->assertSee('You have not set any rules yet');
     }
 
     public function test_a_capability_that_was_never_declared_renders_as_words_not_zero(): void
@@ -83,7 +124,7 @@ class ConsoleTest extends TestCase
 
         // The institution reports a ledger but not receivables. The console must
         // say so in words.
-        $response->assertSee('not yet reporting');
+        $response->assertSee("doesn't send this");
     }
 
     public function test_a_silent_institution_is_named_on_the_landing_page(): void

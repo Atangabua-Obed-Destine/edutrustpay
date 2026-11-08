@@ -14,9 +14,9 @@ use Illuminate\Http\Request;
 /**
  * Drill-down: body -> institution -> month -> OHADA group.
  *
- * The chain stops at the OHADA group on purpose. EdutrustPay holds no rows about
- * identifiable people and no line detail — for anything below the group the
- * console links OUT to the institution's own system (brief §10, §13).
+ * A monthly report stops at the OHADA group. Below that the console has the
+ * school's daybook lines (Body\DaybookController), and links out to the school's
+ * own system for anything else.
  *
  * Three depths, and each answers a different question:
  *

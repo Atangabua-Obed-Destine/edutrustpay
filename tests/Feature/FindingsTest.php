@@ -105,10 +105,11 @@ class FindingsTest extends TestCase
 
         $this->assertNotNull($finding);
 
-        // expected_fees is the institution's own number until the body pushes
-        // fee templates down. The finding must say so, or somebody will act on
-        // it as though it were arithmetic.
-        $this->assertStringContainsString('fee templates', $finding->explanation);
+        // expected_fees is the school's own number. The finding must say so, or
+        // somebody will act on it as though it were arithmetic.
+        $this->assertStringContainsString('own figure', $finding->explanation);
+        $this->assertStringNotContainsString('pushes', $finding->explanation, 'The console never pushes anything into a school.');
+        $this->assertNotSame('critical', $finding->severity);
         $this->assertArrayHasKey('shortfall', $finding->figures);
     }
 

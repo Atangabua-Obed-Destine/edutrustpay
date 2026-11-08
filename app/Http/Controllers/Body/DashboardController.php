@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Body;
 
 use App\Http\Controllers\Controller;
+use App\Models\BudgetSheet;
 use App\Models\Finding;
 use App\Models\Institution;
 use App\Services\ComplianceService;
@@ -55,6 +56,8 @@ class DashboardController extends Controller
             'position' => $position,
             'collections' => $collections,
             'budget' => $consolidation->budget($institutions, $period),
+            'budgetSheets' => BudgetSheet::query()->where('period', $period)->where('is_current', true)
+                ->whereIn('institution_id', $institutions->pluck('id'))->get()->keyBy('institution_id'),
         ]);
     }
 

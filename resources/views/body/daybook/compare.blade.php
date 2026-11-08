@@ -131,6 +131,37 @@
     </section>
 
     <section class="mb-8">
+        <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('Budgets at the end of :month', ['month' => period_text($to)]) }}</h2>
+        <div class="overflow-x-auto rounded border border-rule">
+            <table class="min-w-full divide-y divide-rule text-sm">
+                <thead class="bg-surface-sunk text-left text-xs uppercase tracking-wide text-ink-muted">
+                    <tr>
+                        <th class="px-4 py-2 font-semibold">{{ __('School') }}</th>
+                        <th class="px-4 py-2 text-right font-semibold">{{ __('Year gone') }}</th>
+                        <th class="px-4 py-2 text-right font-semibold">{{ __('Budget used') }}</th>
+                        <th class="px-4 py-2 text-right font-semibold">{{ __('Budgeted income received') }}</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-rule bg-surface">
+                    @foreach ($rows as $row)
+                        @php $sheet = $budgetSheets->get($row->institution->id); @endphp
+                        <tr>
+                            <td class="px-4 py-2 font-medium text-ink">{{ $row->institution->name }}</td>
+                            @if ($sheet)
+                                <td class="px-4 py-2 text-right tabular-nums text-ink-soft">{{ $sheet->yearGoneShare() }}%</td>
+                                <td class="px-4 py-2 text-right tabular-nums">{{ $sheet->spentShare() !== null ? $sheet->spentShare().'%' : __('nothing budgeted') }}</td>
+                                <td class="px-4 py-2 text-right tabular-nums">{{ $sheet->receivedShare() !== null ? $sheet->receivedShare().'%' : __('nothing budgeted') }}</td>
+                            @else
+                                <td colspan="3" class="px-4 py-2 text-right text-sm italic text-ink-muted">{{ __('no budget sheet for this month') }}</td>
+                            @endif
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="mb-8">
         <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('What each school spends most on') }}</h2>
         <div class="grid gap-4 lg:grid-cols-2">
             @foreach ($rows as $row)

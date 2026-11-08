@@ -219,6 +219,12 @@
     </section>
 
     <section class="mt-8">
+        <a href="{{ route('body.institutions.budget', ['institution' => $institution, 'period' => $period]) }}"
+           class="mb-4 block rounded border border-rule bg-surface px-4 py-3 transition hover:bg-surface-sunk">
+            <span class="font-serif text-base text-ink">{{ __('Budget sheet') }}</span>
+            <span class="mt-0.5 block text-xs text-ink-muted">{{ __('Each budget line against what has been spent or received so far this year.') }}</span>
+        </a>
+
         @can('daybook.view')
             <a href="{{ route('body.institutions.daybook', ['institution' => $institution, 'period' => $period]) }}"
                class="mb-4 block rounded border border-rule bg-surface px-4 py-3 transition hover:bg-surface-sunk">

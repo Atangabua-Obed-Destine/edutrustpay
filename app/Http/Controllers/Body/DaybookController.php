@@ -90,6 +90,8 @@ class DaybookController extends Controller
             'to' => $to,
             'monthOptions' => collect(range(0, 23))->map(fn (int $i) => now()->startOfMonth()->subMonths($i + 1)->format('Y-m')),
             'comparison' => $analysis->compare($institutions, $from, $to),
+            'budgetSheets' => \App\Models\BudgetSheet::query()->where('period', $to)->where('is_current', true)
+                ->whereIn('institution_id', $institutions->pluck('id'))->get()->keyBy('institution_id'),
         ]);
     }
 

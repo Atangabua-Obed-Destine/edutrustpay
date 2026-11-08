@@ -259,46 +259,48 @@
         </div>
     </section>
 
-    {{-- 6. BUDGETS, ONLY ONCE THERE IS SOMETHING TO COMPARE. --}}
-    @if (collect($budget['rows'])->contains(fn ($row) => $row->budgeted->hasValue() || $row->actual->hasValue()))
+    {{-- 6. BUDGETS, FROM EACH SCHOOL'S OWN BUDGET SHEET. --}}
+    @if ($budgetSheets->isNotEmpty())
         <section>
-            <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('Budget against actual') }}</h2>
+            <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('Budgets up to the end of :month', ['month' => period_text($period)]) }}</h2>
 
             <div class="overflow-x-auto rounded border border-rule">
                 <table class="min-w-full divide-y divide-rule text-sm">
                     <thead class="bg-surface-sunk text-left text-xs uppercase tracking-wide text-ink-muted">
                         <tr>
                             <th class="px-4 py-2 font-semibold">{{ ucfirst($overview->one) }}</th>
-                            <th class="px-4 py-2 text-right font-semibold">{{ __('Budgeted') }}</th>
-                            <th class="px-4 py-2 text-right font-semibold">{{ __('Actual') }}</th>
-                            <th class="px-4 py-2 text-right font-semibold">{{ __('Difference') }}</th>
+                            <th class="px-4 py-2 font-semibold">{{ __('Budget year') }}</th>
+                            <th class="px-4 py-2 text-right font-semibold">{{ __('Year gone') }}</th>
+                            <th class="px-4 py-2 text-right font-semibold">{{ __('Budget used') }}</th>
+                            <th class="px-4 py-2 text-right font-semibold">{{ __('Budgeted income received') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-rule bg-surface">
-                        @foreach ($budget['rows'] as $row)
+                        @foreach ($institutions as $institution)
+                            @php $sheet = $budgetSheets->get($institution->id); @endphp
                             <tr>
-                                <td class="px-4 py-2">{{ $row->institution->name }}</td>
-                                <td class="px-4 py-2 text-right"><x-figure :figure="$row->budgeted" /></td>
-                                <td class="px-4 py-2 text-right"><x-figure :figure="$row->actual" /></td>
-                                <td class="px-4 py-2 text-right tabular-nums">
-                                    @if ($row->variance_pct === null)
-                                        <span class="text-xs text-ink-muted">—</span>
-                                    @else
-                                        <span @class([
-                                            'font-medium',
-                                            'text-rose-700' => abs($row->variance_pct) > 15,
-                                            'text-ink-soft' => abs($row->variance_pct) <= 15,
-                                        ])>{{ $row->variance_pct > 0 ? '+' : '' }}{{ $row->variance_pct }}%</span>
-                                    @endif
+                                <td class="px-4 py-2">
+                                    <a href="{{ route('body.institutions.budget', ['institution' => $institution, 'period' => $period]) }}" class="font-medium text-ink underline-offset-2 hover:underline">{{ $institution->name }}</a>
                                 </td>
+                                @if ($sheet)
+                                    <td class="px-4 py-2 text-ink-soft">{{ $sheet->budget_title }}</td>
+                                    <td class="px-4 py-2 text-right tabular-nums text-ink-soft">{{ $sheet->yearGoneShare() }}%</td>
+                                    <td class="px-4 py-2 text-right tabular-nums {{ $sheet->spentShare() !== null && $sheet->spentShare() > $sheet->yearGoneShare() + 10 ? 'font-medium text-rose-700' : '' }}">
+                                        {{ $sheet->spentShare() !== null ? $sheet->spentShare().'%' : __('nothing budgeted') }}
+                                    </td>
+                                    <td class="px-4 py-2 text-right tabular-nums">{{ $sheet->receivedShare() !== null ? $sheet->receivedShare().'%' : __('nothing budgeted') }}</td>
+                                @else
+                                    <td colspan="4" class="px-4 py-2 text-right text-sm italic text-ink-muted">{{ __('no budget sheet for this month') }}</td>
+                                @endif
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
+            <p class="mt-2 text-xs text-ink-muted">{{ __('Spending well ahead of the year is shown in red. "Nothing budgeted" means the school has a budget sheet with no amounts allocated.') }}</p>
         </section>
     @elseif ($institutions->isNotEmpty())
-        <p class="text-sm text-ink-muted">{{ __('Budgets: no :one sends budget figures yet, so there is nothing to compare.', ['one' => $overview->one]) }}</p>
+        <p class="text-sm text-ink-muted">{{ __('Budgets: no :one has sent a budget sheet for this month yet.', ['one' => $overview->one]) }}</p>
     @endif
 
 @endsection

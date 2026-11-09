@@ -7,6 +7,7 @@ use App\Models\Institution;
 use App\Models\Regulation;
 use App\Services\ComplianceService;
 use App\Support\BodyContext;
+use App\Support\InstitutionType;
 use EdutrustPay\Contract\Money;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -106,7 +107,7 @@ class RegulationController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'area' => ['required', Rule::in(array_keys(Regulation::AREAS))],
             'check_type' => ['required', Rule::in([Regulation::FEE_SCHEDULE, Regulation::ATTESTATION])],
-            'applies_to' => ['nullable', Rule::in(array_keys(Regulation::INSTITUTION_TYPES))],
+            'applies_to' => ['nullable', Rule::in(InstitutionType::all())],
             'fee_mode' => ['nullable', Rule::in(['maximum', 'exact'])],
             'effective_from' => ['required', 'date'],
             'effective_to' => ['nullable', 'date', 'after_or_equal:effective_from'],

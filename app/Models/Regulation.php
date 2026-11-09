@@ -30,12 +30,6 @@ class Regulation extends Model
         'other' => 'Other',
     ];
 
-    public const INSTITUTION_TYPES = [
-        'school_basic' => 'Primary and secondary schools',
-        'school_higher' => 'Higher institutes',
-        'business' => 'Businesses',
-    ];
-
     protected $fillable = [
         'body_id', 'area', 'check_type', 'title', 'description', 'applies_to', 'fee_mode',
         'effective_from', 'effective_to', 'is_active', 'created_by',

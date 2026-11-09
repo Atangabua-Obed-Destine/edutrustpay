@@ -58,7 +58,7 @@ class InstitutionController extends Controller
         return view('admin.institutions.form', [
             'institution' => new Institution([
                 'body_id' => $request->integer('body') ?: (BodyContext::isSuperAdmin() ? null : BodyContext::current()),
-                'type' => 'school_basic',
+                'type' => \App\Support\InstitutionType::SECONDARY,
                 'system' => 'edutrustshsm',
                 'connectivity_mode' => 'push',
                 'contract_version' => ContractVersion::CURRENT,

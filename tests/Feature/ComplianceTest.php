@@ -510,7 +510,7 @@ class ComplianceTest extends TestCase
         return Institution::withoutBodyScope()->create([
             'body_id' => $body->id,
             'name' => $name,
-            'type' => 'school_basic',
+            'type' => 'school_secondary',
             'system' => 'edutrustshsm',
         ]);
     }

@@ -362,7 +362,7 @@ class FindingsTest extends TestCase
         return Institution::withoutBodyScope()->create([
             'body_id' => $this->body->id,
             'name' => $name,
-            'type' => 'school_basic',
+            'type' => 'school_secondary',
             'system' => 'edutrustshsm',
         ]);
     }

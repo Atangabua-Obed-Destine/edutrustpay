@@ -121,17 +121,20 @@ final class Capability
     /**
      * Capabilities that cannot apply to a given institution type.
      *
-     * A business institution has no enrolment; asking a pharmacy for student
-     * counts is a category error, and the console should render that cell as
-     * "not applicable" rather than "not yet reporting" — the difference between
-     * a gap that will close and one that never will.
+     * A hospital, pharmacy or shop has no enrolment; asking a pharmacy for
+     * student counts is a category error, and the console should render that
+     * cell as "not applicable" rather than "not yet reporting" — the difference
+     * between a gap that will close and one that never will.
      *
      * @return list<string>
      */
     public static function notApplicableTo(string $institutionType): array
     {
-        return $institutionType === 'business' ? [self::ENROLMENT, self::FEES_CHARGED] : [];
+        return in_array($institutionType, self::WITHOUT_PUPILS, true) ? [self::ENROLMENT, self::FEES_CHARGED] : [];
     }
+
+    /** Institution types that have no pupils, so no enrolment and no school fees. */
+    public const WITHOUT_PUPILS = ['health', 'business'];
 
     /**
      * @return list<string>

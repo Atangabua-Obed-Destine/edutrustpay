@@ -40,7 +40,7 @@ class SimulatorTest extends TestCase
         $this->institution = Institution::withoutBodyScope()->create([
             'body_id' => $body->id,
             'name' => 'St Bede College',
-            'type' => 'school_basic',
+            'type' => 'school_secondary',
             'system' => 'edutrustshsm',
         ]);
 

@@ -26,7 +26,7 @@
                     <x-select name="area" :selected="$regulation->area" :options="collect(\App\Models\Regulation::AREAS)->map(fn ($a) => __($a))->all()" />
                 </x-field>
                 <x-field name="applies_to" :label="__('Applies to')">
-                    <x-select name="applies_to" :selected="$regulation->applies_to" :placeholder="__('All institutions')" :options="collect(\App\Models\Regulation::INSTITUTION_TYPES)->map(fn ($a) => __($a))->all()" />
+                    <x-select name="applies_to" :selected="$regulation->applies_to" :placeholder="__('All institutions')" :options="\App\Support\InstitutionType::plurals()" />
                 </x-field>
                 <x-field name="effective_from" :label="__('In force from')" required
                          :hint="$isFees ? __('Months before this are not judged, so a school whose latest report is older reads as cannot be checked until its next report.') : null">

@@ -1,7 +1,7 @@
 @extends('layouts.console')
 
 @section('title', $institution->name)
-@section('subtitle', $institution->body->name . ' · ' . $institution->system . ' · ' . str_replace('_', ' ', $institution->type))
+@section('subtitle', $institution->body->name . ' · ' . $institution->system . ' · ' . \App\Support\InstitutionType::shortLabel($institution->type))
 
 @section('header-actions')
     @unless (request()->routeIs('admin.*'))
@@ -69,7 +69,7 @@
 
                                     @if (! $isApplicable)
                                         <span class="block text-xs text-ink-muted">
-                                            {{ __('not applicable to a :type', ['type' => str_replace('_', ' ', $institution->type)]) }}
+                                            {{ __('not applicable to a :type', ['type' => mb_strtolower(\App\Support\InstitutionType::shortLabel($institution->type))]) }}
                                         </span>
                                     @elseif ($seen)
                                         {{-- Reports carrying it have already arrived. Un-ticking

@@ -55,6 +55,33 @@ class BodyManagementTest extends TestCase
         $this->assertDatabaseHas('institutions', ['name' => 'St Mary', 'body_id' => $this->bamenda->id]);
     }
 
+    public function test_the_form_offers_each_school_level_and_health_apart_from_other_businesses(): void
+    {
+        $this->as($this->admin)->get(route('body.manage.institutions.create'))
+            ->assertOk()
+            ->assertSeeInOrder(['Schools', 'Nursery or primary school', 'Secondary or high school', 'Higher education',
+                'Health', 'Hospital, health centre or pharmacy', 'Business', 'Shop or other business']);
+
+        foreach (\App\Support\InstitutionType::all() as $i => $type) {
+            $this->as($this->admin)->post(route('body.manage.institutions.store'), ['name' => 'Place '.$i, 'type' => $type] + $this->school($this->bamenda))
+                ->assertSessionHasNoErrors();
+            $this->assertDatabaseHas('institutions', ['name' => 'Place '.$i, 'type' => $type]);
+        }
+
+        // The old combined type cannot say which level a school is.
+        $this->as($this->admin)->post(route('body.manage.institutions.store'), ['name' => 'Old', 'type' => 'school_basic'] + $this->school($this->bamenda))
+            ->assertSessionHasErrors('type');
+    }
+
+    public function test_a_hospital_or_pharmacy_has_no_pupils_but_a_nursery_school_does(): void
+    {
+        $pharmacy = Institution::withoutBodyScope()->create(['body_id' => $this->bamenda->id, 'name' => 'Shisong Pharmacy', 'type' => 'health', 'system' => 'posinnova']);
+        $nursery = Institution::withoutBodyScope()->create(['body_id' => $this->bamenda->id, 'name' => 'St Anne Nursery', 'type' => 'school_primary', 'system' => 'edutrustshsm']);
+
+        $this->assertNotContains(\EdutrustPay\Contract\Capability::ENROLMENT, $pharmacy->applicableCapabilities());
+        $this->assertContains(\EdutrustPay\Contract\Capability::ENROLMENT, $nursery->applicableCapabilities());
+    }
+
     public function test_a_body_admin_can_add_a_school_to_a_body_inside_theirs(): void
     {
         $this->as($this->admin)->post(route('body.manage.institutions.store'), $this->school($this->deanery))
@@ -367,7 +394,7 @@ class BodyManagementTest extends TestCase
         return Institution::withoutBodyScope()->create([
             'body_id' => $body->id,
             'name' => $name,
-            'type' => 'school_basic',
+            'type' => 'school_secondary',
             'system' => 'edutrustshsm',
         ]);
     }
@@ -380,7 +407,7 @@ class BodyManagementTest extends TestCase
         return [
             'body_id' => $body->id,
             'name' => 'St Mary',
-            'type' => 'school_basic',
+            'type' => 'school_secondary',
             'system' => 'edutrustshsm',
             'connectivity_mode' => 'tunnel',
             'contract_version' => '1.0',

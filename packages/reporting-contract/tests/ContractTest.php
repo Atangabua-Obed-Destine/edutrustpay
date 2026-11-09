@@ -504,7 +504,10 @@ final class ContractTest extends TestCase
     public function test_a_business_institution_has_no_enrolment_capability(): void
     {
         $this->assertNotContains(Capability::ENROLMENT, Capability::applicableTo('business'));
-        $this->assertContains(Capability::ENROLMENT, Capability::applicableTo('school_basic'));
+        $this->assertNotContains(Capability::ENROLMENT, Capability::applicableTo('health'));
+        $this->assertNotContains(Capability::FEES_CHARGED, Capability::applicableTo('health'));
+        $this->assertContains(Capability::ENROLMENT, Capability::applicableTo('school_primary'));
+        $this->assertContains(Capability::ENROLMENT, Capability::applicableTo('school_secondary'));
     }
 
     // ---------------------------------------------------------------

@@ -29,7 +29,7 @@ class InstitutionRequest extends FormRequest
 
             // The type decides the edition, and the edition decides which
             // capabilities are even applicable — a business has no enrolment.
-            'type' => ['required', Rule::in(['school_basic', 'school_higher', 'business'])],
+            'type' => ['required', Rule::in(\App\Support\InstitutionType::all())],
             'system' => ['required', Rule::in(['edutrustshsm', 'paxhitestbed', 'posinnova'])],
 
             'endpoint' => ['nullable', 'url', 'max:191'],

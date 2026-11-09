@@ -75,7 +75,7 @@
                                 @endunless
                             </td>
                             <td class="px-4 py-2 text-ink-muted">{{ $institution->body->name }}</td>
-                            <td class="px-4 py-2 text-ink-muted">{{ str_replace('_', ' ', $institution->type) }}</td>
+                            <td class="px-4 py-2 text-ink-muted">{{ \App\Support\InstitutionType::shortLabel($institution->type) }}</td>
                             <td class="px-4 py-2 text-ink-muted">{{ $institution->system }}</td>
                             <td class="px-4 py-2 text-center tabular-nums">
                                 {{ $institution->capabilities_count }} / {{ count($institution->applicableCapabilities()) }}

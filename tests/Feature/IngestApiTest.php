@@ -140,7 +140,7 @@ class IngestApiTest extends TestCase
         $other = Institution::withoutBodyScope()->create([
             'body_id' => $this->institution->body_id,
             'name' => 'St Bede College',
-            'type' => 'school_basic',
+            'type' => 'school_secondary',
             'system' => 'edutrustshsm',
         ]);
 

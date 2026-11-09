@@ -1,7 +1,6 @@
 @extends('layouts.console')
 
 @php
-    $types = ['school_basic' => __('Primary or secondary school'), 'school_higher' => __('Higher institute'), 'business' => __('Business')];
     $eventNames = [
         'received' => [__('Received'), 'bg-emerald-100 text-emerald-800'],
         'rejected' => [__('Refused'), 'bg-rose-100 text-rose-800'],
@@ -14,7 +13,7 @@
 @endphp
 
 @section('title', $institution->name)
-@section('subtitle', ($types[$institution->type] ?? $institution->type).' · '.$institution->body->name)
+@section('subtitle', \App\Support\InstitutionType::shortLabel($institution->type).' · '.$institution->body->name)
 
 @section('header-actions')
     <form method="GET" class="flex items-center gap-2">

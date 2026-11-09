@@ -46,7 +46,7 @@
                                     ? __('The system, :count fees', ['count' => $regulation->fee_items_count])
                                     : __('A person') }}
                             </td>
-                            <td class="px-4 py-2">{{ __(\App\Models\Regulation::INSTITUTION_TYPES[$regulation->applies_to] ?? 'All institutions') }}</td>
+                            <td class="px-4 py-2">{{ \App\Support\InstitutionType::plurals()[$regulation->applies_to] ?? __('All institutions') }}</td>
                             <td class="px-4 py-2">{{ $regulation->effective_from->toFormattedDateString() }}</td>
                             <td class="px-4 py-2">{{ $regulation->is_active ? __('in force') : __('retired') }}</td>
                             <td class="px-4 py-2">

@@ -39,7 +39,7 @@ class BudgetSheetTest extends TestCase
         $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
 
         $this->bamenda = Body::create(['name' => 'Archdiocese of Bamenda', 'country' => 'Cameroon', 'currency' => 'XAF', 'fiscal_year_start_month' => 1])->fresh();
-        $this->school = Institution::withoutBodyScope()->create(['body_id' => $this->bamenda->id, 'name' => 'St Mary', 'type' => 'school_basic', 'system' => 'edutrustshsm']);
+        $this->school = Institution::withoutBodyScope()->create(['body_id' => $this->bamenda->id, 'name' => 'St Mary', 'type' => 'school_secondary', 'system' => 'edutrustshsm']);
 
         $issued = InstitutionCredential::issue($this->school, 'Test');
         $this->credential = $issued['credential'];

@@ -28,18 +28,14 @@
                 </x-field>
 
                 <x-field name="type" :label="__('Type')" required
-                         :hint="__('Decides which capabilities can ever apply. A business has no enrolment, and the console shows that as “not applicable” rather than a gap.')">
-                    <x-select name="type" :selected="$institution->type" :options="[
-                        'school_basic' => __('School — primary or secondary'),
-                        'school_higher' => __('School — higher education'),
-                        'business' => __('Business — hospital, pharmacy, shop'),
-                    ]" />
+                         :hint="__('Decides which rules apply and which parts of the report can. A hospital, pharmacy or shop has no pupils, so enrolment and school fees show as “n/a” for it, not as missing.')">
+                    <x-select name="type" :selected="$institution->type" :options="\App\Support\InstitutionType::grouped()" />
                 </x-field>
 
                 <x-field name="system" :label="__('Runs on')" required
                          :hint="__('Which codebase this institution reports from. It determines what the client can produce.')">
                     <x-select name="system" :selected="$institution->system" :options="[
-                        'edutrustshsm' => 'edutrustshsm — ' . __('primary and secondary schools'),
+                        'edutrustshsm' => 'edutrustshsm — ' . __('nursery to high school'),
                         'paxhitestbed' => 'paxhitestbed — ' . __('higher education'),
                         'posinnova' => 'posinnova — ' . __('hospitals, pharmacies, shops'),
                     ]" />

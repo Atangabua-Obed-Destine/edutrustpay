@@ -72,16 +72,16 @@ class DemoBodySeeder extends Seeder
                 Capability::BUDGET, Capability::PAYROLL, Capability::INTEGRITY,
                 Capability::ENROLMENT, Capability::BANK_RECON,
             ]],
-            [$central, 'St Bede College Ashing', 'school_basic', 'edutrustshsm', [
+            [$central, 'St Bede College Ashing', 'school_secondary', 'edutrustshsm', [
                 Capability::LEDGER,
             ]],
-            [$kumbo, 'Shisong Cardiac Centre Pharmacy', 'business', 'posinnova', [
+            [$kumbo, 'Shisong Cardiac Centre Pharmacy', 'health', 'posinnova', [
                 Capability::LEDGER, Capability::RECEIVABLES,
             ]],
-            [$kumbo, 'St Augustine\'s College Kumbo', 'school_basic', 'edutrustshsm', [
+            [$kumbo, 'St Augustine\'s College Kumbo', 'school_secondary', 'edutrustshsm', [
                 Capability::LEDGER,
             ]],
-            [$buea, 'Buea Diocesan Clinic', 'business', 'posinnova', [
+            [$buea, 'Buea Diocesan Clinic', 'health', 'posinnova', [
                 Capability::LEDGER,
             ]],
         ];

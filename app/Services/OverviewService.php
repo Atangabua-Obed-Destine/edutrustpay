@@ -46,7 +46,7 @@ class OverviewService
             'owed' => $money->get($institution->id)?->receivables,
         ])->values();
 
-        $areSchools = $institutions->every(fn (Institution $i) => str_starts_with((string) $i->type, 'school_'));
+        $areSchools = $institutions->every(fn (Institution $i) => \App\Support\InstitutionType::isSchool($i->type));
         $one = $areSchools ? __('school') : __('institution');
         $many = $areSchools ? __('schools') : __('institutions');
 

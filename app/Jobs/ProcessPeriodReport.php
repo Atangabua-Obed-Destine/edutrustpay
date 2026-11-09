@@ -76,7 +76,7 @@ class ProcessPeriodReport implements ShouldQueue
             $report->institution_id,
             SyncEvent::REJECTED,
             $report->period,
-            'Report was accepted but could not be processed.',
+            \App\Support\EventText::couldNotProcess($report->period),
             ['period_report_id' => $report->id, 'error' => $e->getMessage()],
             $report->id
         );

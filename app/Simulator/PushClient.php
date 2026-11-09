@@ -50,7 +50,7 @@ class PushClient
      */
     public function heartbeat(array $body = []): array
     {
-        return $this->send('/api/v1/heartbeat', json_encode($body ?: ['note' => 'Alive, nothing new to report.']));
+        return $this->send('/api/v1/heartbeat', json_encode($body ?: ['note' => \App\Support\EventText::checkedIn()]));
     }
 
     /**

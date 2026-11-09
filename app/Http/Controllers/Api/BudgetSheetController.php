@@ -7,6 +7,7 @@ use App\Http\Middleware\VerifyInstitutionSignature;
 use App\Models\BudgetSheet as Sheet;
 use App\Models\Institution;
 use App\Models\SyncEvent;
+use App\Support\EventText;
 use EdutrustPay\Contract\BudgetSheet;
 use EdutrustPay\Contract\Canonical;
 use Illuminate\Http\JsonResponse;
@@ -88,7 +89,7 @@ class BudgetSheetController extends Controller
         });
 
         SyncEvent::record($institution->id, SyncEvent::RECEIVED, $period,
-            sprintf('Budget sheet received for %s (sequence %d).', $period, $sequence));
+            EventText::budgetSheet($period, $sequence));
 
         return response()->json(['status' => 'accepted', 'period' => $period, 'sequence' => $sequence], 202);
     }
@@ -98,7 +99,7 @@ class BudgetSheetController extends Controller
      */
     private function reject(Institution $institution, string $code, array $errors): JsonResponse
     {
-        SyncEvent::record($institution->id, SyncEvent::REJECTED, null, 'Budget sheet rejected: '.$code, ['errors' => $errors]);
+        SyncEvent::record($institution->id, SyncEvent::REJECTED, null, EventText::refused('budget sheet', $code), ['code' => $code, 'errors' => $errors]);
 
         return response()->json(['error' => $code, 'errors' => $errors], 422);
     }

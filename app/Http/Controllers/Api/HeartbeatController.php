@@ -35,7 +35,7 @@ class HeartbeatController extends Controller
             $institution->id,
             SyncEvent::HEARTBEAT,
             $request->input('period'),
-            $request->input('note') ?: 'Alive, nothing new to report.',
+            \App\Support\EventText::heartbeat($request->input('note')),
             array_filter([
                 'client_version' => $request->input('client_version'),
                 'pending_reports' => $request->input('pending_reports'),

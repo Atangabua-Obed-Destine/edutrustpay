@@ -7,6 +7,7 @@ use App\Http\Middleware\VerifyInstitutionSignature;
 use App\Models\DaybookFiling;
 use App\Models\Institution;
 use App\Models\SyncEvent;
+use App\Support\EventText;
 use EdutrustPay\Contract\Canonical;
 use EdutrustPay\Contract\Daybook;
 use Illuminate\Http\JsonResponse;
@@ -119,7 +120,7 @@ class DaybookController extends Controller
             $institution->id,
             SyncEvent::RECEIVED,
             $period,
-            sprintf('Daybook received for %s (sequence %d, %d lines).', $period, $sequence, count($document['lines']))
+            EventText::daybook($period, $sequence, count($document['lines']))
         );
 
         return response()->json([
@@ -145,7 +146,7 @@ class DaybookController extends Controller
      */
     private function reject(Institution $institution, string $code, array $errors): JsonResponse
     {
-        SyncEvent::record($institution->id, SyncEvent::REJECTED, null, 'Daybook rejected: '.$code, ['errors' => $errors]);
+        SyncEvent::record($institution->id, SyncEvent::REJECTED, null, EventText::refused('daybook', $code), ['code' => $code, 'errors' => $errors]);
 
         return response()->json(['error' => $code, 'errors' => $errors], 422);
     }

@@ -131,7 +131,7 @@ class VerifyInstitutionSignature
             $credential->institution_id,
             SyncEvent::REJECTED,
             null,
-            'Signature verification failed.',
+            \App\Support\EventText::badSignature(),
             ['key_id' => $credential->key_id, 'path' => $request->path()]
         );
     }

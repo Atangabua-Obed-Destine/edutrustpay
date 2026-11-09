@@ -213,6 +213,15 @@ class IngestApiTest extends TestCase
 
         $this->assertNotNull($event, 'Restating a period must raise an event for the findings engine.');
         $this->assertSame('final', $event->detail['superseded_status']);
+        $this->assertSame(
+            period_text($event->period).' sent again as version 2, replacing version 1, which had been closed.',
+            $event->summary,
+            'The line on the school page must read in plain words, not sequences and statuses.'
+        );
+        $this->assertSame(
+            'Monthly report for '.period_text($event->period).', version 1. The month is closed.',
+            SyncEvent::where('type', SyncEvent::RECEIVED)->orderBy('id')->value('summary')
+        );
     }
 
     public function test_out_of_order_delivery_keeps_the_highest_sequence_current(): void
@@ -267,7 +276,9 @@ class IngestApiTest extends TestCase
         $this->assertDatabaseHas('sync_events', [
             'institution_id' => $this->institution->id,
             'type' => SyncEvent::REJECTED,
+            'summary' => 'A monthly report was refused because it did not pass the format checks.',
         ]);
+        $this->assertSame('invalid_payload', SyncEvent::where('type', SyncEvent::REJECTED)->first()->detail['code']);
     }
 
     public function test_processing_explodes_the_payload_into_figures_and_lines(): void

@@ -233,13 +233,7 @@ class ReportIngestService
             $report->institution_id,
             SyncEvent::RESTATED,
             $report->period,
-            sprintf(
-                'Period %s restated at sequence %d, superseding sequence %d (previously %s).',
-                $report->period,
-                $report->sequence,
-                $previous->sequence,
-                $previous->status
-            ),
+            \App\Support\EventText::restated($report->period, $report->sequence, $previous->sequence, $previous->status),
             [
                 'superseded_report_id' => $previous->id,
                 'superseded_sequence' => $previous->sequence,

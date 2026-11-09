@@ -9,6 +9,7 @@ use App\Models\Institution;
 use App\Models\InstitutionCredential;
 use App\Models\PeriodReport;
 use App\Models\SyncEvent;
+use App\Support\EventText;
 use EdutrustPay\Contract\Canonical;
 use EdutrustPay\Contract\ContractVersion;
 use EdutrustPay\Contract\Validator;
@@ -120,7 +121,7 @@ class ReportController extends Controller
             $institution->id,
             SyncEvent::RECEIVED,
             $period,
-            sprintf('Report received for %s (sequence %d, %s).', $period, $sequence, $payload['status']),
+            EventText::report($period, $sequence, $payload['status']),
             [
                 'warnings' => array_column($result['warnings'], 'code'),
                 // Not an error: the signature is verified over raw bytes, so a
@@ -189,11 +190,7 @@ class ReportController extends Controller
             $institution->id,
             SyncEvent::REJECTED,
             $period,
-            sprintf(
-                'Different figures resent for %s at the same sequence (%d). The original was kept.',
-                $period,
-                $sequence
-            ),
+            EventText::sameVersionConflict($period, $sequence),
             ['existing_report_id' => $existing->id, 'existing_hash' => $existing->payload_hash, 'offered_hash' => $hash],
             $existing->id
         );
@@ -226,8 +223,8 @@ class ReportController extends Controller
             $institution->id,
             SyncEvent::REJECTED,
             null,
-            'Report rejected: '.$code,
-            ['errors' => $errors]
+            EventText::refused('report', $code),
+            ['code' => $code, 'errors' => $errors]
         );
 
         return response()->json([

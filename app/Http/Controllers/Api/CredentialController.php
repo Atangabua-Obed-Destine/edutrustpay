@@ -57,7 +57,7 @@ class CredentialController extends Controller
             $institution->id,
             SyncEvent::RECEIVED,
             null,
-            'Credential rotated by the institution.',
+            \App\Support\EventText::keyReplaced(),
             ['from_key_id' => $current->key_id, 'to_key_id' => $issued['credential']->key_id]
         );
 

@@ -240,22 +240,21 @@
     {{-- 7. WHAT HAS ARRIVED FROM THIS SCHOOL. Refusals matter as much as arrivals. --}}
     <section class="mb-8">
         <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('Recently from this school') }}</h2>
-        <div class="overflow-x-auto rounded border border-rule">
-            <table class="min-w-full divide-y divide-rule text-sm">
-                <tbody class="divide-y divide-rule bg-surface">
-                    @forelse ($events as $event)
-                        @php [$eventLabel, $eventClass] = $eventNames[$event->type] ?? [ucfirst($event->type), 'bg-surface-sunk text-ink-soft']; @endphp
-                        <tr>
-                            <td class="whitespace-nowrap px-4 py-2 text-xs text-ink-muted">{{ $event->created_at?->diffForHumans() }}</td>
-                            <td class="px-4 py-2"><span class="rounded px-1.5 py-0.5 text-[11px] font-medium {{ $eventClass }}">{{ $eventLabel }}</span></td>
-                            <td class="px-4 py-2 text-ink-soft">{{ $event->summary }}</td>
-                        </tr>
-                    @empty
-                        <tr><td class="px-4 py-3 text-sm italic text-ink-muted">{{ __('Nothing recorded yet.') }}</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+        {{-- A list, not a table: on a phone the time and badge sit above the sentence instead of squeezing it. --}}
+        <ul class="divide-y divide-rule rounded border border-rule bg-surface text-sm">
+            @forelse ($events as $event)
+                @php [$eventLabel, $eventClass] = $eventNames[$event->type] ?? [ucfirst($event->type), 'bg-surface-sunk text-ink-soft']; @endphp
+                <li class="flex flex-col gap-1 px-4 py-2 sm:flex-row sm:items-baseline sm:gap-4">
+                    <div class="flex shrink-0 items-baseline gap-3 sm:w-52">
+                        <span class="whitespace-nowrap text-xs text-ink-muted sm:w-24" title="{{ $event->created_at?->toDayDateTimeString() }}">{{ $event->created_at?->diffForHumans() }}</span>
+                        <span class="whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] font-medium {{ $eventClass }}">{{ $eventLabel }}</span>
+                    </div>
+                    <p class="text-ink-soft">{{ $event->summary }}</p>
+                </li>
+            @empty
+                <li class="px-4 py-3 text-sm italic text-ink-muted">{{ __('Nothing recorded yet.') }}</li>
+            @endforelse
+        </ul>
     </section>
 
     <section>

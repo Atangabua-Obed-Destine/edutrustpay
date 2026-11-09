@@ -59,8 +59,8 @@ class BodyManagementTest extends TestCase
     {
         $this->as($this->admin)->get(route('body.manage.institutions.create'))
             ->assertOk()
-            ->assertSeeInOrder(['Schools', 'Nursery or primary school', 'Secondary or high school', 'Higher education',
-                'Health', 'Hospital, health centre or pharmacy', 'Business', 'Shop or other business']);
+            ->assertSeeInOrder(['Schools', 'Nursery / Primary school', 'Secondary / High school', 'University / Higher institute',
+                'Health', 'Hospital / Health centre / Pharmacy', 'Business', 'Shop / Other business']);
 
         foreach (\App\Support\InstitutionType::all() as $i => $type) {
             $this->as($this->admin)->post(route('body.manage.institutions.store'), ['name' => 'Place '.$i, 'type' => $type] + $this->school($this->bamenda))

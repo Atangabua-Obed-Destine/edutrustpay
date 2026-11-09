@@ -36,11 +36,11 @@ final class InstitutionType
     public static function options(): array
     {
         return [
-            self::PRIMARY => __('Nursery or primary school'),
-            self::SECONDARY => __('Secondary or high school'),
-            self::HIGHER => __('Higher education: university or higher institute'),
-            self::HEALTH => __('Hospital, health centre or pharmacy'),
-            self::BUSINESS => __('Shop or other business'),
+            self::PRIMARY => __('Nursery / Primary school'),
+            self::SECONDARY => __('Secondary / High school'),
+            self::HIGHER => __('University / Higher institute'),
+            self::HEALTH => __('Hospital / Health centre / Pharmacy'),
+            self::BUSINESS => __('Shop / Other business'),
         ];
     }
 
@@ -85,10 +85,10 @@ final class InstitutionType
     public static function shortLabel(?string $type): string
     {
         return match ($type) {
-            self::PRIMARY => __('Nursery or primary school'),
-            self::SECONDARY => __('Secondary or high school'),
-            self::HIGHER => __('Higher education'),
-            self::HEALTH => __('Hospital or pharmacy'),
+            self::PRIMARY => __('Nursery / Primary school'),
+            self::SECONDARY => __('Secondary / High school'),
+            self::HIGHER => __('University / Higher institute'),
+            self::HEALTH => __('Hospital / Pharmacy'),
             self::BUSINESS => __('Business'),
             default => str_replace('_', ' ', (string) $type),
         };

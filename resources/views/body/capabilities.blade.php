@@ -6,17 +6,7 @@
 @section('subtitle', __('And what it does not send yet'))
 
 @php
-    $names = [
-        Capability::LEDGER => [__('Income and spending'), __('Money in and out, by account class, with cash at the start and end of the month.')],
-        Capability::RECEIVABLES => [__('Owed to it'), __('Mostly unpaid fees, by how long they have been owed.')],
-        Capability::PAYABLES => [__('What it owes'), __('To suppliers and staff, by how long.')],
-        Capability::ENROLMENT => [__('Students and fees collected'), __('Student numbers, fees billed and collected, and how much came in as cash.')],
-        Capability::FEES_CHARGED => [__('Fees charged'), __('Each fee per class. Your fee rules are checked against this.')],
-        Capability::PAYROLL => [__('Staff pay'), __('What went through payroll, and what is owed for tax and social insurance.')],
-        Capability::BUDGET => [__('Budget total'), __('A single budget figure in the report. Most schools send the budget sheet instead.')],
-        Capability::BANK_RECON => [__('Bank statement check'), __('The books against the bank\'s own statement.')],
-        Capability::INTEGRITY => [__('How the books were kept'), __('Counts of entries, late entries, reversals and unfinished entries.')],
-    ];
+    $names = \App\Support\CapabilityText::names();
 
     $cellStyles = [
         'reporting' => ['bg-emerald-100 text-emerald-800', __('sends'), __('Arrives with the monthly report.')],

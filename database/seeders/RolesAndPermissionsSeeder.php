@@ -47,13 +47,13 @@ class RolesAndPermissionsSeeder extends Seeder
      */
     private array $roles = [
         'body_admin' => [
-            'display' => 'Body Administrator',
-            'description' => 'Runs the body: institutions, users, credentials and settings.',
+            'display' => 'Administrator',
+            'description' => 'Runs this console: its institutions, people, connection keys and settings.',
             'permissions' => ['*'],
         ],
         'bursary_head' => [
             'display' => 'Bursary Head',
-            'description' => 'The body\'s finance lead. Sees everything financial and resolves findings.',
+            'description' => 'The finance lead. Sees everything about the money and answers what needs looking into.',
             'permissions' => [
                 'body.view', 'institution.view', 'capability.view',
                 'report.view', 'report.export',
@@ -66,7 +66,7 @@ class RolesAndPermissionsSeeder extends Seeder
         ],
         'education_secretary' => [
             'display' => 'Education Secretary',
-            'description' => 'Oversees the schools: their reports and findings. A starting point; a body can copy it and adjust.',
+            'description' => 'Oversees the schools: their reports and what needs looking into. A starting point you can copy and adjust.',
             'permissions' => [
                 'body.view', 'institution.view', 'capability.view',
                 'report.view', 'report.export',
@@ -87,7 +87,7 @@ class RolesAndPermissionsSeeder extends Seeder
              * the money.
              */
             'display' => 'Auditor',
-            'description' => 'Read-only across the whole body, including findings and the audit trail.',
+            'description' => 'Sees everything, including what needs looking into and the record of who did what, and changes nothing.',
             'permissions' => [
                 'body.view', 'institution.view', 'capability.view',
                 'report.view', 'report.export',
@@ -105,9 +105,52 @@ class RolesAndPermissionsSeeder extends Seeder
              * consolidated position, and not their neighbours.
              */
             'display' => 'Institution Liaison',
-            'description' => 'One institution only: its reports, its findings, its reporting health.',
+            'description' => 'One institution only: its reports, what needs looking into there, and whether it is sending.',
             'permissions' => ['institution.view', 'capability.view', 'report.view', 'finding.view'],
         ],
+    ];
+
+    /**
+     * What each permission lets a person do, in the words the role form shows.
+     *
+     * @var array<string, string>
+     */
+    private array $labels = [
+        'body.view' => 'Open this console',
+        'body.create' => 'Add parts, such as deaneries',
+        'body.update' => 'Change its name and settings',
+        'body.delete' => 'Remove parts',
+        'institution.view' => 'See institutions and their figures',
+        'institution.create' => 'Add institutions',
+        'institution.update' => 'Change institutions',
+        'institution.delete' => 'Remove institutions',
+        'credential.view' => 'See connection keys',
+        'credential.issue' => 'Issue connection keys',
+        'credential.rotate' => 'Replace connection keys',
+        'credential.revoke' => 'Revoke connection keys',
+        'capability.view' => 'See what each system sends',
+        'capability.declare' => 'Set what a system is expected to send',
+        'report.view' => 'Read monthly reports',
+        'report.export' => 'Print or download reports',
+        'finding.view' => 'See what needs looking into',
+        'finding.resolve' => 'Answer what needs looking into',
+        'consolidation.view' => 'See everything added up',
+        'consolidation.export' => 'Print or download the totals',
+        'user.view' => 'See people',
+        'user.invite' => 'Invite people',
+        'user.update' => 'Change people\'s roles',
+        'user.deactivate' => 'Deactivate people',
+        'role.view' => 'See roles',
+        'role.manage' => 'Make and change roles',
+        'compliance.view' => 'See whether rules are followed',
+        'compliance.manage' => 'Set the rules',
+        'compliance.follow_up' => 'Record a follow-up on a rule',
+        'compliance.waive' => 'Allow an exception to a rule',
+        'daybook.view' => 'Read daybooks, names included',
+        'daybook.compare' => 'Compare daybooks across institutions',
+        'audit.view' => 'See who did what',
+        'settings.view' => 'See settings',
+        'settings.update' => 'Change settings',
     ];
 
     public function run(): void
@@ -121,7 +164,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 $permission = Permission::updateOrCreate(
                     ['name' => $name],
                     [
-                        'display_name' => Str::headline($action).' '.$group,
+                        'display_name' => $this->labels[$name] ?? Str::headline($action).' '.$group,
                         'group_name' => $group,
                     ]
                 );

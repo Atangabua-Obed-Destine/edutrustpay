@@ -1,7 +1,7 @@
 @extends('layouts.console')
 
 @section('title', __('Roles'))
-@section('subtitle', __('What each person here may do. Copy a platform role or make your own.'))
+@section('subtitle', __('What each person here may do. Start from a standard role, or make your own.'))
 
 @section('header-actions')
     @can('role.manage')
@@ -32,7 +32,7 @@
                             <span class="font-medium text-ink">{{ $role->display_name }}</span>
                             <span class="block text-xs text-ink-muted">{{ $role->description }}</span>
                         </td>
-                        <td class="px-4 py-2 text-ink-muted">{{ $role->is_system ? __('Platform') : __('Your own') }}</td>
+                        <td class="px-4 py-2 text-ink-muted">{{ $role->is_system ? __('Standard') : __('Your own') }}</td>
                         <td class="px-4 py-2 text-right tabular-nums">{{ $role->users_count }}</td>
                         <td class="px-4 py-2 text-right tabular-nums" title="{{ $role->permissions->pluck('display_name')->implode(', ') }}">{{ $role->permissions->count() }}</td>
                         <td class="px-4 py-2">

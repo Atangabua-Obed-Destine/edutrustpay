@@ -32,43 +32,43 @@ class OnboardingChecklistService
     {
         return [
             'server_power' => [
-                'label' => __('Server and power backup'),
-                'why' => __('The institution keeps its own books locally. Reporting has to survive a power cut.'),
+                'label' => __('A computer and power backup'),
+                'why' => __('The institution keeps its books on its own computer. Reporting has to survive a power cut.'),
                 'manual' => true,
             ],
             'internet' => [
                 'label' => __('Some internet access'),
-                'why' => __('Outbound only. A phone hotspot for a few minutes a day is enough — reports queue locally and retry.'),
+                'why' => __('Only to send. A phone hotspot for a few minutes a day is enough: reports wait on the computer and go when they can.'),
                 'manual' => true,
             ],
             'ohada_mapping' => [
-                'label' => __('Chart of accounts mapped to OHADA groups'),
-                'why' => __('This decides whether any of the rest is worth anything. Without it the figures cannot be consolidated against other institutions.'),
+                'label' => __('Chart of accounts matched to the OHADA classes'),
+                'why' => __('Without this its figures cannot be added up with, or compared against, other institutions.'),
                 'manual' => true,
             ],
             'fiscal_periods' => [
-                'label' => __('Fiscal year and periods opened'),
-                'why' => __('Determines whether a month can be reported as final rather than provisional.'),
+                'label' => __('Its year and months opened in its system'),
+                'why' => __('Without this no month can be closed, so every report stays “still open”.'),
                 'manual' => true,
             ],
             'credentials_issued' => [
-                'label' => __('Credentials issued'),
-                'why' => __('Observed automatically once an active API credential exists.'),
+                'label' => __('Connection key issued'),
+                'why' => __('Ticks itself once a key is issued on this page.'),
                 'manual' => false,
             ],
             'first_push' => [
-                'label' => __('First successful push received'),
-                'why' => __('Observed automatically. Until this happens, nothing above has been proven end to end.'),
+                'label' => __('First report received'),
+                'why' => __('Ticks itself. Until then, nothing above has been shown to work.'),
                 'manual' => false,
             ],
             'data_owner' => [
-                'label' => __('Named data owner'),
-                'why' => __('Somebody accountable for the figures, by name. A finding with nobody to send it to is not a control.'),
+                'label' => __('A named person responsible for the figures'),
+                'why' => __('Someone to ask when something needs looking into. A question with nobody to ask goes nowhere.'),
                 'manual' => true,
             ],
             'bursar_trained' => [
                 'label' => __('Bursar trained'),
-                'why' => __('They need to know the report is generated, not authored — and that a restatement is visible.'),
+                'why' => __('They need to know the report is produced by the system, not typed, and that a month sent again shows here.'),
                 'manual' => true,
             ],
         ];
@@ -114,7 +114,8 @@ class OnboardingChecklistService
                 'manual' => $meta['manual'],
                 'done' => $done,
                 'completed_at' => $meta['manual'] ? $row?->completed_at : null,
-                'completed_by' => $meta['manual'] ? $row?->completedBy?->name : __('observed'),
+                // A step that ticks itself has nobody to name; "ticks itself" beside it already says so.
+                'completed_by' => $meta['manual'] ? $row?->completedBy?->name : null,
                 'note' => $row?->note,
             ];
 

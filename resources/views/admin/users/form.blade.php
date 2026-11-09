@@ -1,7 +1,12 @@
 @extends('layouts.console')
 
 @section('title', __('Invite somebody'))
-@section('subtitle', __('They set their own password from a single-use link. No password is generated, shown or emailed.'))
+@section('subtitle', __('You get a link to give them. They open it once and choose their own password; nobody else ever sees it.'))
+
+@php
+    $forOperator = request()->routeIs('admin.*');
+    $oneBody = ! $forOperator && $bodies->count() === 1;
+@endphp
 
 @section('content')
 
@@ -20,21 +25,31 @@
                     <x-input name="email" type="email" :value="$user->email" required />
                 </x-field>
 
-                <x-field name="body_id" :label="__('Body')" required
-                         :hint="__('They will see this body and everything nested beneath it.')">
-                    <x-select name="body_id" :selected="$user->body_id" :placeholder="__('— choose a body —')"
-                              :options="$bodies->mapWithKeys(fn ($b) => [$b->id => $b->indented_name])->all()" />
-                </x-field>
+                @if ($forOperator)
+                    <x-field name="body_id" :label="__('Body')" required
+                             :hint="__('They will see this body and everything nested beneath it.')">
+                        <x-select name="body_id" :selected="$user->body_id" :placeholder="__('— choose a body —')"
+                                  :options="$bodies->mapWithKeys(fn ($b) => [$b->id => $b->indented_name])->all()" />
+                    </x-field>
+                @elseif ($oneBody)
+                    <input type="hidden" name="body_id" value="{{ $bodies->first()->id }}">
+                @else
+                    <x-field name="body_id" :label="__('Looks after')" required
+                             :hint="__('They see the part you choose and everything inside it.')">
+                        <x-select name="body_id" :selected="$user->body_id ?? $bodies->first()->id"
+                                  :options="$bodies->mapWithKeys(fn ($b, $i) => [$b->id => $i === 0 ? __(':name (all of it)', ['name' => $b->name]) : $b->indented_name])->all()" />
+                    </x-field>
+                @endif
             </div>
 
             @include('admin.users.partials.role-picker')
         </x-card>
 
-        <x-card :title="__('Institution liaison only')"
-                :subtitle="__('Leave empty unless the role above is Institution Liaison — a liaison sees exactly one institution and nothing else in the body.')">
+        <x-card :title="__('Only for an Institution Liaison')"
+                :subtitle="__('A liaison sees one institution and nothing else. Choose it here; leave this empty for everyone else.')">
             <x-field name="institution_id" :label="__('Institution')">
                 <x-select name="institution_id" :selected="$user->institution_id" :placeholder="__('— not a liaison —')"
-                          :options="$institutions->mapWithKeys(fn ($i) => [$i->id => $i->name . ' (' . $i->body->name . ')'])->all()" />
+                          :options="$institutions->mapWithKeys(fn ($i) => [$i->id => $oneBody ? $i->name : $i->name . ' (' . $i->body->name . ')'])->all()" />
             </x-field>
         </x-card>
 

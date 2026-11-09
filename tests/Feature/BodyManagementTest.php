@@ -73,6 +73,37 @@ class BodyManagementTest extends TestCase
             ->assertSessionHasErrors('type');
     }
 
+    public function test_a_body_with_no_parts_is_never_asked_which_body(): void
+    {
+        // Buea has no deaneries, so there is only one place a school or a person can go.
+        $buea = $this->person('admin@buea.test', 'body_admin', $this->buea);
+
+        $this->as($buea)->get(route('body.manage.institutions.create'))
+            ->assertOk()
+            ->assertDontSee('choose a body')
+            ->assertDontSee('Part of')
+            ->assertSee('name="body_id" value="'.$this->buea->id.'"', false);
+
+        $this->as($buea)->get(route('body.manage.users.create'))
+            ->assertOk()
+            ->assertDontSee('choose a body')
+            ->assertSee('name="body_id" value="'.$this->buea->id.'"', false);
+
+        $this->as($buea)->get(route('body.manage.users.index'))
+            ->assertOk()
+            ->assertDontSee('All bodies');
+    }
+
+    public function test_a_body_with_a_deanery_chooses_where_a_school_sits_in_its_own_words(): void
+    {
+        $this->as($this->admin)->get(route('body.manage.institutions.create'))
+            ->assertOk()
+            ->assertSee('Part of')
+            ->assertSee('Diocese of Bamenda (directly)')
+            ->assertSee('Central Deanery')
+            ->assertDontSee('choose a body');
+    }
+
     public function test_a_hospital_or_pharmacy_has_no_pupils_but_a_nursery_school_does(): void
     {
         $pharmacy = Institution::withoutBodyScope()->create(['body_id' => $this->bamenda->id, 'name' => 'Shisong Pharmacy', 'type' => 'health', 'system' => 'posinnova']);

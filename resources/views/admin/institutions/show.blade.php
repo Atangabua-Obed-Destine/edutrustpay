@@ -1,7 +1,15 @@
 @extends('layouts.console')
 
 @section('title', $institution->name)
-@section('subtitle', $institution->body->name . ' · ' . $institution->system . ' · ' . \App\Support\InstitutionType::shortLabel($institution->type))
+@section('subtitle', $institution->body->name . ' · ' . \App\Support\InstitutionType::shortLabel($institution->type) . ' · ' . $institution->system)
+
+@php
+    $forOperator = request()->routeIs('admin.*');
+    $eventNames = [
+        'received' => __('Received'), 'rejected' => __('Refused'), 'restated' => __('Corrected'),
+        'heartbeat' => __('Checked in'), 'stale' => __('Gone quiet'), 'recovered' => __('Back in touch'),
+    ];
+@endphp
 
 @section('header-actions')
     @unless (request()->routeIs('admin.*'))
@@ -22,7 +30,7 @@
 
     <x-breadcrumb :items="[
         __('Institutions') => manage_route('institutions.index'),
-        $institution->body->name => request()->routeIs('admin.*') ? route('admin.bodies.show', $institution->body) : null,
+        ...($forOperator ? [$institution->body->name => route('admin.bodies.show', $institution->body)] : []),
         $institution->name => null,
     ]" />
 
@@ -30,7 +38,7 @@
         {{-- Said out loud rather than left as an unticked box among nine: an
              unmapped chart of accounts is what makes schools incomparable. --}}
         <div class="mb-6 rounded border border-amber-300 bg-amber-50 px-4 py-3">
-            <p class="text-sm font-semibold text-amber-900">{{ __('Onboarding is not finished') }}</p>
+            <p class="text-sm font-semibold text-amber-900">{{ __('Setting up is not finished') }}</p>
             <p class="mt-1 text-sm text-amber-800">
                 {{ __('Still outstanding: :items. Until this is done, this school\'s figures may not compare fairly with other schools.', ['items' => implode('; ', $checklist['blocking'])]) }}
             </p>
@@ -41,8 +49,8 @@
         <div class="space-y-6 lg:col-span-2">
 
             {{-- CAPABILITIES: the most consequential screen in the operator area. --}}
-            <x-card :title="__('What this institution can report')"
-                    :subtitle="__('Fills in by itself as reports arrive. Anything not reported shows as “doesn\'t send this”, never as zero.')">
+            <x-card :title="__('What its system sends')"
+                    :subtitle="__('Ticks itself as reports arrive. Tick a part ahead of time only if its system is expected to send it. Anything not sent shows as “doesn\'t send this”, never as zero.')">
                 <form method="POST" action="{{ manage_route('institutions.capabilities', $institution) }}">
                     @csrf @method('PUT')
 
@@ -65,7 +73,7 @@
                                        class="mt-0.5 rounded border-rule-strong">
 
                                 <span class="min-w-0">
-                                    <span class="font-medium">{{ str_replace('_', ' ', $capability) }}</span>
+                                    <span class="font-medium">{{ \App\Support\CapabilityText::name($capability) }}</span>
 
                                     @if (! $isApplicable)
                                         <span class="block text-xs text-ink-muted">
@@ -75,12 +83,12 @@
                                         {{-- Reports carrying it have already arrived. Un-ticking
                                              it would make this page disagree with the figures. --}}
                                         <span class="block text-xs text-emerald-700">
-                                            {{ __('reports received — cannot be removed here') }}
+                                            {{ __('being sent, so it stays ticked') }}
                                         </span>
                                         <input type="hidden" name="capabilities[]" value="{{ $capability }}">
                                     @elseif ($row)
                                         <span class="block text-xs text-amber-700">
-                                            {{ __('declared, nothing received yet') }}
+                                            {{ __('expected, nothing received yet') }}
                                         </span>
                                     @endif
                                 </span>
@@ -91,7 +99,7 @@
                     @can('capability.declare')
                         <button type="submit"
                                 class="mt-4 rounded bg-accent px-3 py-1.5 text-sm font-semibold text-white">
-                            {{ __('Save capabilities') }}
+                            {{ __('Save') }}
                         </button>
                     @endcan
                 </form>
@@ -99,21 +107,21 @@
 
             {{-- CREDENTIALS --}}
             @can('credential.view')
-            <x-card :title="__('API credentials')"
-                    :subtitle="__('Rotation and revocation are one click. A departing bursar holding a live key is a real risk.')">
+            <x-card :title="__('Connection keys')"
+                    :subtitle="__('The key its system uses to send reports here. When someone who held it leaves, replace it or revoke it: each takes one click.')">
                 @if ($credentials->isEmpty())
                     <p class="mb-3 text-sm text-ink-muted">
-                        {{ __('No credential yet. Until one is issued this institution cannot report, and on the console that looks the same as going quiet.') }}
+                        {{ __('No key yet. Until one is issued its system cannot send anything, and that looks the same as going quiet.') }}
                     </p>
                 @else
                     <div class="-mx-4 mb-4 overflow-x-auto">
                         <table class="min-w-full divide-y divide-rule text-sm">
                             <thead class="text-left text-xs uppercase tracking-wide text-ink-muted">
                                 <tr>
-                                    <th class="px-4 py-2 font-semibold">{{ __('Key id') }}</th>
+                                    <th class="px-4 py-2 font-semibold">{{ __('Key') }}</th>
                                     <th class="px-4 py-2 font-semibold">{{ __('Label') }}</th>
                                     <th class="px-4 py-2 font-semibold">{{ __('Last used') }}</th>
-                                    <th class="px-4 py-2 font-semibold">{{ __('Status') }}</th>
+                                    <th class="px-4 py-2 font-semibold">{{ __('State') }}</th>
                                     <th class="px-4 py-2"></th>
                                 </tr>
                             </thead>
@@ -145,7 +153,7 @@
                                                     <form method="POST" action="{{ manage_route('credentials.rotate', [$institution, $credential]) }}"
                                                           data-confirm="{{ __('Issue a replacement key? The current one keeps working until you revoke it.') }}">
                                                         @csrf
-                                                        <button type="submit" class="text-xs text-ink-soft hover:underline">{{ __('Rotate') }}</button>
+                                                        <button type="submit" class="text-xs text-ink-soft hover:underline">{{ __('Replace') }}</button>
                                                     </form>
                                                     @endif
                                                     @can('credential.revoke')
@@ -198,11 +206,11 @@
                     @csrf
                     <div class="min-w-56 flex-1">
                         <label for="label" class="block text-xs text-ink-muted">{{ __('Label (optional)') }}</label>
-                        <input type="text" name="label" id="label" placeholder="{{ __('e.g. bursary server') }}"
+                        <input type="text" name="label" id="label" placeholder="{{ __('e.g. bursary computer') }}"
                                class="mt-1 w-full rounded border border-rule-strong px-3 py-1.5 text-sm">
                     </div>
                     <button type="submit" class="rounded bg-accent px-3 py-1.5 text-sm font-semibold text-white">
-                        {{ __('Issue credential') }}
+                        {{ __('Issue a key') }}
                     </button>
                 </form>
                 @endcan
@@ -210,8 +218,10 @@
             @endcan
 
             {{-- ONBOARDING --}}
-            <x-card :title="__('Onboarding')"
-                    :subtitle="__(':done of :total complete. Visible to the body too.', ['done' => $checklist['complete'], 'total' => $checklist['total']])">
+            <x-card :title="__('Getting started')"
+                    :subtitle="$forOperator
+                        ? __(':done of :total complete. Visible to the body too.', ['done' => $checklist['complete'], 'total' => $checklist['total']])
+                        : __(':done of :total done.', ['done' => $checklist['complete'], 'total' => $checklist['total']])">
                 <div class="mb-4 h-1.5 w-full overflow-hidden rounded-full bg-surface-sunk">
                     <div class="h-full rounded-full bg-emerald-500" style="width: {{ $checklist['percent'] }}%"></div>
                 </div>
@@ -252,7 +262,7 @@
                             </div>
 
                             @unless ($step->manual)
-                                <span class="text-[11px] text-ink-muted">{{ __('automatic') }}</span>
+                                <span class="text-[11px] text-ink-muted">{{ __('ticks itself') }}</span>
                             @endunless
                         </li>
                     @endforeach
@@ -261,37 +271,37 @@
         </div>
 
         <div class="space-y-6">
-            <x-card :title="__('Reporting reference')">
-                <p class="text-xs text-ink-muted">{{ __('The institution_ref its client must send.') }}</p>
+            <x-card :title="__('Its reference')">
+                <p class="text-xs text-ink-muted">{{ $forOperator ? __('The institution_ref its client must send.') : __('Its system sends this with every report, so the console knows whose report it is. Whoever sets up its system needs it, with the key.') }}</p>
                 <code id="etp-ref" class="mt-1 block break-all rounded bg-surface-sunk px-2 py-1.5 font-mono text-xs">{{ $institution->uuid }}</code>
                 <button type="button" data-copy="#etp-ref"
                         class="mt-2 text-xs text-ink-soft underline">{{ __('Copy reference') }}</button>
             </x-card>
 
-            <x-card :title="__('Reporting health')">
+            <x-card :title="__('Is it sending?')">
                 <dl class="space-y-2 text-sm">
                     <div class="flex justify-between gap-3">
                         <dt class="text-ink-muted">{{ __('Last report') }}</dt>
                         <dd class="text-right font-medium">{{ $institution->last_report_at?->diffForHumans() ?? __('never') }}</dd>
                     </div>
                     <div class="flex justify-between gap-3">
-                        <dt class="text-ink-muted">{{ __('Last heartbeat') }}</dt>
+                        <dt class="text-ink-muted">{{ __('Last check-in') }}</dt>
                         <dd class="text-right font-medium">{{ $institution->last_heartbeat_at?->diffForHumans() ?? __('never') }}</dd>
                     </div>
                     <div class="flex justify-between gap-3">
-                        <dt class="text-ink-muted">{{ __('Threshold') }}</dt>
+                        <dt class="text-ink-muted">{{ __('Warn after') }}</dt>
                         <dd class="text-right font-medium">{{ $institution->notReportingDays() }} {{ __('days') }}</dd>
                     </div>
                     <div class="flex justify-between gap-3">
-                        <dt class="text-ink-muted">{{ __('Status') }}</dt>
+                        <dt class="text-ink-muted">{{ __('State') }}</dt>
                         <dd class="text-right font-medium">
                             @if ($institution->isSilent())
-                                <span class="text-rose-600">{{ __('silent') }}</span>
+                                <span class="text-rose-600">{{ __('gone quiet') }}</span>
                             @else
                                 @if ($institution->last_report_at)
-                                    <span class="text-emerald-700">{{ __('current') }}</span>
+                                    <span class="text-emerald-700">{{ __('up to date') }}</span>
                                 @else
-                                    <span class="text-amber-700">{{ __('not reporting yet') }}</span>
+                                    <span class="text-amber-700">{{ __('nothing sent yet') }}</span>
                                 @endif
                             @endif
                         </dd>
@@ -300,13 +310,13 @@
             </x-card>
 
             @if ($recentReports->isNotEmpty())
-                <x-card :title="__('Recent periods')">
+                <x-card :title="__('Recent months')">
                     <ul class="space-y-1 text-sm">
                         @foreach ($recentReports as $report)
                             <li class="flex items-center justify-between">
-                                <span class="font-mono text-xs">{{ $report->period }}</span>
+                                <span class="text-xs">{{ period_text($report->period) }}</span>
                                 <span class="text-xs text-ink-muted">
-                                    {{ $report->status }}@if ($report->sequence > 1) · {{ __('seq :n', ['n' => $report->sequence]) }}@endif
+                                    {{ $report->status === 'final' ? __('closed') : __('still open') }}@if ($report->sequence > 1) · {{ __('version :n', ['n' => $report->sequence]) }}@endif
                                 </span>
                             </li>
                         @endforeach
@@ -320,7 +330,7 @@
                         @foreach ($events as $event)
                             <li>
                                 <span class="text-ink-muted">{{ $event->created_at?->diffForHumans() }}</span>
-                                <span class="ml-1 font-medium">{{ $event->type }}</span>
+                                <span class="ml-1 font-medium">{{ $eventNames[$event->type] ?? $event->type }}</span>
                                 <p class="text-ink-muted">{{ $event->summary }}</p>
                             </li>
                         @endforeach

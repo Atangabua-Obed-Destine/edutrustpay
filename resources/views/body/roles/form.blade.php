@@ -31,7 +31,15 @@
             <div class="grid gap-5 sm:grid-cols-2">
                 @foreach ($groups as $group => $permissions)
                     <fieldset>
-                        <legend class="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-muted">{{ __($group) }}</legend>
+                        @php
+                            $headings = [
+                                'Body' => __('This console'), 'Institution' => __('Institutions'), 'Credential' => __('Connection keys'),
+                                'Capability' => __('What systems send'), 'Report' => __('Monthly reports'), 'Finding' => __('To look into'),
+                                'Consolidation' => __('Everything added up'), 'User' => __('People'), 'Role' => __('Roles'),
+                                'Compliance' => __('Rules'), 'Daybook' => __('Daybooks'), 'Audit' => __('Record of who did what'), 'Settings' => __('Settings'),
+                            ];
+                        @endphp
+                        <legend class="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-muted">{{ $headings[$group] ?? __($group) }}</legend>
                         @foreach ($permissions as $permission)
                             <label class="flex items-center gap-2 py-0.5 text-sm text-ink-soft">
                                 <input type="checkbox" name="permissions[]" value="{{ $permission->name }}"

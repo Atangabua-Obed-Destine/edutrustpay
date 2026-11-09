@@ -1,7 +1,14 @@
 @extends('layouts.console')
 
 @section('title', __('People'))
-@section('subtitle', __('Everyone with access. Accounts are created by invitation — no password is ever generated or sent.'))
+@section('subtitle', __('Everyone who can sign in. You invite people with a link, and they choose their own password.'))
+
+@php
+    // The operator always sees which body each person is in. A body's own
+    // administrator only does when the body has parts, such as deaneries.
+    $showPart = request()->routeIs('admin.*') || $bodies->count() > 1;
+    $partWord = request()->routeIs('admin.*') ? __('Body') : __('Part of');
+@endphp
 
 @section('header-actions')
     @can('user.invite')
@@ -14,22 +21,24 @@
 
 @section('content')
 
+    @if ($showPart)
     <form method="GET" class="mb-4">
-        <label for="body" class="mr-2 text-sm text-ink-muted">{{ __('Body') }}</label>
+        <label for="body" class="mr-2 text-sm text-ink-muted">{{ $partWord }}</label>
         <select name="body" id="body" onchange="this.form.submit()"
                 class="rounded border-rule-strong py-1.5 text-sm">
-            <option value="">{{ __('All bodies') }}</option>
+            <option value="">{{ request()->routeIs('admin.*') ? __('All bodies') : __('All of them') }}</option>
             @foreach ($bodies as $b)
                 <option value="{{ $b->id }}" @selected((string) $filters['body'] === (string) $b->id)>{{ $b->indented_name }}</option>
             @endforeach
         </select>
     </form>
+    @endif
 
     @if ($users->isEmpty())
         <div class="rounded border border-dashed border-rule-strong bg-surface p-8 text-center">
             <p class="text-sm font-medium text-ink">{{ __('Nobody invited yet') }}</p>
             <p class="mx-auto mt-1 max-w-lg text-sm text-ink-muted">
-                {{ __('A body with no users has nobody to see its findings. Start with the bursary head.') }}
+                {{ __('With nobody invited, nobody sees what needs looking into. Start with the bursary head.') }}
             </p>
         </div>
     @else
@@ -38,7 +47,9 @@
                 <thead class="bg-surface-sunk text-left text-xs uppercase tracking-wide text-ink-muted">
                     <tr>
                         <th class="px-4 py-2 font-semibold">{{ __('Name') }}</th>
-                        <th class="px-4 py-2 font-semibold">{{ __('Body') }}</th>
+                        @if ($showPart)
+                            <th class="px-4 py-2 font-semibold">{{ $partWord }}</th>
+                        @endif
                         <th class="px-4 py-2 font-semibold">{{ __('Role') }}</th>
                         <th class="px-4 py-2 font-semibold">{{ __('Status') }}</th>
                         <th class="px-4 py-2 text-right"></th>
@@ -51,14 +62,14 @@
                                 <span class="font-medium text-ink">{{ $user->name }}</span>
                                 <span class="block text-xs text-ink-muted">{{ $user->email }}</span>
                             </td>
-                            <td class="px-4 py-2 text-ink-muted">
-                                {{ $user->body?->name ?? __('— platform operator —') }}
-                                @if ($user->institution)
-                                    <span class="block text-xs">{{ __('liaison for :name', ['name' => $user->institution->name]) }}</span>
-                                @endif
-                            </td>
+                            @if ($showPart)
+                                <td class="px-4 py-2 text-ink-muted">{{ $user->body?->name ?? __('— platform operator —') }}</td>
+                            @endif
                             <td class="px-4 py-2 text-ink-muted">
                                 {{ $user->roles->pluck('display_name')->implode(', ') ?: $user->role }}
+                                @if ($user->institution)
+                                    <span class="block text-xs">{{ __('for :name only', ['name' => $user->institution->name]) }}</span>
+                                @endif
                             </td>
                             <td class="px-4 py-2">
                                 @if (! $user->is_active)
@@ -106,7 +117,7 @@
         </div>
 
         <p class="mt-3 text-xs text-ink-muted">
-            {{ __('Users are never deleted: somebody who resolved a finding has their name against it, and removing the account would leave that decision unattributed.') }}
+            {{ __('Nobody is ever deleted, only deactivated. Whoever answered something under To look into keeps their name on it.') }}
         </p>
     @endif
 

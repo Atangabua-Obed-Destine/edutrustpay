@@ -76,11 +76,7 @@ class InstitutionController extends Controller
 
         return redirect()
             ->to(manage_route('institutions.show', $institution))
-            ->with('success', __('
-                :name enrolled. Issue credentials and declare what it can report — until you declare a
-                capability, the console will show it as "not yet reporting" rather than as zero, which is
-                usually what you want.
-            ', ['name' => $institution->name]));
+            ->with('success', __(':name has been added. Next, issue a connection key below and give it, with the reference on the right, to whoever sets up its system, so it can start sending reports.', ['name' => $institution->name]));
     }
 
     public function show(Institution $institution)

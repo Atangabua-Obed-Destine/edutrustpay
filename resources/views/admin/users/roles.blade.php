@@ -14,11 +14,12 @@
             @include('admin.users.partials.role-picker')
         </x-card>
 
-        <x-card :title="__('Institution liaison only')"
-                :subtitle="__('Leave empty unless they hold Institution Liaison, who sees exactly one institution.')">
+        @php $oneBody = $institutions->pluck('body_id')->unique()->count() <= 1; @endphp
+        <x-card :title="__('Only for an Institution Liaison')"
+                :subtitle="__('A liaison sees one institution and nothing else. Choose it here; leave this empty for everyone else.')">
             <x-field name="institution_id" :label="__('Institution')">
                 <x-select name="institution_id" :selected="$user->institution_id" :placeholder="__('— not a liaison —')"
-                          :options="$institutions->mapWithKeys(fn ($i) => [$i->id => $i->name . ' (' . $i->body->name . ')'])->all()" />
+                          :options="$institutions->mapWithKeys(fn ($i) => [$i->id => $oneBody ? $i->name : $i->name . ' (' . $i->body->name . ')'])->all()" />
             </x-field>
         </x-card>
 

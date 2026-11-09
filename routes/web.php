@@ -15,6 +15,7 @@ use App\Http\Controllers\Body\DaybookController as BodyDaybookController;
 use App\Http\Controllers\Body\RegulationController;
 use App\Http\Controllers\Body\ConsolidationController;
 use App\Http\Controllers\Body\DashboardController as BodyDashboard;
+use App\Http\Controllers\Body\GuideController;
 use App\Http\Controllers\Body\FindingController;
 use App\Http\Controllers\Body\InstitutionController;
 use App\Http\Controllers\Body\RoleController;
@@ -75,6 +76,12 @@ Route::post('invite/{token}', [InvitationController::class, 'store'])
 Route::middleware(['auth', EnsureBodyView::class])->prefix('body')->name('body.')->group(function () {
 
     Route::get('/', BodyDashboard::class)->name('dashboard');
+
+    // Open to everyone in the body: it explains the console, and shows each
+    // person only the pages they can open.
+    Route::get('guide', [GuideController::class, 'show'])->name('guide');
+    Route::post('guide/hide', [GuideController::class, 'hide'])->name('guide.hide');
+    Route::post('guide/show', [GuideController::class, 'restore'])->name('guide.restore');
 
     Route::middleware('permission:institution.view')->group(function () {
         Route::get('institutions', [InstitutionController::class, 'index'])->name('institutions.index');

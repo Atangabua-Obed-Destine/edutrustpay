@@ -17,7 +17,9 @@ use Illuminate\Support\Carbon;
  *
  * ORDERED BY WHAT NEEDS ATTENTION, NOT BY WHAT IS EASY TO RENDER (brief §10):
  *
- *   1. in words: who reported, who is breaking a rule, what to look into
+ *   0. a welcome saying what the console is for, and a guide until it is hidden
+ *   1. key figures: who reported, who is breaking a rule, what to look into,
+ *      then the money, each saying what it leaves out
  *   2. one row per school, so a problem has a name beside it
  *   3. findings, most serious first
  *   4. the money and fees, school by school, totalled only when all sent them

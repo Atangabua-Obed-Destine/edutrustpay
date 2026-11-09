@@ -361,6 +361,55 @@ class ConsoleTest extends TestCase
         return $user;
     }
 
+    public function test_the_overview_welcomes_the_person_and_leads_with_the_key_figures(): void
+    {
+        $this->actingAsBodyUser('bursary_head', $this->bamenda)
+            ->get(route('body.dashboard'))
+            ->assertOk()
+            ->assertSee('Welcome,')
+            ->assertSee('How this console works')
+            ->assertSeeInOrder(['Reports for', 'To look into', 'Fees collected so far', 'Fees owed', 'Income less spending', 'Start here'])
+            // A total that leaves a school out says so beside the figure.
+            ->assertSee('schools only.');
+    }
+
+    public function test_the_start_here_guide_stays_until_the_person_hides_it_and_can_be_brought_back(): void
+    {
+        $user = $this->bodyUser('bursary_head', $this->bamenda);
+        $this->actingAs($user);
+        BodyContext::flush();
+
+        $this->get(route('body.dashboard'))->assertSee('Start here');
+
+        $this->post(route('body.guide.hide'))->assertRedirect(route('body.dashboard'));
+        $this->get(route('body.dashboard'))->assertDontSee('Start here')->assertSee('How this console works');
+        $this->assertNotNull($user->fresh()->guide_hidden_at, 'Hidden for the person, not the browser.');
+
+        $this->get(route('body.guide'))->assertSee('Show it again');
+        $this->post(route('body.guide.restore'))->assertRedirect(route('body.dashboard'));
+        $this->get(route('body.dashboard'))->assertSee('Start here');
+    }
+
+    public function test_the_guide_describes_only_the_pages_the_person_can_open(): void
+    {
+        $this->actingAsBodyUser('auditor', $this->bamenda)
+            ->get(route('body.guide'))
+            ->assertOk()
+            ->assertSee(route('body.compliance.index'))
+            ->assertSee(route('body.consolidation'));
+
+        // A liaison sees one school's reports and findings, and nothing added up,
+        // so the guide never sends them to a page they would be refused.
+        $this->actingAsBodyUser('institution_liaison', $this->bamenda)
+            ->get(route('body.guide'))
+            ->assertOk()
+            ->assertSee('What each page is for')
+            ->assertSee(route('body.findings.index'))
+            ->assertDontSee(route('body.compliance.index'))
+            ->assertDontSee(route('body.consolidation'))
+            ->assertDontSee(route('body.daybook.compare'));
+    }
+
     private function actingAsBodyUser(string $roleName, Body $body): self
     {
         $this->actingAs($this->bodyUser($roleName, $body));

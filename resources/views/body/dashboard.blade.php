@@ -33,45 +33,144 @@
 @section('content')
 
     {{--
-        1. HOW ARE MY SCHOOLS, IN WORDS.
+        0. WHO THIS IS FOR, AND WHERE TO START.
 
-        Reporting comes first on purpose. Knowing who has gone quiet is worth more
-        than any total (brief section 10), and it is the first thing said here.
+        Someone signing in for the first time met a wall of tables with no word
+        on what the console is for. The welcome says it in two sentences, and
+        the guide below it stays open until the person hides it themselves.
     --}}
+    @php
+        $user = auth()->user();
+        $roleName = $user->roles->first()?->display_name;
+        $canAct = ! \App\Support\BodyContext::isImpersonating();
+        $showGuide = $user->guide_hidden_at === null;
+    @endphp
+
+    <section class="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+        <div class="min-w-0">
+            <p class="font-serif text-xl leading-snug text-ink">{{ __('Welcome, :name', ['name' => $user->name]) }}</p>
+            <p class="mt-1 max-w-3xl text-sm text-ink-soft">
+                @if ($institutions->isEmpty())
+                    {{ __('This console will show you how each of your schools keeps its money and whether it follows your rules, once the first one is connected.') }}
+                @else
+                    {{ trans_choice(
+                        '{1}Here is how your school stands for :month: whether its report arrived, whether it follows your rules, and what is worth asking about.|[2,*]Here is how your :count :many stand for :month: whether their reports arrived, whether they follow your rules, and what is worth asking about.',
+                        $institutions->count(),
+                        ['count' => $institutions->count(), 'many' => $overview->many, 'month' => period_text($period)]
+                    ) }}
+                @endif
+            </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+            @if ($roleName)
+                <span class="text-ink-muted">{{ __('Signed in as :role', ['role' => $roleName]) }}</span>
+            @endif
+            <a href="{{ route('body.guide') }}" class="font-medium text-ink underline underline-offset-2 hover:text-ink-soft">{{ __('How this console works') }}</a>
+        </div>
+    </section>
+
     @if ($institutions->isEmpty())
         <div class="mb-8 rounded border border-dashed border-rule-strong bg-surface p-8 text-center text-sm text-ink-muted">
             {{ __('No schools are connected yet. Once one is, this page shows how it is doing.') }}
         </div>
     @else
-        <section class="mb-8 rounded border border-rule bg-surface px-5 py-4">
-            <ul class="space-y-2.5">
-                @foreach ($overview->headlines as $line)
-                    <li class="flex items-start gap-3 text-[15px] leading-snug text-ink">
-                        <span class="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full {{ $toneDot[$line->tone] }}" aria-hidden="true"></span>
-                        @if ($line->href)
-                            <a href="{{ $line->href }}" class="underline-offset-2 hover:underline">{{ $line->text }}</a>
-                        @else
-                            <span>{{ $line->text }}</span>
-                        @endif
-                    </li>
-                @endforeach
-            </ul>
+        {{--
+            1. THE KEY FIGURES.
 
-            <details class="mt-4 border-t border-rule pt-3 text-sm text-ink-soft">
-                <summary class="cursor-pointer font-medium text-ink-soft">{{ __('New here? How to use this page') }}</summary>
-                <p class="mt-2">{{ __('Each :one\'s system sends a summary here by itself every month. Nobody types it in. Go through these once a month:', ['one' => $overview->one]) }}</p>
-                <ol class="mt-2 list-decimal space-y-1 pl-5">
-                    <li>{{ __('Did every report arrive? If not, call that :one first: a silent system tells you nothing.', ['one' => $overview->one]) }}</li>
-                    <li>{{ __('Are your rules being followed? Open Compliance to see exactly which fee or rule is out of line.') }}</li>
-                    <li>{{ __('Is there anything to look into? These are questions to ask, not proof that something is wrong. Answer each one once you know what happened.') }}</li>
-                    <li>{{ __('Then look at the money. Click a :one to see its month and its daybook, or use Compare schools to see them side by side.', ['one' => $overview->one]) }}</li>
-                </ol>
-                <p class="mt-2">{{ __('This console only sees what is recorded in each system, and it never changes anything there. "Doesn\'t send this" means that system does not report that figure. It does not mean the figure is zero.') }}</p>
-            </details>
+            Reporting comes first on purpose: knowing who has gone quiet is worth
+            more than any total (brief section 10). A state carries a symbol and
+            words as well as its colour; an amount is plain ink, with what it
+            leaves out said beside it.
+        --}}
+        @php
+            $tileMark = [
+                'good' => ['✓', 'bg-emerald-100 text-emerald-800'],
+                'warn' => ['!', 'bg-amber-100 text-amber-800'],
+                'bad' => ['✕', 'bg-rose-100 text-rose-800'],
+                'muted' => ['–', 'bg-surface-sunk text-ink-muted'],
+            ];
+        @endphp
+        <section aria-label="{{ __('Key figures') }}" class="mb-6 grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-3">
+            @foreach ($overview->tiles as $tile)
+                <a href="{{ $tile->href }}" class="group flex min-w-0 flex-col rounded border border-rule bg-surface px-3 py-3 transition-colors hover:border-rule-strong sm:px-4">
+                    <span class="flex items-center justify-between gap-2">
+                        <span class="text-xs font-medium text-ink-muted">{{ $tile->label }}</span>
+                        @if ($tile->tone)
+                            <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold {{ $tileMark[$tile->tone][1] }}" aria-hidden="true">{{ $tileMark[$tile->tone][0] }}</span>
+                        @endif
+                    </span>
+                    <span class="mt-1 text-xl font-semibold tabular-nums leading-tight text-ink sm:text-2xl">
+                        @if ($tile->value === null)
+                            <span class="text-base font-normal italic text-ink-muted">{{ __('not sent') }}</span>
+                        @else
+                            {{ $tile->value }}@if ($tile->unit)<span class="ml-1 text-sm font-normal text-ink-muted">{{ $tile->unit }}</span>@endif
+                        @endif
+                    </span>
+                    @if ($tile->caveat)
+                        <span class="mt-1 text-xs font-medium text-amber-800">{{ $tile->caveat }}</span>
+                    @endif
+                    @if ($tile->hint)
+                        <span class="mt-1 text-xs leading-snug text-ink-soft group-hover:underline">{{ $tile->hint }}</span>
+                    @endif
+                </a>
+            @endforeach
         </section>
 
-        {{-- 2. ONE ROW PER SCHOOL. --}}
-        <section class="mb-8">
+        {{-- 2. WHERE TO START, until the person hides it. --}}
+        @if ($showGuide)
+            <section class="mb-8 rounded border border-rule bg-surface px-5 py-4" aria-labelledby="start-here">
+                <div class="flex flex-wrap items-baseline justify-between gap-2">
+                    <h2 id="start-here" class="font-serif text-lg text-ink">{{ __('Start here') }}</h2>
+                    <span class="text-xs text-ink-muted">{{ __('About 15 minutes, once a month') }}</span>
+                </div>
+                <p class="mt-1 max-w-3xl text-sm text-ink-soft">
+                    {{ __('Each :one\'s own accounting system sends its figures here by itself every month. Nobody types them in, and nothing you do here changes a :one\'s books. Your job is to notice what needs asking about. Go through these four steps:', ['one' => $overview->one]) }}
+                </p>
+
+                <ol class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    @php
+                        $steps = [
+                            [__('Did every report arrive?'), __('A :one that sends nothing tells you nothing, so call it first.', ['one' => $overview->one]), '#schools', __('Your :many, below', ['many' => $overview->many]), true],
+                            [__('Are your rules followed?'), __('See which fee or rule is out of line, and by how much.'), route('body.compliance.index'), __('Compliance'), $user->can('compliance.view')],
+                            [__('What is worth asking about?'), $user->can('finding.resolve')
+                                ? __('Questions the system cannot explain. They are not proof of anything. Mark each one answered once you know what happened.')
+                                : __('Questions the system cannot explain. They are not proof of anything. You will see who answered each one and what they said.'),
+                                $user->can('finding.view') ? route('body.findings.index') : '#look-into', __('To look into'), true],
+                            $user->can('consolidation.view')
+                                ? [__('How is the money?'), __('Open a :one for its month, its year so far and its daybook, or see all of them added up.', ['one' => $overview->one]), route('body.consolidation', ['period' => $period]), __('All schools together'), true]
+                                : [__('How is the money?'), __('Open a :one for its month and its year so far.', ['one' => $overview->one]), '#money', __('The money, below'), true],
+                        ];
+                        $steps = array_values(array_filter($steps, fn ($step) => $step[4]));
+                    @endphp
+                    @foreach ($steps as $i => [$title, $text, $href, $linkText])
+                        <li class="flex gap-3 rounded border border-rule bg-surface-sunk/50 p-3">
+                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-white">{{ $i + 1 }}</span>
+                            <span class="min-w-0 text-sm">
+                                <span class="block font-medium text-ink">{{ $title }}</span>
+                                <span class="mt-0.5 block text-ink-soft">{{ $text }}</span>
+                                <a href="{{ $href }}" class="mt-1 inline-block font-medium text-ink underline underline-offset-2 hover:text-ink-soft">{{ $linkText }} →</a>
+                            </span>
+                        </li>
+                    @endforeach
+                </ol>
+
+                <div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-rule pt-3 text-sm">
+                    <p class="text-ink-muted">{{ __('"Doesn\'t send this" means a :one\'s system does not report that figure. It does not mean zero.', ['one' => $overview->one]) }}</p>
+                    <div class="flex items-center gap-4">
+                        <a href="{{ route('body.guide') }}" class="text-ink underline underline-offset-2 hover:text-ink-soft">{{ __('Read the full guide') }}</a>
+                        @if ($canAct)
+                            <form method="POST" action="{{ route('body.guide.hide') }}">
+                                @csrf
+                                <button type="submit" class="rounded border border-rule-strong px-3 py-1 text-ink-soft hover:bg-surface-sunk">{{ __('I know my way, hide this') }}</button>
+                            </form>
+                        @endif
+                    </div>
+                </div>
+            </section>
+        @endif
+
+        {{-- 3. ONE ROW PER SCHOOL. --}}
+        <section id="schools" class="mb-8 scroll-mt-4">
             <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('Your :many', ['many' => $overview->many]) }}</h2>
 
             <div class="overflow-x-auto rounded border border-rule">
@@ -131,7 +230,7 @@
         </section>
     @endif
 
-    {{-- 3. WHAT TO ASK ABOUT, MOST SERIOUS FIRST. --}}
+    {{-- 4. WHAT TO ASK ABOUT, MOST SERIOUS FIRST. --}}
     <section id="look-into" class="mb-8 scroll-mt-4">
         <div class="mb-3 flex items-center justify-between">
             <h2 class="text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('To look into') }}</h2>
@@ -153,13 +252,13 @@
     </section>
 
     {{--
-        4. THE MONEY, SCHOOL BY SCHOOL.
+        5. THE MONEY, SCHOOL BY SCHOOL.
 
         A total is only given when every school sent that figure. A total of the
         schools that happened to send it reads as the whole body's position when it
         is not, so otherwise the cell says how many sent it (brief section 7.4).
     --}}
-    <section class="mb-8">
+    <section id="money" class="mb-8 scroll-mt-4">
         <div class="mb-3 flex items-center justify-between">
             <h2 class="text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('Money for :month', ['month' => period_text($period)]) }}</h2>
             @can('consolidation.view')
@@ -219,8 +318,8 @@
         </div>
     </section>
 
-    {{-- 5. FEES, SCHOOL BY SCHOOL. --}}
-    <section class="mb-8">
+    {{-- 6. FEES, SCHOOL BY SCHOOL. --}}
+    <section id="fees" class="mb-8 scroll-mt-4">
         <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('Fees up to the end of :month', ['month' => period_text($period)]) }}</h2>
 
         <div class="overflow-x-auto rounded border border-rule">
@@ -259,7 +358,7 @@
         </div>
     </section>
 
-    {{-- 6. BUDGETS, FROM EACH SCHOOL'S OWN BUDGET SHEET. --}}
+    {{-- 7. BUDGETS, FROM EACH SCHOOL'S OWN BUDGET SHEET. --}}
     @if ($budgetSheets->isNotEmpty())
         <section>
             <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('Budgets up to the end of :month', ['month' => period_text($period)]) }}</h2>

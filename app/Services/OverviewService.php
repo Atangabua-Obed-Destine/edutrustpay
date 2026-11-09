@@ -50,16 +50,117 @@ class OverviewService
         $one = $areSchools ? __('school') : __('institution');
         $many = $areSchools ? __('schools') : __('institutions');
 
+        $reportHeadline = $this->reportHeadline($rows, $period, $one, $many);
+        $ruleHeadline = $compliance === null ? null : $this->ruleHeadline($rows, $compliance, $one, $many);
+        $issueHeadline = $this->issueHeadline($findingGroups);
+
         return (object) [
             'one' => $one,
             'many' => $many,
             'rows' => $rows,
-            'headlines' => array_values(array_filter([
-                $this->reportHeadline($rows, $period, $one, $many),
-                $compliance === null ? null : $this->ruleHeadline($rows, $compliance, $one, $many),
-                $this->issueHeadline($findingGroups),
+            'headlines' => array_values(array_filter([$reportHeadline, $ruleHeadline, $issueHeadline])),
+            'tiles' => $rows->isEmpty() ? [] : array_values(array_filter([
+                $this->reportTile($rows, $period, $reportHeadline),
+                $compliance === null ? null : $this->ruleTile($rows, $compliance, $ruleHeadline),
+                $this->issueTile($findingGroups),
+                $this->moneyTile(__('Fees collected so far'), $collections['collected'], $one, $many, '#fees'),
+                $this->moneyTile(__('Fees owed'), $collections['receivables'], $one, $many, '#fees', $collections['ageing']['90_plus'] ?? null),
+                $this->moneyTile(__('Income less spending, :month', ['month' => period_text($period)]), $position['surplus'], $one, $many,
+                    auth()->user()?->can('consolidation.view') ? route('body.consolidation', ['period' => $period]) : '#money'),
             ])),
         ];
+    }
+
+    /*
+     * The key figures across the top of the Overview.
+     *
+     * Each says what it is, the figure, and in words what it covers. A money
+     * total that leaves a school out says so beside the figure, never in a
+     * footnote: "From 1 of 2 schools only" (brief section 7.4).
+     */
+
+    private function reportTile(Collection $rows, string $period, ?object $headline): object
+    {
+        $expected = $rows->filter(fn ($row) => ! in_array($row->report->key, ['not_live', 'not_due'], true));
+        $received = $expected->filter(fn ($row) => $row->report->key === 'received')->count();
+
+        return $this->tile(
+            __('Reports for :month', ['month' => period_text($period)]),
+            $expected->isEmpty() ? __('not due') : __(':received of :total', ['received' => $received, 'total' => $expected->count()]),
+            $headline?->tone ?? 'muted',
+            $headline?->text,
+            '#schools'
+        );
+    }
+
+    private function ruleTile(Collection $rows, array $compliance, object $headline): object
+    {
+        if ($compliance['regulations']->isEmpty()) {
+            return $this->tile(__('Following your rules'), __('no rules set'), 'muted', $headline->text, $headline->href);
+        }
+
+        // A school none of the rules apply to is neither following nor breaking them.
+        $judged = $rows->filter(fn ($row) => $row->rules && ($row->rules->broken + $row->rules->unknown + $row->rules->complies) > 0);
+        $following = $judged->filter(fn ($row) => $row->rules->broken === 0 && $row->rules->unknown === 0)->count();
+
+        return $this->tile(
+            __('Following your rules'),
+            __(':following of :total', ['following' => $following, 'total' => $judged->count()]),
+            $headline->tone,
+            $headline->text,
+            $headline->href
+        );
+    }
+
+    private function issueTile(Collection $findingGroups): object
+    {
+        $count = $findingGroups->count();
+        $urgent = $findingGroups->filter(fn ($group) => in_array($group->severity, ['critical', 'high'], true))->count();
+
+        return $this->tile(
+            __('To look into'),
+            (string) $count,
+            $urgent > 0 ? 'warn' : ($count > 0 ? 'muted' : 'good'),
+            match (true) {
+                $count === 0 => __('Nothing at the moment.'),
+                $urgent > 0 => trans_choice('{1}1 needs action.|[2,*]:count need action.', $urgent, ['count' => $urgent]),
+                default => __('None needs action now.'),
+            },
+            auth()->user()?->can('finding.view') ? route('body.findings.index') : '#look-into'
+        );
+    }
+
+    private function moneyTile(string $label, $aggregate, string $one, string $many, string $href, $over90 = null): object
+    {
+        if (! $aggregate->hasFigures()) {
+            return $this->tile($label, null, 'muted', __('No :one sends this yet.', ['one' => $one]), $href);
+        }
+
+        $hint = null;
+
+        if ($over90 !== null && $over90->hasFigures() && ! $over90->total()->isZero()) {
+            $hint = $over90->isComplete()
+                ? __(':amount of it owed for over 90 days.', ['amount' => $over90->formatted()])
+                : __(':amount owed for over 90 days, from :covered of :total :many.', [
+                    'amount' => $over90->formatted(), 'covered' => $over90->coveredCount(), 'total' => $over90->total_sources(), 'many' => $many,
+                ]);
+        }
+
+        $tile = $this->tile($label, $aggregate->formatted(), null, $hint, $href);
+        $tile->unit = config('platform.currency');
+        $tile->caveat = $aggregate->isComplete()
+            ? null
+            : __('From :covered of :total :many only.', ['covered' => $aggregate->coveredCount(), 'total' => $aggregate->total_sources(), 'many' => $many]);
+
+        return $tile;
+    }
+
+    /**
+     * @param  string|null  $tone  good, warn, bad or muted for a state; null for a plain amount
+     */
+    private function tile(string $label, ?string $value, ?string $tone, ?string $hint, ?string $href): object
+    {
+        return (object) ['label' => $label, 'value' => $value, 'tone' => $tone, 'hint' => $hint, 'href' => $href, 'unit' => null, 'caveat' => null];
     }
 
     private function reportState(Institution $institution, string $period, $report, ?object $silent): object

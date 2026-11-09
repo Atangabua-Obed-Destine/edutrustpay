@@ -66,6 +66,14 @@
             @endcan
         </div>
     @endcanany
+
+    <div>
+        <p class="px-2 pb-2 text-[11px] font-semibold uppercase tracking-wider text-white/45">{{ __('Help') }}</p>
+
+        <x-nav-link :href="route('body.guide')" :active="request()->routeIs('body.guide')">
+            {{ __('How this console works') }}
+        </x-nav-link>
+    </div>
     @endunless
 
     @if ($isOperator)

@@ -51,6 +51,7 @@ class User extends Authenticatable
             'invite_sent_at' => 'datetime',
             'invite_accepted_at' => 'datetime',
             'last_login_at' => 'datetime',
+            'guide_hidden_at' => 'datetime',
         ];
     }
 

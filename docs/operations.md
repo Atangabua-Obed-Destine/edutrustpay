@@ -1,5 +1,7 @@
 # Running EdutrustPay
 
+Installing the console on a new server is covered in the README: clone, `composer install --no-dev`, `php artisan edutrustpay:install`.
+
 Nothing on this platform works unattended unless these jobs are running. Pages
 keep loading when they stop, and figures quietly stop changing, so the operator's
 **System health** panel at `/admin` shows when they have stopped.

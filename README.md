@@ -1,59 +1,98 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# EdutrustPay
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+**EdutrustPay, powered by I-NNOVA.** The oversight console for the organisations that run schools. Each school's accounting system sends its monthly figures here, signed. A diocese then sees its schools in one place, checked against its own rules. The console only reads what schools send; it never changes their books.
 
-## About Laravel
+This guide is for the technician installing the console on a server.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## What the server needs
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- PHP 8.2 or newer, with these extensions on: `bcmath`, `ctype`, `dom`, `fileinfo`, `gd`, `mbstring`, `openssl`, `pdo_mysql`, `tokenizer`, `xml`
+- MySQL or MariaDB
+- Apache or Nginx, with HTTPS on a VPS
+- Composer, Node.js and Git
+- Internet access during the installation
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+XAMPP provides PHP, MariaDB and Apache, which is enough to try the console on one computer.
 
-## Learning Laravel
+## Install
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+Clone into the web folder (`/var/www` on Linux, `C:\xampp\htdocs` on XAMPP), then:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```
+git clone https://github.com/Atangabua-Obed-Destine/edutrustpay.git
+cd edutrustpay
+composer install --no-dev
+php artisan edutrustpay:install
+```
 
-## Laravel Sponsors
+The installer checks the server, asks for the console's address and the database details, then sets everything up. It creates the database if it does not exist. On Windows, run it in PowerShell or Command Prompt rather than Git Bash, which can hang on the password question.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+**The address** is what people type to open the console, and what every school's system sends its reports to.
 
-### Premium Partners
+- **On a VPS:** use its HTTPS domain, for example `https://console.example.org`, and point the web server's document root at the `public` folder. Linux also needs `storage` and `bootstrap/cache` writable by the web server's user.
+- **On XAMPP:** the installer suggests `http://<this computer's address>/edutrustpay/public`.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+The installer finishes by printing a private link. Open it in a browser:
 
-## Contributing
+1. Create the **operator** account. It sees every organisation and creates all the other accounts.
+2. Optionally, name the **first organisation**, for example the Archdiocese of Bamenda. You can also add it later.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+You arrive on the operator's dashboard, signed in. From there:
 
-## Code of Conduct
+1. Open the organisation under **Bodies** and invite its administrator under **People**.
+2. That administrator, or you, adds its schools under **All institutions** and issues each one a connection key.
+3. Each school then enters its key in its own system. See `docs/operations.md`.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+The link works once. If it gets lost, run `php artisan edutrustpay:install` again for a new one. If an installation stops part-way, fix the problem and run the same command. It never touches a console that already has accounts.
 
-## Security Vulnerabilities
+## After installing
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+**The scheduler must run every minute.** Reports from schools are processed on a queue that the scheduler runs, together with the daily check for schools that have gone quiet. Without it, reports arrive and are never read, and nothing on the screen says so.
 
-## License
+Linux, in `crontab -e`:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```
+* * * * * cd /var/www/edutrustpay && php artisan schedule:run >> /dev/null 2>&1
+```
+
+Windows, in an administrator PowerShell:
+
+```
+schtasks /create /tn "EdutrustPay scheduler" /sc minute /mo 1 /ru SYSTEM /tr "C:\xampp\php\php.exe C:\xampp\htdocs\edutrustpay\artisan schedule:run"
+```
+
+The operator's dashboard shows a **System health** panel that turns red when these jobs stop.
+
+**Backups.** Copy the database daily (`mysqldump`) and keep the copies away from the server. Back up `APP_KEY` from `.env` **separately**: together with the database it decrypts every school's connection secret.
+
+**Email.** Invitations are shown on screen as a link to pass on, so the console works without a mail server.
+
+## Updating
+
+Back up first, then in the console's folder:
+
+```
+git pull
+composer install --no-dev
+php artisan migrate --force
+npm ci
+npm run build
+php artisan optimize:clear
+```
+
+## If the operator is locked out
+
+There is no password reset by email yet. On the server, run this with the account's email and a new password, then ask them to sign in:
+
+```
+php artisan tinker --execute="App\Models\User::where('email', 'name@example.org')->firstOrFail()->update(['password' => Hash::make('a-new-password')]);"
+```
+
+## For developers
+
+Copy `.env.example` to `.env`, set `APP_ENV=local` and `APP_DEBUG=true`, then run `composer install`, `php artisan edutrustpay:install`, and `composer run dev`.
+
+- `php artisan db:seed --class=DemoBodySeeder` adds a worked example: an archdiocese, deaneries and schools with invented figures. `php artisan edutrustpay:clear-demo` takes it away again.
+- `php artisan test` runs the tests on an in-memory database. Run `php artisan config:clear` first.
+- `packages/reporting-contract` is the reporting format the schools' systems send. The school systems keep a copy of it; copy it to them again when it changes.
+- `docs/operations.md` covers running the console and connecting a school.

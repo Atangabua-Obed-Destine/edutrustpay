@@ -36,6 +36,12 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+// First run. Opened from the link `php artisan edutrustpay:install` prints;
+// once an account exists it only ever redirects to the login page.
+Route::get('install/{token?}', [\App\Http\Controllers\InstallController::class, 'show'])->name('install.show');
+Route::post('install/{token}', [\App\Http\Controllers\InstallController::class, 'store'])
+    ->middleware('throttle:6,1')->name('install.store');
+
 Route::get('/', function () {
     if (! auth()->check()) {
         return redirect()->route('login');

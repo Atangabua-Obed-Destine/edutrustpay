@@ -28,6 +28,15 @@ class PlatformSeeder extends Seeder
     {
         $this->call(RolesAndPermissionsSeeder::class);
 
+        // Installed through `edutrustpay:install`, the operator made their own
+        // account on the setup page. Seeding again must not add a second one
+        // with a default email and a printed password.
+        if (User::where('role', 'super_admin')->exists()) {
+            $this->command?->info('An operator account already exists; none added.');
+
+            return;
+        }
+
         $email = config('platform.operator.email');
         $existing = User::where('email', $email)->first();
 

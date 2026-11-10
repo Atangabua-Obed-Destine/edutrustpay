@@ -18,8 +18,13 @@ use Illuminate\Validation\ValidationException;
  */
 class LoginController extends Controller
 {
-    public function show()
+    public function show(\App\Services\PlatformInstaller $installer)
     {
+        // Nobody can sign in yet: the console still has to create its first account.
+        if (! $installer->isInstalled()) {
+            return redirect()->route('install.show');
+        }
+
         return view('auth.login');
     }
 

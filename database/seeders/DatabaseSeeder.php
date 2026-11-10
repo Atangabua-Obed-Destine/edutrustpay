@@ -7,6 +7,8 @@ use Illuminate\Database\Seeder;
 
 /**
  * The default seed is the LIVE one: roles, permissions, and an operator account.
+ * A real server is installed with `php artisan edutrustpay:install` instead, which
+ * seeds roles alone and has the operator make their own account in the browser.
  *
  * Demo data is deliberately not here. `db:seed` is what somebody runs on a new
  * deployment, often without reading it first, and a stock command that quietly

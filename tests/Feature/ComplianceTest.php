@@ -191,7 +191,7 @@ class ComplianceTest extends TestCase
         $this->assertSame($this->bamenda->id, $rule->body_id);
         $this->assertSame('100000.00', $rule->feeItems->first()->amount);
 
-        $this->get(route('body.compliance.index'))->assertOk()->assertSee('Secondary fees')->assertSee('breach');
+        $this->get(route('body.compliance.index'))->assertOk()->assertSee('Secondary fees')->assertSee('rule broken');
         $this->get(route('body.compliance.show', [$rule->id, $this->school]))->assertOk()->assertSee('125 000')->assertSee('above schedule');
     }
 

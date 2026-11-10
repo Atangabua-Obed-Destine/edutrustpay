@@ -1,7 +1,7 @@
 @php
     $chips = [
         'complies' => ['bg-emerald-100 text-emerald-800', __('complies')],
-        'breach' => ['bg-rose-100 text-rose-800', __('breach')],
+        'breach' => ['bg-rose-100 text-rose-800', __('rule broken')],
         'unknown' => ['bg-amber-100 text-amber-800', __('cannot be checked')],
         'waived' => ['bg-surface-sunk text-ink-soft', __('waived')],
         'not_live' => ['bg-surface-sunk text-ink-muted', __('not live yet')],

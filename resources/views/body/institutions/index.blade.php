@@ -1,6 +1,6 @@
 @extends('layouts.console')
 
-@section('title', __('Institutions'))
+@section('title', __('All institutions'))
 @section('subtitle', trans_choice('{1}One institution|[2,*]:count institutions', $institutions->count(), ['count' => $institutions->count()]))
 
 @section('header-actions')

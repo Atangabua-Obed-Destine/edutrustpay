@@ -133,7 +133,7 @@
                             [__('Did every report arrive?'), __('A :one that sends nothing tells you nothing, so call it first.', ['one' => $overview->one]), '#schools', __('Your :many, below', ['many' => $overview->many]), true],
                             [__('Are your rules followed?'), __('See which fee or rule is out of line, and by how much.'), route('body.compliance.index'), __('Compliance'), $user->can('compliance.view')],
                             [__('What is worth asking about?'), $user->can('finding.resolve')
-                                ? __('Questions the system cannot explain. They are not proof of anything. Mark each one answered once you know what happened.')
+                                ? __('Questions the system cannot explain. They are not proof of anything. Answer each one once you know what happened.')
                                 : __('Questions the system cannot explain. They are not proof of anything. You will see who answered each one and what they said.'),
                                 $user->can('finding.view') ? route('body.findings.index') : '#look-into', __('To look into'), true],
                             $user->can('consolidation.view')
@@ -209,7 +209,7 @@
                                     @if ($row->issues->count === 0)
                                         <span class="text-ink-muted">{{ __('nothing') }}</span>
                                     @else
-                                        <a href="#look-into" class="underline-offset-2 hover:underline">
+                                        <a href="{{ auth()->user()->can('finding.view') ? route('body.findings.index', ['institution' => $row->institution->uuid]) : '#look-into' }}" class="underline-offset-2 hover:underline">
                                             {{ $row->issues->count }}
                                             @if ($row->issues->urgent > 0)
                                                 <span class="text-xs text-amber-700">({{ __(':count needing action', ['count' => $row->issues->urgent]) }})</span>
@@ -262,7 +262,7 @@
         <div class="mb-3 flex items-center justify-between">
             <h2 class="text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('Money for :month', ['month' => period_text($period)]) }}</h2>
             @can('consolidation.view')
-                <a href="{{ route('body.consolidation', ['period' => $period]) }}" class="text-sm text-ink-muted hover:underline">{{ __('Full statement') }}</a>
+                <a href="{{ route('body.consolidation', ['period' => $period]) }}" class="text-sm text-ink-muted hover:underline">{{ __('All schools together') }}</a>
             @endcan
         </div>
 
@@ -275,7 +275,7 @@
                         <th class="px-4 py-2 text-right font-semibold">{{ __('Spending') }}</th>
                         <th class="px-4 py-2 text-right font-semibold">{{ __('Income less spending') }}</th>
                         <th class="px-4 py-2 text-right font-semibold">{{ __('Cash at month end') }}</th>
-                        <th class="px-4 py-2 font-semibold">{{ __('Books') }}</th>
+                        <th class="px-4 py-2 font-semibold">{{ __('Books add up') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-rule bg-surface">
@@ -293,11 +293,11 @@
                                 @if ($row->balanced === null)
                                     <span class="text-xs text-ink-muted">—</span>
                                 @elseif ($row->balanced)
-                                    <span class="text-xs text-emerald-700">{{ __('balance') }}</span>
+                                    <span class="text-xs text-emerald-700">{{ __('yes') }}</span>
                                 @else
                                     {{-- Accepted at ingest on purpose: refusing it would
                                          make this institution look silent rather than alarming. --}}
-                                    <span class="rounded bg-rose-100 px-1.5 py-0.5 text-xs font-semibold text-rose-800">{{ __('do not balance') }}</span>
+                                    <span class="rounded bg-rose-100 px-1.5 py-0.5 text-xs font-semibold text-rose-800">{{ __('no') }}</span>
                                 @endif
                             </td>
                         </tr>
@@ -364,7 +364,7 @@
             <div class="mb-3 flex items-center justify-between">
                 <h2 class="text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('Budgets up to the end of :month', ['month' => period_text($period)]) }}</h2>
                 @can('consolidation.view')
-                    <a href="{{ route('body.budgets.compare', ['period' => $period]) }}" class="text-sm text-ink-muted hover:underline">{{ __('Compare budgets') }}</a>
+                    <a href="{{ route('body.budgets.compare', ['period' => $period]) }}" class="text-sm text-ink-muted hover:underline">{{ __('Budgets compared') }}</a>
                 @endcan
             </div>
 

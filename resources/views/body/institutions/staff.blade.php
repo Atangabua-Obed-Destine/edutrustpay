@@ -1,6 +1,6 @@
 @extends('layouts.console')
 
-@section('title', __(':name staff', ['name' => $institution->name]))
+@section('title', __(':name staff list', ['name' => $institution->name]))
 @section('subtitle', period_text($period))
 
 @section('header-actions')
@@ -19,7 +19,7 @@
 
 @section('content')
 
-    <x-breadcrumb :items="[__('All institutions') => route('body.institutions.index'), $institution->name => route('body.institutions.show', ['institution' => $institution, 'period' => $period]), __('Staff') => null]" />
+    <x-breadcrumb :items="[__('All institutions') => route('body.institutions.index'), $institution->name => route('body.institutions.show', ['institution' => $institution, 'period' => $period]), __('Staff list') => null]" />
 
     @if (! $staff)
         <div class="rounded border border-dashed border-rule-strong bg-surface p-8 text-center">

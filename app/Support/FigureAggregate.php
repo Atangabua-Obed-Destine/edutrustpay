@@ -166,10 +166,13 @@ final class FigureAggregate
             );
         }
 
-        return trans_choice(
-            '{1}Added up from :covered of :total schools. 1 has no figure for this, so the total leaves it out.|[2,*]Added up from :covered of :total schools. :count have no figure for this, so the total leaves them out.',
-            $this->missingCount(),
-            ['covered' => $this->coveredCount(), 'total' => $total, 'count' => $this->missingCount()]
-        );
+        // Named, so the reader knows whose figure the total lacks and why.
+        $left = collect($this->missing)->map(fn ($why, $name) => $name.' ('.mb_strtolower((string) $why).')')->implode(', ');
+
+        return __('Added up from :covered of :total schools. Left out: :left.', [
+            'covered' => $this->coveredCount(),
+            'total' => $total,
+            'left' => $left,
+        ]);
     }
 }

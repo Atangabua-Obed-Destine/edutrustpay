@@ -16,9 +16,14 @@ class FindingController extends Controller
     {
         $status = $request->query('status', Finding::OPEN);
 
+        // One school's items, when asked: the body scope already limits the choice to this body.
+        $institutions = \App\Models\Institution::query()->orderBy('name')->get(['id', 'uuid', 'name']);
+        $school = $institutions->firstWhere('uuid', (string) $request->query('institution'));
+
         $findings = Finding::query()
             ->with('institution', 'resolver')
             ->when($status !== 'all', fn ($q) => $q->where('status', $status))
+            ->when($school, fn ($q) => $q->where('institution_id', $school->id))
             ->bySeverity()
             ->paginate(200)
             ->withQueryString();
@@ -27,9 +32,11 @@ class FindingController extends Controller
             'findings' => $findings,
             'groups' => Finding::grouped($findings->getCollection()),
             'status' => $status,
+            'institutions' => $institutions,
+            'school' => $school,
             'openFindingCount' => Finding::grouped(Finding::query()->open()->with('institution')->get())->count(),
             'counts' => collect([Finding::OPEN, Finding::EXPLAINED, Finding::ACCEPTED])->mapWithKeys(fn (string $s) => [
-                $s => Finding::grouped(Finding::query()->where('status', $s)->with('institution')->get())->count(),
+                $s => Finding::grouped(Finding::query()->where('status', $s)->when($school, fn ($q) => $q->where('institution_id', $school->id))->with('institution')->get())->count(),
             ])->all(),
         ]);
     }

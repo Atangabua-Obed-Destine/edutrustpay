@@ -22,7 +22,7 @@
     @if ($regulation->check_type === \App\Models\Regulation::FEE_SCHEDULE)
         <div class="mb-6">
                 <x-card :title="__('What the school charges')"
-                        :subtitle="$result->report ? __('From the report for :period. No student is named. Problems are listed first.', ['period' => period_text($result->report->period)]) : null">
+                        :subtitle="$result->report ? __('From the report for :period. No student is named. Problems are listed first. Where the school names a class or fee differently from your rule, choose under “Counts as” which line of the rule it is, then click Save matching; it stays matched.', ['period' => period_text($result->report->period)]) : null">
                     @if ($result->lines->isEmpty())
                         <p class="text-sm text-ink-muted">{{ __('No fee figures to compare yet. They arrive with the school\'s monthly report.') }}</p>
                     @else
@@ -48,7 +48,7 @@
                                             <th class="px-4 py-2 text-right font-semibold">{{ __('Students') }}</th>
                                             <th class="px-4 py-2 font-semibold">{{ __('Result') }}</th>
                                             @can('compliance.manage')
-                                                <th class="px-4 py-2 font-semibold">{{ __('Counts as') }}</th>
+                                                <th class="px-4 py-2 font-semibold" title="{{ __('When the school names a class or fee differently from your rule, choose which line of the rule it is, then Save matching. It stays matched.') }}">{{ __('Counts as') }}</th>
                                             @endcan
                                         </tr>
                                     </thead>

@@ -6,7 +6,7 @@
 @section('header-actions')
     <nav class="flex gap-1 text-sm">
         @foreach ([\App\Models\Finding::OPEN => __('Open'), \App\Models\Finding::EXPLAINED => __('Explained'), \App\Models\Finding::ACCEPTED => __('Accepted'), 'all' => __('All')] as $key => $label)
-            <a href="{{ route('body.findings.index', ['status' => $key]) }}"
+            <a href="{{ route('body.findings.index', array_filter(['status' => $key, 'institution' => $school?->uuid])) }}"
                @class([
                    'rounded px-2.5 py-1',
                    'bg-accent text-white' => $status === $key,
@@ -19,6 +19,19 @@
 @endsection
 
 @section('content')
+
+    @if ($institutions->count() > 1)
+        <form method="GET" class="mb-4 flex flex-wrap items-center gap-2 text-sm">
+            <input type="hidden" name="status" value="{{ $status }}">
+            <label for="institution" class="text-ink-muted">{{ __('School') }}</label>
+            <select id="institution" name="institution" onchange="this.form.submit()" class="rounded border-rule-strong bg-surface py-1.5 text-sm">
+                <option value="">{{ __('All schools') }}</option>
+                @foreach ($institutions as $option)
+                    <option value="{{ $option->uuid }}" @selected($school?->uuid === $option->uuid)>{{ $option->name }}</option>
+                @endforeach
+            </select>
+        </form>
+    @endif
 
     @if ($findings->isEmpty())
         <p class="rounded border border-rule bg-surface px-4 py-3 text-sm text-ink-muted">

@@ -174,9 +174,24 @@ class Institution extends Model
      */
     public function fiscalYearStartMonth(): int
     {
+        // With no setting of its own, a school's year is the year its budget
+        // runs over, so "year so far" and its budget sheet add up the same months.
         return $this->fiscal_year_start_month
+            ?? $this->budgetYearStartMonth()
             ?? $this->body?->fiscal_year_start_month
             ?? 1;
+    }
+
+    /** The month its latest budget sheet's year opens, or null with no sheet. */
+    public function budgetYearStartMonth(): ?int
+    {
+        $starts = BudgetSheet::withoutGlobalScopes()
+            ->where('institution_id', $this->id)
+            ->where('is_current', true)
+            ->orderByDesc('period')
+            ->value('budget_starts');
+
+        return $starts ? (int) \Illuminate\Support\Carbon::parse($starts)->month : null;
     }
 
     /**

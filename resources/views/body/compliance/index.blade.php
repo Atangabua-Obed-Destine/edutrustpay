@@ -11,7 +11,7 @@
     @can('compliance.manage')
         <a href="{{ route('body.compliance.regulations.create') }}"
            class="rounded bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">
-            {{ __('New rule') }}
+            {{ __('New fee schedule') }}
         </a>
     @endcan
 @endsection
@@ -34,7 +34,7 @@
     @else
         <div class="mb-6 grid gap-4 sm:grid-cols-3">
             @foreach ([
-                ['breach', __('Breaches'), 'text-rose-700'],
+                ['breach', __('Rules broken'), 'text-rose-700'],
                 ['unknown', __('Cannot be checked'), 'text-amber-700'],
                 ['complies', __('Complying'), 'text-emerald-700'],
             ] as [$key, $label, $colour])
@@ -71,7 +71,7 @@
                                             <span class="mt-1 block max-w-56 text-xs leading-snug text-ink-muted group-hover:underline">{{ $cell->summary }}</span>
                                         </a>
                                     @else
-                                        <span class="text-xs text-ink-muted" title="{{ __('This rule does not apply to this type of institution.') }}">{{ __('n/a') }}</span>
+                                        <span class="text-xs text-ink-muted" title="{{ __('This rule does not apply to this type of institution.') }}">{{ __('does not apply') }}</span>
                                     @endif
                                 </td>
                             @endforeach
@@ -98,7 +98,7 @@
                         <tr>
                             <th class="px-4 py-2 font-semibold">{{ __('School') }}</th>
                             <th class="px-4 py-2 font-semibold">{{ __('Rule') }}</th>
-                            <th class="px-4 py-2 font-semibold">{{ __('With') }}</th>
+                            <th class="px-4 py-2 font-semibold">{{ __('Assigned to') }}</th>
                             <th class="px-4 py-2 font-semibold">{{ __('Due') }}</th>
                         </tr>
                     </thead>

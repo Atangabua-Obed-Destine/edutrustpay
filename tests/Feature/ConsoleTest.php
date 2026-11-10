@@ -146,7 +146,7 @@ class ConsoleTest extends TestCase
             ->get(route('body.capabilities'))
             ->assertOk()
             ->assertSee('not yet')   // will close as systems gain modules
-            ->assertSee('n/a')       // enrolment at a pharmacy never will
+            ->assertSee('does not apply')  // enrolment at a pharmacy never will
             ->assertSee('Sent separately');  // the daybook and budget sheet are their own documents
     }
 

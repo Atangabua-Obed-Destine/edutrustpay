@@ -37,7 +37,7 @@
 @section('content')
 
     <x-breadcrumb :items="[
-        __('Institutions') => route('body.institutions.index'),
+        __('All institutions') => route('body.institutions.index'),
         $institution->name => route('body.institutions.show', ['institution' => $institution, 'period' => $period]),
         $month => null,
     ]" />
@@ -193,7 +193,7 @@
 
             <x-card :title="__('Students and fees collected')" :subtitle="__('The school\'s own figures.')">
                 @if (! $report->declares(Capability::ENROLMENT))
-                    <p class="text-sm italic text-ink-muted">{{ $notSent(__('its student numbers or fees billed against fees collected')) }}</p>
+                    <p class="text-sm italic text-ink-muted">{{ $notSent($report->declares(Capability::STUDENTS) ? __('its fees billed against fees collected. Its student numbers are below, under Students per class') : __('its student numbers or fees billed against fees collected')) }}</p>
                 @else
                     <dl class="divide-y divide-rule text-sm">
                         <div class="flex items-baseline justify-between gap-4 py-2">
@@ -211,7 +211,12 @@
                         <div class="flex items-baseline justify-between gap-4 py-2">
                             <dt class="text-ink-soft">{{ __('Collected, as a share of fees billed') }}</dt>
                             <dd class="tabular-nums font-medium">
-                                {{ $report->collection_rate !== null ? round((float) $report->collection_rate * 100, 1).'%' : '—' }}
+                                {{-- Worked out from the two amounts: the report's own rate stops at 100%, and collecting more than was billed is worth seeing. --}}
+                                @php $billed = (float) $report->expected_fees; $got = (float) $report->collected; @endphp
+                                {{ $billed > 0 ? round($got / $billed * 100).'%' : ($report->collection_rate !== null ? round((float) $report->collection_rate * 100).'%' : '—') }}
+                                @if ($billed > 0 && $got > $billed)
+                                    <span class="block text-xs font-normal text-amber-800">{{ __('more collected than billed') }}</span>
+                                @endif
                             </dd>
                         </div>
                         <div class="flex items-baseline justify-between gap-4 py-2">

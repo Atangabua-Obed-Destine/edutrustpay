@@ -5,6 +5,8 @@
 
 @section('content')
 
+    <x-breadcrumb :items="[__('To look into') => route('body.findings.index'), $finding->institution->name => route('body.findings.index', ['institution' => $finding->institution->uuid]), __('This item') => null]" />
+
     <div class="grid gap-6 lg:grid-cols-3">
         <div class="lg:col-span-2 space-y-6">
             @include('body.partials.finding-row', ['finding' => $finding, 'hideAnswer' => true])
@@ -30,7 +32,7 @@
             @endif
 
             @if ($finding->periodReport)
-                <a href="{{ route('body.institutions.show', ['institution' => $finding->institution, 'period' => $finding->period]) }}"
+                <a href="{{ $finding->period ? route('body.institutions.monthly', [$finding->institution, $finding->period]) : route('body.institutions.show', $finding->institution) }}"
                    class="inline-block text-sm text-ink-soft underline">
                     {{ __('Open the report this came from') }}
                 </a>
@@ -53,8 +55,8 @@
                             <label for="status" class="block text-sm text-ink-soft">{{ __('Outcome') }}</label>
                             <select name="status" id="status" required
                                     class="mt-1 w-full rounded border-rule-strong bg-surface py-1.5 text-sm">
-                                <option value="{{ \App\Models\Finding::EXPLAINED }}">{{ __('Explained — there is a reason') }}</option>
-                                <option value="{{ \App\Models\Finding::ACCEPTED }}">{{ __('Accepted — we will live with it') }}</option>
+                                <option value="{{ \App\Models\Finding::EXPLAINED }}">{{ __('Explained: there is a good reason') }}</option>
+                                <option value="{{ \App\Models\Finding::ACCEPTED }}">{{ __('Accepted: noted, no further action needed') }}</option>
                             </select>
                         </div>
 
@@ -83,7 +85,7 @@
                     <h2 class="text-sm font-semibold text-ink">{{ __(ucfirst($finding->status)) }}</h2>
                     <p class="mt-2 text-sm text-ink-soft">{{ $finding->resolution_note }}</p>
                     <p class="mt-2 text-xs text-ink-muted">
-                        {{ $finding->resolver?->name ?? __('Unknown') }} · {{ $finding->resolved_at?->toDayDateTimeString() }}
+                        {{ $finding->resolver?->name ?? __('the console itself') }} · {{ $finding->resolved_at?->toDayDateTimeString() }}
                     </p>
                 </div>
             @endif

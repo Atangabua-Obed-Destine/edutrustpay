@@ -26,7 +26,7 @@
 @section('content')
 
     <p class="mb-4 max-w-3xl text-sm text-ink-soft">
-        {{ __('Every school\'s income and spending for the month, added up by account class. A school that sent nothing for the month is left out of the totals and named, never counted as zero.') }}
+        {{ __('Every school\'s income and spending for the month, added up by account class. A school whose figure is missing is left out of the total and named under it, never counted as zero.') }}
     </p>
 
     {{-- Which schools are in the totals comes first, before any total. --}}

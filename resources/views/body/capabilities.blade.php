@@ -2,7 +2,7 @@
 
 @use('EdutrustPay\Contract\Capability')
 
-@section('title', __('What each school sends'))
+@section('title', __('What schools send'))
 @section('subtitle', __('And what it does not send yet'))
 
 @php
@@ -12,7 +12,7 @@
         'reporting' => ['bg-emerald-100 text-emerald-800', __('sends'), __('Arrives with the monthly report.')],
         'declared' => ['bg-amber-100 text-amber-800', __('expected, never sent'), __('It was set up as something this school would send, and nothing has arrived. Either its system cannot produce it yet or the setting is wrong; whoever manages the school\'s connection can say which.')],
         'not_reporting' => ['bg-surface-sunk text-ink-muted', __('not yet'), __('Its system cannot produce this yet. The gap closes when it can.')],
-        'not_applicable' => ['bg-transparent text-ink-muted opacity-60', __('n/a'), __('Does not apply to this kind of institution, and never will.')],
+        'not_applicable' => ['bg-transparent text-ink-muted opacity-60', __('does not apply'), __('Does not apply to this kind of institution, and never will.')],
     ];
 
     $order = [Capability::LEDGER, Capability::RECEIVABLES, Capability::PAYABLES, Capability::ENROLMENT, Capability::FEES_CHARGED, Capability::PAYROLL, Capability::BANK_RECON, Capability::INTEGRITY, Capability::BUDGET, Capability::STUDENTS, Capability::STAFF];
@@ -58,7 +58,14 @@
                         </td>
 
                         @foreach ($order as $i => $capability)
-                            @php [$classes, $label] = $cellStyles[$row->cells[$capability]]; @endphp
+                            @php
+                                $state = $row->cells[$capability];
+                                // Schools send their budget as a budget sheet, not as a total in the report.
+                                if ($capability === \EdutrustPay\Contract\Capability::BUDGET && $state === 'declared' && isset($budgetSheets[$id])) {
+                                    $state = 'not_reporting';
+                                }
+                                [$classes, $label] = $cellStyles[$state];
+                            @endphp
                             <td @class(['px-2 py-2 text-center', 'border-l border-rule' => $i === 0])>
                                 <span class="inline-block rounded px-1.5 py-0.5 text-[11px] font-medium {{ $classes }}">{{ $label }}</span>
                             </td>

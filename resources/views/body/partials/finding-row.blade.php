@@ -5,7 +5,8 @@
         'medium'   => 'border-amber-300 bg-amber-50 text-amber-900',
         'low'      => 'border-rule-strong bg-surface-sunk text-ink',
     ];
-    $classes = $severityClasses[$finding->severity] ?? $severityClasses['low'];
+    $open = $finding->status === \App\Models\Finding::OPEN;
+    $classes = $open ? ($severityClasses[$finding->severity] ?? $severityClasses['low']) : $severityClasses['low'];
 @endphp
 
 <div class="rounded border px-4 py-3 {{ $classes }}">
@@ -14,7 +15,7 @@
             <p class="text-sm font-semibold">
                 {{ $finding->title }}
                 <span class="ml-2 rounded bg-black/10 px-1.5 py-0.5 text-[11px] font-medium">
-                    {{ \App\Models\Finding::severityLabel($finding->severity) }}
+                    {{ $open ? \App\Models\Finding::severityLabel($finding->severity) : __('Answered') }}
                 </span>
             </p>
 
@@ -27,18 +28,23 @@
                 {{ $finding->institution->name }}
                 @if ($finding->period) · {{ period_text($finding->period) }} @endif
                 @if ($finding->occurrences > 1)
-                    · {{ trans_choice('{1}seen once|[2,*]seen :count times', $finding->occurrences, ['count' => $finding->occurrences]) }}
+                    · {{ trans_choice('{1}noticed once|[2,*]noticed in :count reports', $finding->occurrences, ['count' => $finding->occurrences]) }}
                 @endif
             </p>
         </div>
 
         @if (! ($hideAnswer ?? false))
-        @can('finding.resolve')
-            <a href="{{ route('body.findings.show', $finding) }}"
-               class="shrink-0 rounded border border-current/30 px-2.5 py-1 text-xs font-medium hover:bg-black/5">
-                {{ __('Answer') }}
-            </a>
-        @endcan
+            @if (! $open)
+                <a href="{{ route('body.findings.show', $finding) }}"
+                   class="shrink-0 rounded border border-current/30 px-2.5 py-1 text-xs font-medium hover:bg-black/5">{{ __('Read the answer') }}</a>
+            @else
+                @can('finding.resolve')
+                    <a href="{{ route('body.findings.show', $finding) }}"
+                       class="shrink-0 rounded border border-current/30 px-2.5 py-1 text-xs font-medium hover:bg-black/5">
+                        {{ __('Answer') }}
+                    </a>
+                @endcan
+            @endif
         @endif
     </div>
 </div>

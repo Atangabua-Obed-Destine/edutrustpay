@@ -39,7 +39,7 @@
 @section('content')
 
     <x-breadcrumb :items="[
-        __('Institutions') => route('body.institutions.index'),
+        __('All institutions') => route('body.institutions.index'),
         $institution->name => route('body.institutions.show', ['institution' => $institution, 'period' => $period]),
         __('The year so far') => null,
     ]" />
@@ -57,6 +57,7 @@
     --}}
     @php $elapsed = count($statement['elapsed']); @endphp
 
+    @if ($statement['sends_ledger'] || $statement['reported'] === [])
     <div class="mb-4 rounded border-l-4 px-4 py-3 text-sm
                 {{ $statement['complete'] ? 'border-emerald-400 bg-emerald-50 text-emerald-900' : 'border-amber-400 bg-amber-50 text-amber-900' }}">
         <p class="font-medium">{{ $annual->coverageStatement($elapsed, $statement['missing']) }}</p>
@@ -67,6 +68,7 @@
             </p>
         @endunless
     </div>
+    @endif
 
     {{-- The year at a glance. A month that arrived opens that month. --}}
     <div class="mb-2 flex flex-wrap gap-1.5">

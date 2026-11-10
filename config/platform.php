@@ -18,7 +18,7 @@ return [
 
     'name' => env('PLATFORM_NAME', 'EdutrustPay'),
 
-    'console_name' => env('PLATFORM_CONSOLE_NAME', 'Body Console'),
+    'console_name' => env('PLATFORM_CONSOLE_NAME', 'EdutrustPay'),
 
     /*
     |--------------------------------------------------------------------------

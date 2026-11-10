@@ -29,7 +29,7 @@
 @section('content')
 
     <x-breadcrumb :items="[
-        __('Institutions') => manage_route('institutions.index'),
+        (request()->routeIs('admin.*') ? __('Institutions') : __('All institutions')) => manage_route('institutions.index'),
         ...($forOperator ? [$institution->body->name => route('admin.bodies.show', $institution->body)] : []),
         $institution->name => null,
     ]" />
@@ -40,8 +40,23 @@
         <div class="mb-6 rounded border border-amber-300 bg-amber-50 px-4 py-3">
             <p class="text-sm font-semibold text-amber-900">{{ __('Setting up is not finished') }}</p>
             <p class="mt-1 text-sm text-amber-800">
-                {{ __('Still outstanding: :items. Until this is done, this school\'s figures may not compare fairly with other schools.', ['items' => implode('; ', $checklist['blocking'])]) }}
+                {{ __(':items still has to be done. Until it is, this school\'s figures may not compare fairly with other schools.', ['items' => implode('; ', $checklist['blocking'])]) }}
+                {{ trans_choice('{1}One getting-started step is still open; see the list below.|[2,*]:count getting-started steps are still open; see the list below.', $checklist['total'] - $checklist['complete'], ['count' => $checklist['total'] - $checklist['complete']]) }}
             </p>
+        </div>
+    @endif
+
+    @php
+        $budgetStart = $institution->budgetYearStartMonth();
+        $ownStart = $institution->fiscal_year_start_month;
+    @endphp
+    @if ($ownStart && $budgetStart && $ownStart !== $budgetStart)
+        {{-- Two years that disagree make "year so far" and the budget sheet add up different months. --}}
+        <div class="mb-6 rounded border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            {{ __('Its year is set to start in :own, but its budget year starts in :budget. "The year so far" adds up from :own, the budget sheet from :budget. If the budget year is right, clear "Its year starts in" on Edit.', [
+                'own' => \Carbon\Carbon::create(null, $ownStart, 1)->translatedFormat('F'),
+                'budget' => \Carbon\Carbon::create(null, $budgetStart, 1)->translatedFormat('F'),
+            ]) }}
         </div>
     @endif
 

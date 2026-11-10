@@ -71,7 +71,7 @@
                                 <th class="px-4 py-2 text-right font-semibold">{{ __('This month') }}</th>
                                 <th class="px-4 py-2 text-right font-semibold">{{ __('So far') }}</th>
                                 <th class="px-4 py-2 text-right font-semibold">{{ $section === 'income' ? __('Still to come') : __('Left') }}</th>
-                                <th class="px-4 py-2 text-right font-semibold">{{ __('Used') }}</th>
+                                <th class="px-4 py-2 text-right font-semibold">{{ $section === 'income' ? __('Received') : __('Used') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-rule bg-surface">
@@ -92,7 +92,7 @@
                                     <td class="px-4 py-2 text-right tabular-nums">{{ money_text($line['budget']) }}</td>
                                     <td class="px-4 py-2 text-right tabular-nums">{{ money_text($line['month']) }}</td>
                                     <td class="px-4 py-2 text-right tabular-nums">{{ money_text($line['to_date']) }}</td>
-                                    <td class="px-4 py-2 text-right tabular-nums {{ $budget - $soFar < 0 && $section !== 'income' ? 'text-rose-700' : '' }}">{{ $budget > 0 ? money_text($budget - $soFar) : '—' }}</td>
+                                    <td class="px-4 py-2 text-right tabular-nums {{ $budget - $soFar < 0 && $section !== 'income' ? 'text-rose-700' : '' }}">@if ($budget > 0 && $section === 'income' && $soFar > $budget)<span class="text-emerald-700">{{ __(':amount more than budgeted', ['amount' => money_text($soFar - $budget)]) }}</span>@else{{ $budget > 0 ? money_text($budget - $soFar) : '—' }}@endif</td>
                                     <td class="px-4 py-2 text-right tabular-nums text-ink-muted">{{ $used !== null ? $used.'%' : '—' }}</td>
                                 </tr>
                             @endforeach

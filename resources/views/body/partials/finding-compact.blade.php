@@ -1,16 +1,17 @@
 @php
     $latest = $group->latest;
     $count = $group->findings->count();
-    $chip = [
+    $open = $latest->status === \App\Models\Finding::OPEN;
+    $chip = $open ? ([
         'critical' => 'bg-rose-100 text-rose-800',
         'high' => 'bg-amber-100 text-amber-800',
-    ][$group->severity] ?? 'bg-surface-sunk text-ink-soft';
+    ][$group->severity] ?? 'bg-surface-sunk text-ink-soft') : 'bg-emerald-50 text-emerald-800';
 @endphp
 
 {{-- One line each, so the list can be read at a glance. The full text opens underneath. --}}
 <details class="rounded border border-rule bg-surface">
     <summary class="cursor-pointer px-4 py-2.5 text-sm">
-        <span class="mr-1.5 inline-block rounded px-1.5 py-0.5 text-xs font-medium {{ $chip }}">{{ \App\Models\Finding::severityLabel($group->severity) }}</span>
+        <span class="mr-1.5 inline-block rounded px-1.5 py-0.5 text-xs font-medium {{ $chip }}">{{ $open ? \App\Models\Finding::severityLabel($group->severity) : __('Answered') }}</span>
         <span class="font-medium text-ink">{{ $latest->institution->name }}:</span>
         <span class="text-ink-soft">{{ $latest->title }}</span>
         @if ($count > 1)
@@ -32,10 +33,15 @@
                             <span class="ml-2 text-ink-muted">{{ $finding->title }}</span>
                         @endif
                     </span>
-                    @can('finding.resolve')
+                    @if ($finding->status !== \App\Models\Finding::OPEN)
                         <a href="{{ route('body.findings.show', $finding) }}"
-                           class="shrink-0 rounded border border-rule-strong px-2.5 py-1 text-xs font-medium text-ink hover:bg-surface-sunk">{{ __('Answer') }}</a>
-                    @endcan
+                           class="shrink-0 rounded border border-rule-strong px-2.5 py-1 text-xs font-medium text-ink hover:bg-surface-sunk">{{ __('Read the answer') }}</a>
+                    @else
+                        @can('finding.resolve')
+                            <a href="{{ route('body.findings.show', $finding) }}"
+                               class="shrink-0 rounded border border-rule-strong px-2.5 py-1 text-xs font-medium text-ink hover:bg-surface-sunk">{{ __('Answer') }}</a>
+                        @endcan
+                    @endif
                 </li>
             @endforeach
         </ul>

@@ -1,0 +1,1 @@
+@include('errors.page', ['code' => '500', 'heading' => __('Something went wrong'), 'text' => __('The console could not show this page. Try again in a moment; if it keeps happening, tell the people who run the console.')])

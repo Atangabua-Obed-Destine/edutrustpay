@@ -15,6 +15,9 @@ use Illuminate\Support\Collection;
  */
 class OverviewService
 {
+    /** Set while building: why a money figure is empty when no report has arrived at all. */
+    private ?string $noReportsYet = null;
+
     /**
      * @param  Collection<int, Institution>  $institutions
      * @param  array<string, mixed>  $position  from ConsolidationService::position()
@@ -49,6 +52,10 @@ class OverviewService
         $areSchools = $institutions->every(fn (Institution $i) => \App\Support\InstitutionType::isSchool($i->type));
         $one = $areSchools ? __('school') : __('institution');
         $many = $areSchools ? __('schools') : __('institutions');
+
+        $this->noReportsYet = $position['reports']->isEmpty()
+            ? __('No reports for :month yet.', ['month' => period_text($period)])
+            : null;
 
         $reportHeadline = $this->reportHeadline($rows, $period, $one, $many);
         $ruleHeadline = $compliance === null ? null : $this->ruleHeadline($rows, $compliance, $one, $many);
@@ -133,7 +140,7 @@ class OverviewService
     private function moneyTile(string $label, $aggregate, string $one, string $many, string $href, $over90 = null): object
     {
         if (! $aggregate->hasFigures()) {
-            return $this->tile($label, null, 'muted', __('No :one sends this yet.', ['one' => $one]), $href);
+            return $this->tile($label, null, 'muted', $this->noReportsYet ?? __('No :one sends this yet.', ['one' => $one]), $href);
         }
 
         $hint = null;

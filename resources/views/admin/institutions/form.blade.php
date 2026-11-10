@@ -15,7 +15,7 @@
 @section('content')
 
     <x-breadcrumb :items="array_filter([
-        __('Institutions') => manage_route('institutions.index'),
+        (request()->routeIs('admin.*') ? __('Institutions') : __('All institutions')) => manage_route('institutions.index'),
         ($institution->exists ? $institution->name : null) => $institution->exists ? manage_route('institutions.show', $institution) : null,
         ($institution->exists ? __('Edit') : __('New')) => null,
     ])" />

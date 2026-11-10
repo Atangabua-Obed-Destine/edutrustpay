@@ -23,7 +23,7 @@
         <div class="rounded border border-rule bg-surface">
             <header class="border-b border-rule px-4 py-3">
                 <h2 class="font-serif text-base leading-tight text-ink">
-                    {{ __('In the school\'s own system') }}
+                    {{ __('In the school\'s own system (needs a login there)') }}
                 </h2>
                 <p class="mt-0.5 text-xs text-ink-muted">
                     {{ __('These open :institution\'s own system in a new tab, for anything beyond the daybook. You will sign in there, under your own name. If the figures there disagree with the ones above, the school\'s own books are right.', [
@@ -60,7 +60,7 @@
 
             @if ($period)
                 <p class="border-t border-rule px-4 py-2 text-[11px] text-ink-muted">
-                    {{ __('Each link opens on :period. If the figures there disagree with the ones above, the school\'s own books are right, and the school should send the month again.', ['period' => period_text($period)]) }}
+                    {{ __('Where the school\'s system allows it, a link opens on :period. If the figures there disagree with the ones above, the school\'s own books are right, and the school should send the month again.', ['period' => period_text($period)]) }}
                 </p>
             @endif
         </div>

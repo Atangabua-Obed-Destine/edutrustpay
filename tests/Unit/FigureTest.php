@@ -67,7 +67,7 @@ class FigureTest extends TestCase
         $this->assertFalse($aggregate->isComplete());
 
         $this->assertSame(
-            'Added up from 2 of 3 schools. 1 has no figure for this, so the total leaves it out.',
+            'Added up from 2 of 3 schools. Left out: St Joseph Primary ('.mb_strtolower(Figure::notCapable()->label()).').',
             $aggregate->coverageStatement()
         );
     }

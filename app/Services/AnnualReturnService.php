@@ -226,7 +226,7 @@ class AnnualReturnService
     {
         if ($missing === []) {
             return trans_choice(
-                '{1}The one month of the year so far has arrived.|[2,*]All :count months of the year so far have arrived.',
+                '{1}The year so far is one month, and it has arrived.|[2,*]All :count months of the year so far have arrived.',
                 $elapsed,
                 ['count' => $elapsed]
             );

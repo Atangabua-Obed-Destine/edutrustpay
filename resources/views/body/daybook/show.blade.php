@@ -74,7 +74,7 @@
                     @endforeach
                 </select>
             </div>
-            <button type="submit" class="rounded border border-rule-strong px-3 py-1.5 text-sm font-medium hover:bg-surface-sunk">{{ __('Filter') }}</button>
+            <button type="submit" class="rounded border border-rule-strong px-3 py-1.5 text-sm font-medium hover:bg-surface-sunk">{{ __('Show') }}</button>
             @if (array_filter($filters))
                 <a href="{{ route('body.institutions.daybook', ['institution' => $institution, 'period' => $period]) }}" class="py-1.5 text-sm text-ink-muted hover:underline">{{ __('Clear') }}</a>
             @endif
@@ -92,7 +92,7 @@
                             <th class="px-4 py-2 font-semibold">{{ __('Date') }}</th>
                             <th class="px-4 py-2 font-semibold">{{ __('Reference') }}</th>
                             <th class="px-4 py-2 font-semibold">{{ __('Description') }}</th>
-                            <th class="px-4 py-2 font-semibold">{{ __('Heading') }}</th>
+                            <th class="px-4 py-2 font-semibold">{{ __('Budget line') }}</th>
                             <th class="px-4 py-2 font-semibold">{{ __('Paid by') }}</th>
                             <th class="px-4 py-2 text-right font-semibold">{{ __('In') }}</th>
                             <th class="px-4 py-2 text-right font-semibold">{{ __('Out') }}</th>

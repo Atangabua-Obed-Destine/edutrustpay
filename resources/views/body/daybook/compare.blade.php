@@ -74,7 +74,8 @@
                                     <td class="px-4 py-2 text-right tabular-nums">{{ money_text($row->payroll->value()) }}</td>
                                     <td class="px-4 py-2 text-right tabular-nums">{{ money_text($row->money_out->subtract($row->payroll)->value()) }}</td>
                                 @else
-                                    <td colspan="2" class="px-4 py-2 text-right text-xs italic text-ink-muted">{{ __('salaries not recorded through payroll') }}</td>
+                                    <td class="px-4 py-2 text-right text-xs italic text-ink-muted">{{ __('not through payroll') }}</td>
+                                    <td class="px-4 py-2 text-right tabular-nums">{{ money_text($row->money_out->value()) }}<span class="block text-xs font-normal text-ink-muted">{{ __('salaries included') }}</span></td>
                                 @endif
                             @else
                                 <td colspan="6" class="px-4 py-2 text-right text-sm italic text-ink-muted">{{ __('no daybook sent for these months') }}</td>
@@ -94,7 +95,8 @@
                                 <td class="px-4 py-2 text-right tabular-nums">{{ money_text($comparison['totals']->payroll->value()) }}</td>
                                 <td class="px-4 py-2 text-right tabular-nums">{{ money_text($comparison['totals']->money_out->subtract($comparison['totals']->payroll)->value()) }}</td>
                             @else
-                                <td colspan="2" class="px-4 py-2 text-right text-xs font-normal text-ink-muted">{{ __('not every school records salaries through payroll') }}</td>
+                                <td class="px-4 py-2 text-right text-xs font-normal text-ink-muted">{{ __('not every school uses payroll') }}</td>
+                                <td class="px-4 py-2 text-right tabular-nums">{{ money_text($comparison['totals']->money_out->subtract($comparison['totals']->payroll)->value()) }}<span class="block text-xs font-normal text-ink-muted">{{ __('some salaries included') }}</span></td>
                             @endif
                         </tr>
                     </tfoot>
@@ -127,7 +129,7 @@
                 </tbody>
             </table>
         </div>
-        <p class="mt-2 text-xs text-ink-muted">{{ __('A dash means it cannot be worked out: nothing to take a share of, or salaries not recorded through payroll, in which case they appear under what the school spends most on. The cash share only counts money with a recorded method.') }}</p>
+        <p class="mt-2 text-xs text-ink-muted">{{ __('A dash means the share cannot be worked out. A school that pays salaries outside payroll has them counted in its other spending. The cash share counts only money whose method of payment was recorded.') }}</p>
     </section>
 
     <section class="mb-8">

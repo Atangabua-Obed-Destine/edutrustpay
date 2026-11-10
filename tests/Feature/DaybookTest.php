@@ -225,7 +225,7 @@ class DaybookTest extends TestCase
         $this->as($this->person('s@bamenda.test', 'education_secretary'))
             ->get(route('body.daybook.compare', ['from' => '2026-10', 'to' => '2026-10']))
             ->assertOk()
-            ->assertSee('salaries not recorded through payroll')
+            ->assertSee('not through payroll')->assertSee('salaries included')
             ->assertDontSee('>0%<', false);
     }
 

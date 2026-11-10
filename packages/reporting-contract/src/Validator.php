@@ -537,6 +537,129 @@ final class Validator
                 );
             }
         }
+
+        $version = (string) ($payload['contract_version'] ?? '');
+        $since = ContractVersion::STUDENTS_AND_STAFF_FROM;
+
+        if (array_key_exists('students', $operational)) {
+            if (version_compare($version, $since, '<')) {
+                $this->errors[] = sprintf('operational.students arrived in contract %s; this report says %s.', $since, $version);
+            } else {
+                $this->checkStudents($operational['students']);
+            }
+        }
+
+        if (array_key_exists('staff', $operational)) {
+            if (version_compare($version, $since, '<')) {
+                $this->errors[] = sprintf('operational.staff arrived in contract %s; this report says %s.', $since, $version);
+            } else {
+                $this->checkStaff($operational['staff']);
+            }
+        }
+    }
+
+    /**
+     * @param  mixed  $block
+     */
+    private function checkStudents($block): void
+    {
+        if (! is_array($block) || ! $this->isText($block['session'] ?? null) || ! is_int($block['total'] ?? null) || $block['total'] < 0
+            || ! is_array($block['by_class'] ?? null) || ! array_is_list($block['by_class'])) {
+            $this->errors[] = 'operational.students must have a session name, a total and a list of classes.';
+
+            return;
+        }
+
+        $seen = [];
+        $sum = 0;
+
+        foreach ($block['by_class'] as $i => $row) {
+            if (! is_array($row) || ! $this->isText($row['level'] ?? null) || ! is_int($row['students'] ?? null) || $row['students'] < 0) {
+                $this->errors[] = sprintf('operational.students.by_class[%d] needs a class name and a whole number of students.', $i);
+
+                continue;
+            }
+
+            if (isset($seen[$row['level']])) {
+                $this->errors[] = sprintf('operational.students lists the class "%s" twice.', $row['level']);
+            }
+
+            $seen[$row['level']] = true;
+            $sum += $row['students'];
+        }
+
+        if ($sum !== $block['total']) {
+            $this->errors[] = sprintf('operational.students.by_class adds up to %d, not the total of %d.', $sum, $block['total']);
+        }
+    }
+
+    /**
+     * @param  mixed  $block
+     */
+    private function checkStaff($block): void
+    {
+        if (! is_array($block) || ! is_int($block['total'] ?? null) || $block['total'] < 0
+            || ! is_array($block['people'] ?? null) || ! array_is_list($block['people'])) {
+            $this->errors[] = 'operational.staff must have a total and a list of people.';
+
+            return;
+        }
+
+        foreach ($block['people'] as $i => $person) {
+            $allowed = ['department', 'designation', 'name', 'number'];
+
+            if (! is_array($person) || array_diff(array_keys($person), $allowed) !== [] || ! $this->isText($person['name'] ?? null)) {
+                // Anything beyond these four is refused, pay above all: the
+                // console was approved to hold who is posted where, not more.
+                $this->errors[] = sprintf('operational.staff.people[%d] must carry a name, and nothing besides number, department and designation.', $i);
+
+                continue;
+            }
+
+            foreach (['number', 'department', 'designation'] as $key) {
+                if (($person[$key] ?? null) !== null && ! $this->isText($person[$key])) {
+                    $this->errors[] = sprintf('operational.staff.people[%d].%s must be text of 1 to %d characters, or null.', $i, $key, PayloadBuilder::TEXT_MAX);
+                }
+            }
+        }
+
+        if (count($block['people']) !== $block['total']) {
+            $this->errors[] = sprintf('operational.staff.total says %d but the list has %d people.', $block['total'], count($block['people']));
+        }
+
+        foreach (['by_department', 'by_designation'] as $key) {
+            $rows = $block[$key] ?? null;
+
+            if (! is_array($rows) || ! array_is_list($rows)) {
+                $this->errors[] = sprintf('operational.staff.%s must be a list of rows.', $key);
+
+                continue;
+            }
+
+            $sum = 0;
+
+            foreach ($rows as $i => $row) {
+                if (! is_array($row) || ! (($row['name'] ?? null) === null || $this->isText($row['name'])) || ! is_int($row['staff'] ?? null) || $row['staff'] < 0) {
+                    $this->errors[] = sprintf('operational.staff.%s[%d] needs a name (or null) and a whole number of staff.', $key, $i);
+
+                    continue;
+                }
+
+                $sum += $row['staff'];
+            }
+
+            if ($sum !== $block['total']) {
+                $this->errors[] = sprintf('operational.staff.%s adds up to %d, not the total of %d.', $key, $sum, $block['total']);
+            }
+        }
+    }
+
+    /**
+     * @param  mixed  $value
+     */
+    private function isText($value): bool
+    {
+        return is_string($value) && trim($value) !== '' && mb_strlen($value) <= PayloadBuilder::TEXT_MAX;
     }
 
     /**

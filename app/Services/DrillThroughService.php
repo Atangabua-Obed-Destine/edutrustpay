@@ -10,8 +10,8 @@ use Carbon\Carbon;
  * not hold.
  *
  * THE ARCHITECTURAL POINT. EdutrustPay receives a signed monthly summary and each
- * school's daybook lines. It holds nothing else: no invoices, no receipts, no
- * student records. So for detail beyond the daybook, the honest answer is not to
+ * school's daybook lines and staff list (number, name, department and post).
+ * It holds nothing else: no invoices, no receipts, no student records. So for detail beyond the daybook, the honest answer is not to
  * fetch it; it is to send them to the institution's own system, where the
  * institution's own login decides what they may see.
  *

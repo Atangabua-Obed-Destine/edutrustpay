@@ -59,6 +59,10 @@ final class PayloadBuilder
 
     public const GROUP_NAME_MAX = 120;
 
+    /** The longest class name, session, staff name, number, department or post. */
+    public const TEXT_MAX = 120;
+
+
     /** @var array<string, bool> capability => declared */
     private array $declared = [];
 
@@ -352,6 +356,136 @@ final class PayloadBuilder
         $this->operational['fees_charged'] = ['session' => $session, 'rows' => array_values($rows)];
 
         return $this->declare(Capability::FEES_CHARGED);
+    }
+
+    /**
+     * How many students the institution has in the session the month falls in,
+     * class by class. Since contract 1.3.
+     *
+     * A row is a class name and a count; no student is named. Use the same class
+     * names as feesCharged(), so the console can set the two side by side. The
+     * total is the sum of the classes, worked out here so the two never disagree.
+     *
+     * @param  array<int, array{level: string, students: int}>  $rows
+     */
+    public function students(string $session, array $rows): self
+    {
+        $session = self::cleanText($session);
+
+        if ($session === '' || mb_strlen($session) > self::TEXT_MAX) {
+            throw new ContractException(sprintf('students needs a session name of 1 to %d characters.', self::TEXT_MAX));
+        }
+
+        $clean = [];
+
+        foreach ($rows as $row) {
+            $level = self::cleanText((string) ($row['level'] ?? ''));
+            $students = $row['students'] ?? null;
+
+            if ($level === '' || mb_strlen($level) > self::TEXT_MAX || ! is_int($students) || $students < 0) {
+                throw new ContractException('Each class needs a name of 1 to '.self::TEXT_MAX.' characters and a whole number of students.');
+            }
+
+            if (isset($clean[$level])) {
+                throw new ContractException(sprintf('The class "%s" appears twice. Add its students together.', $level));
+            }
+
+            $clean[$level] = ['level' => $level, 'students' => $students];
+        }
+
+        ksort($clean, SORT_STRING);
+
+        $this->operational['students'] = [
+            'session' => $session,
+            'total' => array_sum(array_column($clean, 'students')),
+            'by_class' => array_values($clean),
+        ];
+
+        return $this->declare(Capability::STUDENTS);
+    }
+
+    /**
+     * The staff on the books at the end of the month. Since contract 1.3.
+     *
+     * Each person is their staff number, name, department and post, and nothing
+     * else: no pay, no contact details. The counts by department and by post
+     * are worked out here from the same list, so the two can never disagree.
+     * A department or post the school has not recorded is sent as null.
+     *
+     * @param  array<int, array{number: ?string, name: string, department: ?string, designation: ?string}>  $people
+     */
+    public function staff(array $people): self
+    {
+        $clean = [];
+
+        foreach ($people as $person) {
+            $name = self::cleanText((string) ($person['name'] ?? ''));
+
+            if ($name === '' || mb_strlen($name) > self::TEXT_MAX) {
+                throw new ContractException('Each member of staff needs a name of 1 to '.self::TEXT_MAX.' characters.');
+            }
+
+            $entry = ['name' => $name];
+
+            foreach (['number', 'department', 'designation'] as $key) {
+                $value = isset($person[$key]) ? self::cleanText((string) $person[$key]) : '';
+
+                if (mb_strlen($value) > self::TEXT_MAX) {
+                    throw new ContractException(sprintf('A staff %s can be at most %d characters.', $key, self::TEXT_MAX));
+                }
+
+                $entry[$key] = $value === '' ? null : $value;
+            }
+
+            ksort($entry);
+            $clean[] = $entry;
+        }
+
+        // A fixed order, so the same staff always serialise, and sign, the same way.
+        usort($clean, fn (array $a, array $b) => [$a['name'], (string) $a['number'], (string) $a['department'], (string) $a['designation']]
+            <=> [$b['name'], (string) $b['number'], (string) $b['department'], (string) $b['designation']]);
+
+        $this->operational['staff'] = [
+            'total' => count($clean),
+            'by_department' => self::countBy($clean, 'department'),
+            'by_designation' => self::countBy($clean, 'designation'),
+            'people' => $clean,
+        ];
+
+        return $this->declare(Capability::STAFF);
+    }
+
+    /**
+     * @param  list<array<string, ?string>>  $people
+     * @return list<array{name: ?string, staff: int}>  by name, with "not recorded" (null) last
+     */
+    private static function countBy(array $people, string $key): array
+    {
+        $counts = [];
+
+        foreach ($people as $person) {
+            $counts[$person[$key] ?? ''] = ($counts[$person[$key] ?? ''] ?? 0) + 1;
+        }
+
+        $unset = $counts[''] ?? null;
+        unset($counts['']);
+        ksort($counts, SORT_STRING);
+
+        $rows = [];
+        foreach ($counts as $name => $staff) {
+            $rows[] = ['name' => (string) $name, 'staff' => $staff];
+        }
+
+        if ($unset !== null) {
+            $rows[] = ['name' => null, 'staff' => $unset];
+        }
+
+        return $rows;
+    }
+
+    private static function cleanText(string $text): string
+    {
+        return trim((string) preg_replace('/\s+/u', ' ', $text));
     }
 
     /**

@@ -76,6 +76,19 @@ $fixtures['full-capability'] = [
         ->budget($m('5000000.00'), $m('4200000.00'))
         ->payroll($m('3100000.00'), $m('465000.00'))
         ->enrolment(842, $m('8400000.00'), $m('4200000.00'), '0.50', '0.31')
+        ->students('2026/2027', [
+            ['level' => 'HND 1', 'students' => 310],
+            ['level' => 'HND 2', 'students' => 287],
+            ['level' => 'Bachelor 3', 'students' => 245],
+        ])
+        // Invented people, so the fixture names nobody real.
+        ->staff([
+            ['number' => 'ST-001', 'name' => 'Example Lecturer One', 'department' => 'Accounting', 'designation' => 'Lecturer'],
+            ['number' => 'ST-002', 'name' => 'Example Lecturer Two', 'department' => 'Accounting', 'designation' => 'Lecturer'],
+            ['number' => 'ST-003', 'name' => 'Example Head', 'department' => 'Accounting', 'designation' => 'Head of Department'],
+            ['number' => 'ST-004', 'name' => 'Example Bursar', 'department' => 'Administration', 'designation' => 'Bursar'],
+            ['number' => null, 'name' => 'Example Guard', 'department' => null, 'designation' => null],
+        ])
         ->integrity('sha256:'.str_repeat('ab', 32), 12, 1, 0)
         ->build(),
 ];

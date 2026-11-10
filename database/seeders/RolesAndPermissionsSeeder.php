@@ -36,6 +36,8 @@ class RolesAndPermissionsSeeder extends Seeder
         'Compliance' => ['view', 'manage', 'follow_up', 'waive'],
         // Separate because view reads lines that name people, and compare does not.
         'Daybook' => ['view', 'compare'],
+        // Its own permission because the list names people (number, name and post).
+        'Staff' => ['view'],
         'Audit' => ['view'],
         'Settings' => ['view', 'update'],
     ];
@@ -62,6 +64,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'credential.view', 'audit.view',
                 'compliance.view',
                 'daybook.view', 'daybook.compare',
+                'staff.view',
             ],
         ],
         'education_secretary' => [
@@ -74,6 +77,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'consolidation.view', 'consolidation.export',
                 'audit.view',
                 'daybook.view', 'daybook.compare',
+                'staff.view',
                 'compliance.view', 'compliance.manage', 'compliance.follow_up', 'compliance.waive',
             ],
         ],
@@ -96,6 +100,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'credential.view', 'audit.view', 'user.view',
                 'compliance.view',
                 'daybook.view', 'daybook.compare',
+                'staff.view',
             ],
         ],
         'institution_liaison' => [
@@ -148,6 +153,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'compliance.waive' => 'Allow an exception to a rule',
         'daybook.view' => 'Read daybooks, names included',
         'daybook.compare' => 'Compare daybooks across institutions',
+        'staff.view' => 'See the staff list, names included',
         'audit.view' => 'See who did what',
         'settings.view' => 'See settings',
         'settings.update' => 'Change settings',

@@ -36,7 +36,7 @@
                                 'Body' => __('This console'), 'Institution' => __('Institutions'), 'Credential' => __('Connection keys'),
                                 'Capability' => __('What systems send'), 'Report' => __('Monthly reports'), 'Finding' => __('To look into'),
                                 'Consolidation' => __('Everything added up'), 'User' => __('People'), 'Role' => __('Roles'),
-                                'Compliance' => __('Rules'), 'Daybook' => __('Daybooks'), 'Audit' => __('Record of who did what'), 'Settings' => __('Settings'),
+                                'Compliance' => __('Rules'), 'Daybook' => __('Daybooks'), 'Staff' => __('Staff list'), 'Audit' => __('Record of who did what'), 'Settings' => __('Settings'),
                             ];
                         @endphp
                         <legend class="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-muted">{{ $headings[$group] ?? __($group) }}</legend>

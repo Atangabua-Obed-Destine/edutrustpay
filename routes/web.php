@@ -111,6 +111,10 @@ Route::middleware(['auth', EnsureBodyView::class])->prefix('body')->name('body.'
         Route::get('institutions/{institution}/daybook', [BodyDaybookController::class, 'show'])
             ->middleware('permission:daybook.view')
             ->name('institutions.daybook');
+        // Names people (number, name, department, post), so it has its own permission.
+        Route::get('institutions/{institution}/staff', [\App\Http\Controllers\Body\StaffController::class, 'show'])
+            ->middleware('permission:staff.view')
+            ->name('institutions.staff');
     });
 
     Route::get('capabilities', CapabilityMatrixController::class)

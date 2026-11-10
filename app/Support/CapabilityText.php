@@ -28,6 +28,8 @@ final class CapabilityText
             Capability::BUDGET => [__('Budget total'), __('A single budget figure in the report. Most schools send the budget sheet instead.')],
             Capability::BANK_RECON => [__('Bank statement check'), __('The books against the bank\'s own statement.')],
             Capability::INTEGRITY => [__('How the books were kept'), __('Counts of entries, late entries, reversals and unfinished entries.')],
+            Capability::STUDENTS => [__('Students per class'), __('How many students it has in the session, class by class. No student is named.')],
+            Capability::STAFF => [__('Staff'), __('How many staff, by department and post, with the staff list: number, name, department and post. Never pay.')],
         ];
     }
 

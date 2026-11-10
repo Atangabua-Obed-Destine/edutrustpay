@@ -56,6 +56,20 @@ final class Capability
     public const BANK_RECON = 'bank_recon';
 
     /**
+     * How many students the institution has in the session the month falls in,
+     * class by class. No student is named. Since contract 1.3. Separate from
+     * enrolment, which also carries fees billed and collected: an institution
+     * can count its students long before its fee records can be trusted.
+     */
+    public const STUDENTS = 'students';
+
+    /**
+     * How many staff, by department and post, with the staff list itself: number,
+     * name, department and post. Never pay. Since contract 1.3.
+     */
+    public const STAFF = 'staff';
+
+    /**
      * Every capability, in the order the console's capability matrix shows them.
      *
      * @return list<string>
@@ -72,6 +86,8 @@ final class Capability
             self::INTEGRITY,
             self::BANK_RECON,
             self::FEES_CHARGED,
+            self::STUDENTS,
+            self::STAFF,
         ];
     }
 
@@ -106,6 +122,8 @@ final class Capability
             self::BANK_RECON => ['financial.bank_recon'],
             self::ENROLMENT => ['operational.enrolment'],
             self::FEES_CHARGED => ['operational.fees_charged'],
+            self::STUDENTS => ['operational.students'],
+            self::STAFF => ['operational.staff'],
             self::INTEGRITY => ['integrity'],
         ];
     }
@@ -130,7 +148,7 @@ final class Capability
      */
     public static function notApplicableTo(string $institutionType): array
     {
-        return in_array($institutionType, self::WITHOUT_PUPILS, true) ? [self::ENROLMENT, self::FEES_CHARGED] : [];
+        return in_array($institutionType, self::WITHOUT_PUPILS, true) ? [self::ENROLMENT, self::FEES_CHARGED, self::STUDENTS] : [];
     }
 
     /** Institution types that have no pupils, so no enrolment and no school fees. */

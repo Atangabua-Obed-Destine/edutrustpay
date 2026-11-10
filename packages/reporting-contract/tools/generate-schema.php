@@ -137,6 +137,19 @@ $financial = [
     ],
 ];
 
+/** A class, session, name, number, department or post. */
+$text = ['type' => 'string', 'minLength' => 1, 'maxLength' => 120];
+$textOrNull = ['type' => ['string', 'null'], 'minLength' => 1, 'maxLength' => 120, 'description' => 'null when the school has not recorded it.'];
+$staffCount = [
+    'type' => 'array',
+    'items' => [
+        'type' => 'object',
+        'additionalProperties' => false,
+        'required' => ['name', 'staff'],
+        'properties' => ['name' => $textOrNull, 'staff' => ['type' => 'integer', 'minimum' => 0]],
+    ],
+];
+
 $operational = [
     'type' => 'object',
     'additionalProperties' => false,
@@ -174,6 +187,53 @@ $operational = [
         'cash_share' => array_merge($rate, [
             'description' => 'Proportion taken as physical cash. The exposure measure for interception.',
         ]),
+        'students' => [
+            'type' => 'object',
+            'additionalProperties' => false,
+            'required' => ['session', 'total', 'by_class'],
+            'description' => 'Since 1.3. How many students the institution has in the session the month falls in, class by class. No student is named.',
+            'properties' => [
+                'session' => $text,
+                'total' => ['type' => 'integer', 'minimum' => 0],
+                'by_class' => [
+                    'type' => 'array',
+                    'items' => [
+                        'type' => 'object',
+                        'additionalProperties' => false,
+                        'required' => ['level', 'students'],
+                        'properties' => [
+                            'level' => $text,
+                            'students' => ['type' => 'integer', 'minimum' => 0],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+        'staff' => [
+            'type' => 'object',
+            'additionalProperties' => false,
+            'required' => ['total', 'by_department', 'by_designation', 'people'],
+            'description' => 'Since 1.3. The staff on the books at the end of the month: number, name, department and post. Never pay.',
+            'properties' => [
+                'total' => ['type' => 'integer', 'minimum' => 0],
+                'by_department' => $staffCount,
+                'by_designation' => $staffCount,
+                'people' => [
+                    'type' => 'array',
+                    'items' => [
+                        'type' => 'object',
+                        'additionalProperties' => false,
+                        'required' => ['name', 'number', 'department', 'designation'],
+                        'properties' => [
+                            'name' => $text,
+                            'number' => $textOrNull,
+                            'department' => $textOrNull,
+                            'designation' => $textOrNull,
+                        ],
+                    ],
+                ],
+            ],
+        ],
     ],
 ];
 

@@ -56,7 +56,7 @@
     </section>
 
     {{-- 2. WHERE TO GO NEXT. --}}
-    <section class="mb-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <section class="mb-8 grid gap-3 sm:grid-cols-2 {{ auth()->user()->can('staff.view') ? 'xl:grid-cols-5' : 'xl:grid-cols-4' }}">
         @can('daybook.view')
             <a href="{{ route('body.institutions.daybook', ['institution' => $institution, 'period' => $period]) }}"
                class="rounded border border-rule bg-surface px-4 py-3 transition hover:bg-surface-sunk">
@@ -69,6 +69,13 @@
             <span class="font-serif text-base text-ink">{{ __('Budget sheet') }}</span>
             <span class="mt-0.5 block text-xs text-ink-muted">{{ __('Each budget line against what has been spent so far.') }}</span>
         </a>
+        @can('staff.view')
+            <a href="{{ route('body.institutions.staff', ['institution' => $institution, 'period' => $period]) }}"
+               class="rounded border border-rule bg-surface px-4 py-3 transition hover:bg-surface-sunk">
+                <span class="font-serif text-base text-ink">{{ __('Staff list') }}</span>
+                <span class="mt-0.5 block text-xs text-ink-muted">{{ __('Who is on the books, by name, department and post.') }}</span>
+            </a>
+        @endcan
         <a href="{{ route('body.institutions.annual', $institution) }}?period={{ $period }}"
            class="rounded border border-rule bg-surface px-4 py-3 transition hover:bg-surface-sunk">
             <span class="font-serif text-base text-ink">{{ __('The year so far') }}</span>

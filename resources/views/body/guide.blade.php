@@ -29,6 +29,8 @@
         [__('Act now, Needs action, Worth a look'), __('How serious something under To look into is. None of them is proof of wrongdoing; each is a question to ask the school.')],
         [__('Daybook'), __('Every entry in a school\'s books for a month, line by line, as the school recorded it.')],
         [__('Budget sheet'), __('The school\'s own budget for the year, with how much of each line has been used so far.')],
+        [__('Students per class'), __('How many students each class has in the session, as the school counts them. No student is named.')],
+        [__('Staff list'), __('Who is on a school\'s books at the end of a month: staff number, name, department and post, as the school records them. Never pay. Only some roles can open it, and every opening is recorded.')],
         [__('Class 71 · Scolarites'), __('An account class, numbered as in the school\'s chart of accounts and named in the school\'s own words.')],
     ];
 @endphp

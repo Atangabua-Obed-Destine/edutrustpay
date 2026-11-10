@@ -293,6 +293,88 @@
         </section>
 
         {{-- ══════════════════════════════════════════════════════════
+             Who is there: students per class, and the staff by department
+             and post. The names are on their own page, behind staff.view.
+             ══════════════════════════════════════════════════════════ --}}
+        @php
+            // Decoded only when one of the two is declared, as the fees charged are.
+            $operational = $report->declares(Capability::STUDENTS) || $report->declares(Capability::STAFF) ? ($report->decodedPayload()['operational'] ?? []) : [];
+            $students = $report->declares(Capability::STUDENTS) ? ($operational['students'] ?? null) : null;
+            $staff = $report->declares(Capability::STAFF) ? ($operational['staff'] ?? null) : null;
+        @endphp
+        <section class="mb-8 grid gap-6 lg:grid-cols-2">
+            <x-card :title="__('Students per class')"
+                    :subtitle="$students ? __('The :session session, at the end of :month.', ['session' => $students['session'], 'month' => $month]) : __('The school\'s own count.')">
+                @if (! $students)
+                    <p class="text-sm italic text-ink-muted">{{ $notSent(__('how many students each class has')) }}</p>
+                @else
+                    <div class="-mx-4 overflow-x-auto">
+                        <table class="min-w-full divide-y divide-rule text-sm">
+                            <thead class="text-left text-xs uppercase tracking-wide text-ink-muted">
+                                <tr>
+                                    <th class="px-4 py-2 font-semibold">{{ __('Class') }}</th>
+                                    <th class="px-4 py-2 text-right font-semibold">{{ __('Students') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-rule">
+                                @forelse ($students['by_class'] as $row)
+                                    <tr>
+                                        <td class="px-4 py-2 text-ink-soft">{{ $row['level'] }}</td>
+                                        <td class="px-4 py-2 text-right tabular-nums">{{ number_format((int) $row['students']) }}</td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="2" class="px-4 py-3 text-sm italic text-ink-muted">{{ __('No student is enrolled in this session yet.') }}</td></tr>
+                                @endforelse
+                            </tbody>
+                            <tfoot class="border-t-2 border-rule-strong font-medium">
+                                <tr>
+                                    <td class="px-4 py-2 text-ink">{{ __('All classes') }}</td>
+                                    <td class="px-4 py-2 text-right tabular-nums text-ink">{{ number_format((int) $students['total']) }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    @if ($report->enrolment !== null && (int) $report->enrolment !== (int) $students['total'])
+                        <p class="mt-3 text-xs text-amber-800">
+                            {{ __('The classes add up to :total, but the student count beside the fees says :enrolment. Worth asking the school which is right.', ['total' => number_format((int) $students['total']), 'enrolment' => number_format((int) $report->enrolment)]) }}
+                        </p>
+                    @endif
+                @endif
+            </x-card>
+
+            <x-card :title="__('Staff')"
+                    :subtitle="$staff ? trans_choice('{0}Nobody on the books at the end of :month.|{1}One person on the books at the end of :month.|[2,*]:count people on the books at the end of :month.', $staff['total'], ['count' => number_format((int) $staff['total']), 'month' => $month]) : __('The school\'s own records.')">
+                @if (! $staff)
+                    <p class="text-sm italic text-ink-muted">{{ $notSent(__('who is on its staff')) }}</p>
+                @else
+                    <div class="grid gap-5 sm:grid-cols-2">
+                        @foreach (['by_department' => __('By department'), 'by_designation' => __('By post')] as $key => $heading)
+                            <div>
+                                <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-muted">{{ $heading }}</p>
+                                <ul class="divide-y divide-rule text-sm">
+                                    @forelse ($staff[$key] as $row)
+                                        <li class="flex items-baseline justify-between gap-3 py-1.5">
+                                            <span class="{{ $row['name'] === null ? 'italic text-ink-muted' : 'text-ink-soft' }}">{{ $row['name'] ?? __('Not recorded') }}</span>
+                                            <span class="tabular-nums">{{ number_format((int) $row['staff']) }}</span>
+                                        </li>
+                                    @empty
+                                        <li class="py-1.5 text-sm italic text-ink-muted">{{ __('Nobody') }}</li>
+                                    @endforelse
+                                </ul>
+                            </div>
+                        @endforeach
+                    </div>
+                    @can('staff.view')
+                        <a href="{{ route('body.institutions.staff', ['institution' => $institution, 'period' => $period]) }}"
+                           class="mt-4 inline-block text-sm font-medium text-accent hover:underline">{{ __('See the staff list for :month, with names', ['month' => $month]) }} →</a>
+                    @else
+                        <p class="mt-4 text-xs text-ink-muted">{{ __('The list of names is shown only to people allowed to see it.') }}</p>
+                    @endcan
+                @endif
+            </x-card>
+        </section>
+
+        {{-- ══════════════════════════════════════════════════════════
              What is actually being charged, class by class. No student
              is named; this is the schedule as the school applies it.
              ══════════════════════════════════════════════════════════ --}}

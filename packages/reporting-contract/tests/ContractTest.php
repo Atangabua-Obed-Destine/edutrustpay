@@ -268,11 +268,161 @@ final class ContractTest extends TestCase
             ->build();
     }
 
+    /**
+     * @param  array<int, array<string, ?string>>  $staff
+     * @param  array<int, array{level: string, students: int}>  $classes
+     */
+    private function peopleReport(array $staff, array $classes = [['level' => 'Form One', 'students' => 30]], string $status = 'provisional'): array
+    {
+        $m = fn (string $v) => Money::of($v);
+
+        return PayloadBuilder::for(TestVectors::INSTITUTION_REF, '2026-10')
+            ->status($status)
+            ->sequence(1)
+            ->generatedAt('2026-11-01T00:00:00Z')
+            ->currency('XAF')
+            ->enrolment(array_sum(array_column($classes, 'students')), $m('300000.00'), $m('150000.00'), '0.50', '0.20')
+            ->students('2026/2027', $classes)
+            ->staff($staff)
+            ->build();
+    }
+
+    private const TEACHERS = [
+        ['number' => 'T2', 'name' => 'Example Teacher', 'department' => 'Sciences', 'designation' => 'Teacher'],
+        ['number' => 'T1', 'name' => 'Example Head', 'department' => 'Sciences', 'designation' => 'Head of Department'],
+        ['number' => null, 'name' => 'Example Cook', 'department' => null, 'designation' => 'Cook'],
+    ];
+
+    public function test_staff_are_counted_by_department_and_post_from_the_same_list(): void
+    {
+        $payload = $this->peopleReport(self::TEACHERS);
+        $staff = $payload['operational']['staff'];
+
+        $this->assertContains(Capability::STAFF, $payload['capabilities']);
+        $this->assertSame(3, $staff['total']);
+        $this->assertSame([['name' => 'Sciences', 'staff' => 2], ['name' => null, 'staff' => 1]], $staff['by_department']);
+        $this->assertSame(['Cook', 'Head of Department', 'Teacher'], array_column($staff['by_designation'], 'name'));
+        // A fixed order, whatever order the school's system lists people in.
+        $this->assertSame(['Example Cook', 'Example Head', 'Example Teacher'], array_column($staff['people'], 'name'));
+        $this->assertSame(Canonical::encode($payload), Canonical::encode($this->peopleReport(array_reverse(self::TEACHERS))));
+
+        $this->assertTrue((new Validator())->validate($payload)['valid']);
+    }
+
+    public function test_students_are_counted_by_class_and_need_no_fee_figures(): void
+    {
+        $payload = $this->peopleReport([], [['level' => 'Form Two', 'students' => 12], ['level' => 'Form One', 'students' => 18]]);
+
+        $this->assertSame([
+            'session' => '2026/2027',
+            'total' => 30,
+            'by_class' => [['level' => 'Form One', 'students' => 18], ['level' => 'Form Two', 'students' => 12]],
+        ], $payload['operational']['students']);
+        $this->assertTrue((new Validator())->validate($payload)['valid']);
+
+        // A system whose fee records cannot be trusted yet still counts its students.
+        $alone = PayloadBuilder::for(TestVectors::INSTITUTION_REF, '2026-10')
+            ->students('2026/2027', [['level' => 'HND 1', 'students' => 9]])
+            ->build();
+
+        $this->assertSame(['students'], $alone['capabilities']);
+        $this->assertTrue((new Validator())->validate($alone)['valid']);
+    }
+
+    public function test_a_class_total_that_disagrees_with_the_classes_is_refused(): void
+    {
+        $payload = Canonical::decode(Canonical::encode($this->peopleReport([])));
+        $payload['operational']['students']['total'] = 31;
+
+        $this->assertStringContainsString('by_class adds up to 30, not the total of 31', implode(' ', (new Validator())->validate($payload)['errors']));
+    }
+
+    public function test_a_class_named_twice_or_a_nameless_member_of_staff_is_refused(): void
+    {
+        $refused = 0;
+
+        foreach ([
+            fn () => PayloadBuilder::for(TestVectors::INSTITUTION_REF, '2026-10')->students('2026/2027', [['level' => 'Form One', 'students' => 1], ['level' => ' Form  One ', 'students' => 2]]),
+            fn () => PayloadBuilder::for(TestVectors::INSTITUTION_REF, '2026-10')->staff([['number' => 'T1', 'name' => '  ', 'department' => null, 'designation' => null]]),
+            fn () => PayloadBuilder::for(TestVectors::INSTITUTION_REF, '2026-10')->students('', []),
+        ] as $attempt) {
+            try {
+                $attempt();
+            } catch (ContractException) {
+                $refused++;
+            }
+        }
+
+        $this->assertSame(3, $refused);
+    }
+
+    public function test_the_console_refuses_pay_or_anything_else_about_a_person(): void
+    {
+        $payload = Canonical::decode(Canonical::encode($this->peopleReport(self::TEACHERS)));
+        $payload['operational']['staff']['people'][0]['salary'] = '250000.00';
+
+        $result = (new Validator())->validate($payload);
+
+        $this->assertFalse($result['valid']);
+        $this->assertStringContainsString('nothing besides number, department and designation', implode(' ', $result['errors']));
+    }
+
+    public function test_staff_counts_that_disagree_with_the_list_are_refused(): void
+    {
+        $payload = Canonical::decode(Canonical::encode($this->peopleReport(self::TEACHERS)));
+        $payload['operational']['staff']['total'] = 4;
+        $payload['operational']['staff']['by_department'][0]['staff'] = 5;
+
+        $errors = implode(' ', (new Validator())->validate($payload)['errors']);
+
+        $this->assertStringContainsString('total says 4 but the list has 3 people', $errors);
+        $this->assertStringContainsString('by_department adds up to 6', $errors);
+    }
+
+    public function test_students_and_staff_are_refused_on_an_older_contract(): void
+    {
+        $payload = Canonical::decode(Canonical::encode($this->peopleReport(self::TEACHERS)));
+        $payload['contract_version'] = '1.2';
+
+        $errors = implode(' ', (new Validator())->validate($payload)['errors']);
+
+        $this->assertStringContainsString('operational.students arrived in contract 1.3', $errors);
+        $this->assertStringContainsString('operational.staff arrived in contract 1.3', $errors);
+    }
+
+    public function test_a_staff_change_refiles_an_open_month_but_never_a_closed_one(): void
+    {
+        // A post corrected today must not make every closed month look changed:
+        // each refile of a closed month raises a finding.
+        $moved = self::TEACHERS;
+        $moved[0]['designation'] = 'Senior Teacher';
+        $grown = [['level' => 'Form One', 'students' => 31]];
+
+        $open = Canonical::encode($this->peopleReport(self::TEACHERS));
+        $closed = Canonical::encode($this->peopleReport(self::TEACHERS, status: 'final'));
+
+        $this->assertFalse(Fingerprint::needsRefiling($open, $this->peopleReport(self::TEACHERS)));
+        $this->assertTrue(Fingerprint::needsRefiling($open, $this->peopleReport($moved)));
+        $this->assertFalse(Fingerprint::needsRefiling($closed, $this->peopleReport($moved, status: 'final')));
+        $this->assertSame(Fingerprint::ofJson($closed), Fingerprint::of($this->peopleReport($moved, status: 'final')));
+
+        // Students per class follow the same rule. The fee part's enrolment
+        // figure is still a figure, though: it changing in a closed month is a change.
+        $this->assertTrue(Fingerprint::needsRefiling($open, $this->peopleReport(self::TEACHERS, $grown)));
+        $grownClosed = Canonical::decode(Canonical::encode($this->peopleReport(self::TEACHERS, $grown, 'final')));
+        $this->assertTrue(Fingerprint::needsRefiling($closed, $grownClosed), 'enrolment 31 against 30');
+        unset($grownClosed['operational']['enrolment']);
+        $sameEnrolment = Canonical::decode($closed);
+        unset($sameEnrolment['operational']['enrolment']);
+        $this->assertSame(Fingerprint::of($sameEnrolment), Fingerprint::of($grownClosed), 'students alone never refile a closed month');
+    }
+
     public function test_a_report_on_the_previous_contract_version_is_still_valid(): void
     {
         // Schools upgrade when they can.
         $payload = $this->fixture('full-capability')['payload'];
-        unset($payload['financial']['group_names']);
+        unset($payload['financial']['group_names'], $payload['operational']['students'], $payload['operational']['staff']);
+        $payload['capabilities'] = array_values(array_diff($payload['capabilities'], [Capability::STUDENTS, Capability::STAFF]));
         $payload['contract_version'] = '1.0';
 
         $this->assertTrue((new Validator())->validate($payload)['valid']);

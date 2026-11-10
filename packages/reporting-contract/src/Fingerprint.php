@@ -29,6 +29,13 @@ final class Fingerprint
             $payload['contract_version'],
             $payload['capabilities'],
             $payload['operational']['fees_charged'],
+            // Who is on the staff and how many students each class holds are read
+            // from the institution's records as they stand today. Counting them would
+            // refile every closed month the day either first appears, and again
+            // whenever someone corrects a post, and each refile of a closed month
+            // raises a finding.
+            $payload['operational']['students'],
+            $payload['operational']['staff'],
             // A school naming or renaming its account groups is not a change to
             // its figures. Counting it would refile every closed month the day
             // the names first appear, and each refile of a closed month raises
@@ -75,7 +82,7 @@ final class Fingerprint
             return false;
         }
 
-        foreach ([['operational', 'fees_charged'], ['financial', 'group_names']] as [$block, $key]) {
+        foreach ([['operational', 'fees_charged'], ['financial', 'group_names'], ['operational', 'students'], ['operational', 'staff']] as [$block, $key]) {
             if (json_encode($filed[$block][$key] ?? null) !== json_encode($current[$block][$key] ?? null)) {
                 return true;
             }

@@ -15,7 +15,10 @@ use Illuminate\Support\Str;
  * EdutrustPay holds identity and reporting history for an institution. It does
  * NOT hold its books: the institution keeps those, and this platform receives
  * summaries (brief §4.1). Nothing here should ever grow a row about an
- * identifiable student or patient.
+ * identifiable student or patient. Staff are the one exception, approved so a
+ * body can check postings person by person: a report carries each member of
+ * staff's number, name, department and post, never pay, and only people with
+ * staff.view see the list.
  */
 class Institution extends Model
 {

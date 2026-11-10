@@ -194,7 +194,7 @@
                     </button>
                 </div>
                 <p id="forgot-note" hidden class="-mt-2 rounded-lg bg-accent-soft px-3 py-2 text-xs leading-relaxed text-ink-soft">
-                    {{ __('There is no reset by email yet. Ask the people who run this console to set a new password for you.') }}
+                    {{ __('Ask your administrator: they can set a new password for you from the People page. You then choose your own when you sign in.') }}
                 </p>
 
                 <button type="submit"
@@ -207,7 +207,7 @@
 
             <p class="mt-6 flex items-center justify-center gap-1.5 text-xs text-ink-muted">
                 <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 018 0v3"/></svg>
-                {{ __('Only for people who have been invited. Every sign-in is recorded.') }}
+                {{ __('Only for people with an account. Every sign-in is recorded.') }}
             </p>
             <p class="mt-2 text-center text-xs text-ink-muted">
                 © {{ now()->year }} {{ platform_name() }} · {{ __('Powered by') }} <span class="font-semibold tracking-[0.14em] text-ink-soft">I-NNOVA</span>

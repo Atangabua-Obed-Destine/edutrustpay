@@ -1,7 +1,7 @@
 @extends('layouts.console')
 
 @section('title', __('People'))
-@section('subtitle', __('Everyone who can sign in. You invite people with a link, and they choose their own password.'))
+@section('subtitle', __('Everyone who can sign in. Add a person with a first password, or send them a link to set their own.'))
 
 @php
     // The operator always sees which body each person is in. A body's own
@@ -14,7 +14,7 @@
     @can('user.invite')
         <a href="{{ manage_route('users.create') }}"
            class="rounded bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">
-            {{ __('Invite somebody') }}
+            {{ __('Add a person') }}
         </a>
     @endcan
 @endsection
@@ -86,6 +86,10 @@
                                 <div class="flex justify-end gap-3">
                                     @if ($user->id !== auth()->id() && auth()->user()->can('user.update') && ! $user->isSuperAdmin())
                                         <a href="{{ manage_route('users.edit', $user) }}" class="text-xs text-ink-soft hover:underline">{{ __('Change roles') }}</a>
+                                    @endif
+
+                                    @if ($user->id !== auth()->id() && auth()->user()->can('user.update') && ! $user->isSuperAdmin())
+                                        <a href="{{ manage_route('users.password', $user) }}" class="text-xs text-ink-soft hover:underline">{{ __('Set a new password') }}</a>
                                     @endif
 
                                     @if (! $user->invite_accepted_at && auth()->user()->can('user.invite'))

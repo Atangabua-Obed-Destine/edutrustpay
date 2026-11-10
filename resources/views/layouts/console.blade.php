@@ -83,12 +83,15 @@
         <div class="border-t border-white/15 px-5 py-4 text-xs text-white/60">
             <p class="truncate font-medium text-white/90">{{ auth()->user()->name }}</p>
             <p class="truncate">{{ auth()->user()->email }}</p>
-            <form method="POST" action="{{ route('logout') }}" class="mt-2">
-                @csrf
-                <button type="submit" class="underline-offset-2 hover:text-white hover:underline">
-                    {{ __('Sign out') }}
-                </button>
-            </form>
+            <div class="mt-2 flex items-center gap-3">
+                <a href="{{ route('account.password') }}" class="underline-offset-2 hover:text-white hover:underline">{{ __('Change password') }}</a>
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="underline-offset-2 hover:text-white hover:underline">
+                        {{ __('Sign out') }}
+                    </button>
+                </form>
+            </div>
         </div>
     </aside>
 

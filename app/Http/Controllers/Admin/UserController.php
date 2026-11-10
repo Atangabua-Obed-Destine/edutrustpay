@@ -63,6 +63,37 @@ class UserController extends Controller
     {
         $data = $this->validated($request);
 
+        // The usual way: the account exists at once, with a first password the
+        // administrator sets, and the person chooses their own when they sign in.
+        if ($request->input('how', 'link') === 'password') {
+            $request->validate(['password' => ['required', 'string', 'min:10', 'confirmed']]);
+
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'body_id' => $data['body_id'],
+                'institution_id' => $data['institution_id'] ?? null,
+                'role' => $data['role'],
+                'is_active' => true,
+                'password' => $request->input('password'),
+                'invite_accepted_at' => now(),
+            ]);
+            $user->forceFill(['must_change_password' => $request->boolean('must_change', true)])->save();
+            $user->roles()->sync($data['role_ids']);
+
+            AuditLog::log('user.created', User::class, $user->id, null, [
+                'email' => $user->email,
+                'body_id' => $user->body_id,
+                'role' => $user->role,
+            ]);
+
+            return redirect()
+                ->to(manage_route('users.index', ['body' => $user->body_id]))
+                ->with('success', $user->must_change_password
+                    ? __(':name can sign in now with :email and the password you set. They will choose their own the first time.', ['name' => $user->name, 'email' => $user->email])
+                    : __(':name can sign in now with :email and the password you set.', ['name' => $user->name, 'email' => $user->email]));
+        }
+
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
@@ -93,6 +124,37 @@ class UserController extends Controller
                 'expires' => now()->addDays(self::INVITE_DAYS)->toFormattedDateString(),
             ])
             ->with('success', __(':name invited.', ['name' => $user->name]));
+    }
+
+    /**
+     * Set a new password for someone, e.g. one who has forgotten theirs. Unless
+     * told otherwise, they choose their own the next time they sign in.
+     */
+    public function password(Request $request, User $user)
+    {
+        $this->guardTarget($request, $user);
+
+        return view('admin.users.password', ['user' => $user]);
+    }
+
+    public function setPassword(Request $request, User $user)
+    {
+        $this->guardTarget($request, $user);
+
+        $request->validate(['password' => ['required', 'string', 'min:10', 'confirmed']]);
+
+        $user->forceFill([
+            'password' => $request->input('password'),
+            'must_change_password' => $request->boolean('must_change', true),
+            // A pending invitation is replaced by the password: the account works now.
+            'invite_accepted_at' => $user->invite_accepted_at ?? now(),
+            'invite_token' => null,
+        ])->save();
+
+        AuditLog::log('user.password_set', User::class, $user->id);
+
+        return redirect()->to(manage_route('users.index'))
+            ->with('success', __('New password set for :name. Give it to them in person or by phone.', ['name' => $user->name]));
     }
 
     /**

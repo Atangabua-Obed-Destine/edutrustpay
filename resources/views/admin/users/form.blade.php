@@ -1,7 +1,7 @@
 @extends('layouts.console')
 
-@section('title', __('Invite somebody'))
-@section('subtitle', __('You get a link to give them. They open it once and choose their own password; nobody else ever sees it.'))
+@section('title', __('Add a person'))
+@section('subtitle', __('Their account is ready as soon as you save. They sign in with their email and the password you set.'))
 
 @php
     $forOperator = request()->routeIs('admin.*');
@@ -10,7 +10,7 @@
 
 @section('content')
 
-    <x-breadcrumb :items="[__('People') => manage_route('users.index'), __('Invite') => null]" />
+    <x-breadcrumb :items="[__('People') => manage_route('users.index'), __('Add a person') => null]" />
 
     <form method="POST" action="{{ manage_route('users.store') }}" class="max-w-2xl space-y-6">
         @csrf
@@ -53,10 +53,45 @@
             </x-field>
         </x-card>
 
+        {{-- How they get in: a first password set here (the usual way), or a link they open to set their own. --}}
+        @php $how = old('how', 'password'); @endphp
+        <x-card :title="__('How they sign in')">
+            <div class="space-y-3 text-sm">
+                <label class="flex items-start gap-2">
+                    <input type="radio" name="how" value="password" @checked($how === 'password') class="mt-1" onchange="document.getElementById('first-password').hidden = false">
+                    <span>
+                        <span class="font-medium text-ink">{{ __('Set a first password now') }}</span>
+                        <span class="block text-xs text-ink-muted">{{ __('The account works at once. Give them the password in person or by phone.') }}</span>
+                    </span>
+                </label>
+                <label class="flex items-start gap-2">
+                    <input type="radio" name="how" value="link" @checked($how === 'link') class="mt-1" onchange="document.getElementById('first-password').hidden = true">
+                    <span>
+                        <span class="font-medium text-ink">{{ __('Send them a link instead') }}</span>
+                        <span class="block text-xs text-ink-muted">{{ __('You get a one-time link to send them; they open it and choose their own password. It works for 14 days.') }}</span>
+                    </span>
+                </label>
+            </div>
+
+            <div id="first-password" class="mt-4 grid gap-4 border-t border-rule pt-4 sm:grid-cols-2" @if ($how === 'link') hidden @endif>
+                <x-field name="password" :label="__('First password')" :hint="__('At least 10 characters.')">
+                    <x-input name="password" type="password" minlength="10" autocomplete="new-password" />
+                </x-field>
+                <x-field name="password_confirmation" :label="__('The same password again')">
+                    <x-input name="password_confirmation" type="password" minlength="10" autocomplete="new-password" />
+                </x-field>
+                <label class="flex items-center gap-2 text-sm text-ink-soft sm:col-span-2">
+                    <input type="hidden" name="must_change" value="0">
+                    <input type="checkbox" name="must_change" value="1" @checked(old('must_change', '1') === '1') class="rounded border-rule-strong">
+                    {{ __('Ask them to choose their own password the first time they sign in (recommended)') }}
+                </label>
+            </div>
+        </x-card>
+
         <div class="flex items-center gap-3">
             <button type="submit"
                     class="rounded bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90">
-                {{ __('Create invitation') }}
+                {{ __('Save') }}
             </button>
             <a href="{{ manage_route('users.index') }}" class="text-sm text-ink-muted hover:underline">{{ __('Cancel') }}</a>
         </div>

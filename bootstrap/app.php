@@ -46,7 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Appended, so it runs after the session is available and after auth —
         // it has no opinion about anonymous requests, and it must be able to
         // read the impersonation the session holds.
-        $middleware->web(append: [HandleImpersonation::class]);
+        $middleware->web(append: [HandleImpersonation::class, \App\Http\Middleware\EnsurePasswordChosen::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

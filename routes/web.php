@@ -61,6 +61,12 @@ Route::middleware('guest')->group(function () {
 
 Route::post('logout', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');
 
+// Your own password: changed any time, and chosen at first sign-in when an administrator set it.
+Route::middleware('auth')->group(function () {
+    Route::get('account/password', [\App\Http\Controllers\Auth\PasswordController::class, 'edit'])->name('account.password');
+    Route::post('account/password', [\App\Http\Controllers\Auth\PasswordController::class, 'update'])->name('account.password.update');
+});
+
 /*
  * Leaving "view as body" sits OUTSIDE the /admin group on purpose: that whole
  * group is redirected away while impersonating, so a way out placed inside it
@@ -204,6 +210,8 @@ Route::middleware(['auth', EnsureBodyView::class])->prefix('body')->name('body.'
         Route::get('people/{user}/edit', [UserController::class, 'edit'])->middleware('permission:user.update')->name('users.edit');
         Route::put('people/{user}', [UserController::class, 'update'])->middleware('permission:user.update')->name('users.update');
         Route::post('people/{user}/reinvite', [UserController::class, 'reinvite'])->middleware('permission:user.invite')->name('users.reinvite');
+        Route::get('people/{user}/password', [UserController::class, 'password'])->middleware('permission:user.update')->name('users.password');
+        Route::post('people/{user}/password', [UserController::class, 'setPassword'])->middleware('permission:user.update')->name('users.password.update');
         Route::post('people/{user}/toggle', [UserController::class, 'toggle'])->middleware('permission:user.deactivate')->name('users.toggle');
 
         Route::get('roles', [RoleController::class, 'index'])->middleware('permission:role.view')->name('roles.index');
@@ -266,5 +274,7 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')
     Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
     Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::post('users/{user}/reinvite', [UserController::class, 'reinvite'])->name('users.reinvite');
+    Route::get('users/{user}/password', [UserController::class, 'password'])->name('users.password');
+    Route::post('users/{user}/password', [UserController::class, 'setPassword'])->name('users.password.update');
     Route::post('users/{user}/toggle', [UserController::class, 'toggle'])->name('users.toggle');
 });

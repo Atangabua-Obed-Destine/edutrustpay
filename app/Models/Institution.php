@@ -182,6 +182,11 @@ class Institution extends Model
             ?? 1;
     }
 
+    public function notes()
+    {
+        return $this->hasMany(InstitutionNote::class)->orderByDesc('noted_on')->orderByDesc('id');
+    }
+
     /** The month its latest budget sheet's year opens, or null with no sheet. */
     public function budgetYearStartMonth(): ?int
     {

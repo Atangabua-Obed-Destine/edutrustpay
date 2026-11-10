@@ -3,6 +3,10 @@
 @section('title', $finding->title)
 @section('subtitle', $finding->institution->name . ($finding->period ? ' · ' . period_text($finding->period) : ''))
 
+@section('header-actions')
+    <x-print-button />
+@endsection
+
 @section('content')
 
     <x-breadcrumb :items="[__('To look into') => route('body.findings.index'), $finding->institution->name => route('body.findings.index', ['institution' => $finding->institution->uuid]), __('This item') => null]" />

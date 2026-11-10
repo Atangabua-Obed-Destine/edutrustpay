@@ -30,10 +30,7 @@
         {{ __('Everything sent for :month', ['month' => $month]) }}
     </a>
 
-    <button type="button" onclick="window.print()"
-            class="rounded border border-rule-strong px-3 py-1.5 text-sm font-medium hover:bg-surface-sunk">
-        {{ __('Print') }}
-    </button>
+    <x-print-button />
 @endsection
 
 @section('content')

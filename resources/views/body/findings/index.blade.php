@@ -4,6 +4,7 @@
 @section('subtitle', __('What the system noticed and cannot explain, most serious first'))
 
 @section('header-actions')
+    <x-print-button />
     <nav class="flex gap-1 text-sm">
         @foreach ([\App\Models\Finding::OPEN => __('Open'), \App\Models\Finding::EXPLAINED => __('Explained'), \App\Models\Finding::ACCEPTED => __('Accepted'), 'all' => __('All')] as $key => $label)
             <a href="{{ route('body.findings.index', array_filter(['status' => $key, 'institution' => $school?->uuid])) }}"

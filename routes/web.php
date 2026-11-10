@@ -111,11 +111,24 @@ Route::middleware(['auth', EnsureBodyView::class])->prefix('body')->name('body.'
         Route::get('institutions/{institution}/daybook', [BodyDaybookController::class, 'show'])
             ->middleware('permission:daybook.view')
             ->name('institutions.daybook');
+        // The same rows as the pages, as files for Excel, with the same permissions.
+        Route::get('institutions/{institution}/daybook.csv', [\App\Http\Controllers\Body\ExportController::class, 'daybook'])
+            ->middleware('permission:daybook.view')->name('institutions.daybook.csv');
+        Route::get('institutions/{institution}/staff.csv', [\App\Http\Controllers\Body\ExportController::class, 'staff'])
+            ->middleware('permission:staff.view')->name('institutions.staff.csv');
+        Route::get('institutions/{institution}/budget.csv', [\App\Http\Controllers\Body\ExportController::class, 'budget'])
+            ->name('institutions.budget.csv');
+        Route::post('institutions/{institution}/notes', [\App\Http\Controllers\Body\InstitutionNoteController::class, 'store'])
+            ->middleware('permission:institution.note')->name('institutions.notes.store');
         // Names people (number, name, department, post), so it has its own permission.
         Route::get('institutions/{institution}/staff', [\App\Http\Controllers\Body\StaffController::class, 'show'])
             ->middleware('permission:staff.view')
             ->name('institutions.staff');
     });
+
+    // Who did what: the record the console has always kept, readable by administrators and auditors.
+    Route::get('activity', [\App\Http\Controllers\Body\ActivityController::class, 'index'])
+        ->middleware('permission:audit.view')->name('activity');
 
     Route::get('capabilities', CapabilityMatrixController::class)
         ->middleware('permission:capability.view')->name('capabilities');

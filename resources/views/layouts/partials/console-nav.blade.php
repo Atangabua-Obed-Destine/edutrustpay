@@ -55,7 +55,7 @@
         @endcan
     </div>
 
-    @canany(['user.view', 'role.view'])
+    @canany(['user.view', 'role.view', 'audit.view'])
         <div>
             <p class="px-2 pb-2 text-[11px] font-semibold uppercase tracking-wider text-white/45">{{ __('Manage') }}</p>
 
@@ -68,6 +68,12 @@
             @can('role.view')
                 <x-nav-link :href="route('body.manage.roles.index')" :active="request()->routeIs('body.manage.roles.*')">
                     {{ __('Roles') }}
+                </x-nav-link>
+            @endcan
+
+            @can('audit.view')
+                <x-nav-link :href="route('body.activity')" :active="request()->routeIs('body.activity')">
+                    {{ __('Activity') }}
                 </x-nav-link>
             @endcan
         </div>

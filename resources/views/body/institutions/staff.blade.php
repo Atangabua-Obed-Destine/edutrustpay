@@ -4,6 +4,11 @@
 @section('subtitle', period_text($period))
 
 @section('header-actions')
+    <x-print-button />
+    @if ($staff)
+        <a href="{{ route('body.institutions.staff.csv', ['institution' => $institution, 'period' => $period]) }}"
+           class="no-print inline-flex items-center gap-1.5 rounded border border-rule-strong px-3 py-1.5 text-sm font-medium hover:bg-surface-sunk">{{ __('Download for Excel') }}</a>
+    @endif
     <form method="GET" class="flex items-center gap-2">
         <label for="period" class="text-sm text-ink-muted">{{ __('Month') }}</label>
         <select name="period" id="period" onchange="this.form.submit()" class="rounded border-rule-strong bg-surface py-1.5 text-sm">

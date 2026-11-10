@@ -16,6 +16,7 @@
 @section('subtitle', \App\Support\InstitutionType::shortLabel($institution->type).' · '.$institution->body->name)
 
 @section('header-actions')
+    <x-print-button />
     <form method="GET" class="flex items-center gap-2">
         <label for="period" class="text-sm text-ink-muted">{{ __('Month') }}</label>
         <select name="period" id="period" onchange="this.form.submit()"
@@ -87,6 +88,27 @@
             <span class="mt-0.5 block text-xs text-ink-muted">{{ __('The full monthly report, including what it does not send.') }}</span>
         </a>
     </section>
+    {{-- WHO TO CALL. The first step of every month is a call to a school that is quiet. --}}
+    <section class="mb-8 flex flex-wrap items-center gap-x-6 gap-y-2 rounded border border-rule bg-surface px-5 py-3 text-sm">
+        <span class="font-semibold text-ink">{{ __('Who to call') }}</span>
+        @if ($institution->contact_name || $institution->contact_phone || $institution->contact_email)
+            @if ($institution->contact_name)<span class="text-ink">{{ $institution->contact_name }}</span>@endif
+            @if ($institution->contact_phone)
+                <a href="tel:{{ preg_replace('/[^0-9+]/', '', $institution->contact_phone) }}" class="text-accent underline-offset-2 hover:underline">{{ $institution->contact_phone }}</a>
+            @endif
+            @if ($institution->contact_email)
+                <a href="mailto:{{ $institution->contact_email }}" class="text-accent underline-offset-2 hover:underline">{{ $institution->contact_email }}</a>
+            @endif
+        @else
+            <span class="italic text-ink-muted">{{ __('No contact recorded yet.') }}</span>
+            @can('institution.update')
+                <a href="{{ route('body.manage.institutions.edit', $institution) }}" class="text-accent underline-offset-2 hover:underline">{{ __('Add who to ring') }}</a>
+            @else
+                <span class="text-xs text-ink-muted">{{ __('An administrator can add one on the school\'s setup page.') }}</span>
+            @endcan
+        @endif
+    </section>
+
 
     @if ($report)
         {{-- Warnings raised at ingest. Accepted and stored, never a reason to refuse. --}}
@@ -241,6 +263,59 @@
             </div>
         </div>
         <p class="mt-2 text-xs text-ink-muted">{{ __('Green is more income than spending, red the reverse. A dashed gap is a month with no figures, not a month of zero.') }}</p>
+    </section>
+
+    {{-- NOTES. Visits, calls and meetings, dated and signed, so the next person knows what was already asked. --}}
+    <section id="notes" class="mb-8 scroll-mt-4">
+        <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('Notes on this school') }}</h2>
+        <div class="grid gap-4 lg:grid-cols-3">
+            <div class="lg:col-span-2">
+                @if ($notes->isEmpty())
+                    <p class="rounded border border-dashed border-rule-strong bg-surface px-4 py-6 text-center text-sm italic text-ink-muted">{{ __('No notes yet. Record your visits and calls here, so everyone sees what was already asked.') }}</p>
+                @else
+                    <ul class="divide-y divide-rule rounded border border-rule bg-surface">
+                        @foreach ($notes as $note)
+                            <li class="px-4 py-3 text-sm">
+                                <p class="text-xs text-ink-muted">
+                                    <span class="font-semibold text-ink">{{ $note->noted_on->translatedFormat('j M Y') }}</span>
+                                    · {{ $note->kindLabel() }} · {{ $note->author?->name ?? __('someone') }}
+                                </p>
+                                <p class="mt-1 whitespace-pre-line text-ink-soft">{{ $note->body }}</p>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+            </div>
+            @can('institution.note')
+                @unless (\App\Support\BodyContext::isImpersonating())
+                    <form method="POST" action="{{ route('body.institutions.notes.store', $institution) }}" class="no-print space-y-3 rounded border border-rule bg-surface p-4 text-sm">
+                        @csrf
+                        <p class="font-medium text-ink">{{ __('Add a note') }}</p>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label for="note-kind" class="block text-xs text-ink-muted">{{ __('What it was') }}</label>
+                                <select id="note-kind" name="kind" class="mt-1 w-full rounded border border-rule-strong bg-surface py-1.5 text-sm">
+                                    @foreach (\App\Models\InstitutionNote::KINDS as $key => $label)
+                                        <option value="{{ $key }}" @selected(old('kind', 'visit') === $key)>{{ __($label) }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label for="note-date" class="block text-xs text-ink-muted">{{ __('When') }}</label>
+                                <input id="note-date" type="date" name="noted_on" value="{{ old('noted_on', now()->toDateString()) }}" max="{{ now()->toDateString() }}" class="mt-1 w-full rounded border border-rule-strong bg-surface px-2 py-1.5 text-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="note-body" class="block text-xs text-ink-muted">{{ __('What happened, and what was agreed') }}</label>
+                            <textarea id="note-body" name="body" rows="4" required minlength="3" class="mt-1 w-full rounded border border-rule-strong bg-surface px-2 py-1.5 text-sm">{{ old('body') }}</textarea>
+                            @error('body')<p class="mt-1 text-xs text-rose-700">{{ $message }}</p>@enderror
+                        </div>
+                        <button type="submit" class="rounded bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">{{ __('Save note') }}</button>
+                        <p class="text-xs text-ink-muted">{{ __('Notes are kept with your name and never deleted.') }}</p>
+                    </form>
+                @endunless
+            @endcan
+        </div>
     </section>
 
     {{-- 7. WHAT HAS ARRIVED FROM THIS SCHOOL. Refusals matter as much as arrivals. --}}

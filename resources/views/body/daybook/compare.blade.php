@@ -4,6 +4,7 @@
 @section('subtitle', __(':from to :to', ['from' => period_text($from), 'to' => period_text($to)]))
 
 @section('header-actions')
+    <x-print-button />
     <form method="GET" class="flex flex-wrap items-center gap-2">
         <label for="from" class="text-sm text-ink-muted">{{ __('From') }}</label>
         <select name="from" id="from" onchange="this.form.submit()" class="rounded border-rule-strong bg-surface py-1.5 text-sm">

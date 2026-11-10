@@ -25,7 +25,7 @@ class RolesAndPermissionsSeeder extends Seeder
      */
     private array $groups = [
         'Body' => ['view', 'create', 'update', 'delete'],
-        'Institution' => ['view', 'create', 'update', 'delete'],
+        'Institution' => ['view', 'create', 'update', 'delete', 'note'],
         'Credential' => ['view', 'issue', 'rotate', 'revoke'],
         'Capability' => ['view', 'declare'],
         'Report' => ['view', 'export'],
@@ -57,6 +57,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'display' => 'Bursary Head',
             'description' => 'The finance lead. Sees everything about the money and answers what needs looking into.',
             'permissions' => [
+                'institution.note',
                 'body.view', 'institution.view', 'capability.view',
                 'report.view', 'report.export',
                 'finding.view', 'finding.resolve',
@@ -71,6 +72,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'display' => 'Education Secretary',
             'description' => 'Oversees the schools: their reports and what needs looking into. A starting point you can copy and adjust.',
             'permissions' => [
+                'institution.note',
                 'body.view', 'institution.view', 'capability.view',
                 'report.view', 'report.export',
                 'finding.view', 'finding.resolve',
@@ -129,6 +131,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'institution.create' => 'Add institutions',
         'institution.update' => 'Change institutions',
         'institution.delete' => 'Remove institutions',
+        'institution.note' => 'Write notes on a school',
         'credential.view' => 'See connection keys',
         'credential.issue' => 'Issue connection keys',
         'credential.rotate' => 'Replace connection keys',

@@ -4,6 +4,7 @@
 @section('subtitle', period_text($period))
 
 @section('header-actions')
+    <x-print-button />
     <form method="GET" class="flex items-center gap-2">
         <label for="period" class="text-sm text-ink-muted">{{ __('Month') }}</label>
         <select name="period" id="period" onchange="this.form.submit()"

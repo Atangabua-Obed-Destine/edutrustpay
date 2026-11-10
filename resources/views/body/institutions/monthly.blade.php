@@ -13,6 +13,7 @@
 @section('subtitle', $institution->name . ' · ' . $institution->body->name)
 
 @section('header-actions')
+    <x-print-button />
     <form method="GET" action="{{ route('body.institutions.monthly', [$institution, $period]) }}"
           class="flex items-center gap-2"
           onsubmit="event.preventDefault(); window.location = '{{ route('body.institutions.show', $institution) }}'.replace(/\/$/, '') + '/return/' + this.period.value;">

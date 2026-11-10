@@ -3,6 +3,10 @@
 @section('title', $institution->name)
 @section('subtitle', $regulation->title)
 
+@section('header-actions')
+    <x-print-button />
+@endsection
+
 @section('content')
 
     <x-breadcrumb :items="[__('Compliance') => route('body.compliance.index'), $institution->name => null]" />

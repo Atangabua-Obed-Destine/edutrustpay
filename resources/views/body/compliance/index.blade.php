@@ -4,6 +4,7 @@
 @section('subtitle', __('Are the schools following the rules you set?'))
 
 @section('header-actions')
+    <x-print-button />
     <a href="{{ route('body.compliance.regulations.index') }}"
        class="rounded border border-rule-strong px-3 py-1.5 text-sm font-medium hover:bg-surface-sunk">
         {{ __('Rules') }}

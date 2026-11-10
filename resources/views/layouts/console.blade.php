@@ -156,6 +156,7 @@
         </main>
 
         <footer class="border-t border-rule px-6 py-4 text-xs text-ink-muted">
+            <p class="hidden print:block">{{ __('Printed from :platform by :name on :date.', ['platform' => platform_name(), 'name' => auth()->user()?->name, 'date' => now()->translatedFormat('j F Y, H:i')]) }}</p>
             {{ __(':platform receives figures; it never holds funds and is never the authority on an institution\'s books.', ['platform' => platform_name()]) }}
         </footer>
     </div>

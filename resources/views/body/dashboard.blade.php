@@ -361,7 +361,12 @@
     {{-- 7. BUDGETS, FROM EACH SCHOOL'S OWN BUDGET SHEET. --}}
     @if ($budgetSheets->isNotEmpty())
         <section>
-            <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('Budgets up to the end of :month', ['month' => period_text($period)]) }}</h2>
+            <div class="mb-3 flex items-center justify-between">
+                <h2 class="text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('Budgets up to the end of :month', ['month' => period_text($period)]) }}</h2>
+                @can('consolidation.view')
+                    <a href="{{ route('body.budgets.compare', ['period' => $period]) }}" class="text-sm text-ink-muted hover:underline">{{ __('Compare budgets') }}</a>
+                @endcan
+            </div>
 
             <div class="overflow-x-auto rounded border border-rule">
                 <table class="min-w-full divide-y divide-rule text-sm">

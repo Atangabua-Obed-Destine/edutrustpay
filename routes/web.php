@@ -203,6 +203,8 @@ Route::middleware(['auth', EnsureBodyView::class])->prefix('body')->name('body.'
 
     Route::middleware('permission:consolidation.view')->group(function () {
         Route::get('consolidation', [ConsolidationController::class, 'show'])->name('consolidation');
+        // Every school's budget on its totals, side by side. Its lines stay on its own budget page.
+        Route::get('budgets', [\App\Http\Controllers\Body\BudgetCompareController::class, 'index'])->name('budgets.compare');
         Route::get('consolidation/export', [ConsolidationController::class, 'export'])
             ->middleware('permission:consolidation.export')->name('consolidation.export');
     });

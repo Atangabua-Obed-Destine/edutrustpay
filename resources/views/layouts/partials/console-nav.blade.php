@@ -42,6 +42,12 @@
             </x-nav-link>
         @endcan
 
+        @can('consolidation.view')
+            <x-nav-link :href="route('body.budgets.compare')" :active="request()->routeIs('body.budgets.*')">
+                {{ __('Budgets compared') }}
+            </x-nav-link>
+        @endcan
+
         @can('capability.view')
             <x-nav-link :href="route('body.capabilities')" :active="request()->routeIs('body.capabilities')">
                 {{ __('What schools send') }}

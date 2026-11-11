@@ -1,24 +1,24 @@
 {
     "name": "restatement-of-final",
     "description": "Sequence 2 for a period already reported as final, with income revised down. Supersedes the prior version, which is retained. Must raise final_restated.",
-    "contract_version": "1.3",
+    "contract_version": "1.4",
     "signing": {
         "note": "The secret below is a published test vector, not a credential.",
         "secret": "edutrustpay-test-vector-secret-do-not-use-in-production",
         "timestamp": "2026-09-02T08:15:00Z",
         "signature_base": "timestamp . \".\" . canonical_json",
-        "signature": "sha256=1cb7619f95bded161ac693c3b530d16690131fa409853e88ece0befb10e55acd"
+        "signature": "sha256=b84098596d695c2022b6ee72588c30b9f77a9076dfe3d8783a977bc4192f4405"
     },
     "expected_warnings": [
         "backdated_entries"
     ],
-    "canonical_json": "{\"capabilities\":[\"ledger\",\"integrity\"],\"contract_version\":\"1.3\",\"currency\":\"XAF\",\"financial\":{\"cash\":{\"closing\":\"3040000.00\",\"movement\":\"740000.00\",\"opening\":\"2300000.00\"},\"control\":{\"journal_entry_count\":433,\"total_credits\":\"12180000.00\",\"total_debits\":\"12180000.00\",\"unposted_count\":0},\"expenditure_by_group\":{\"60\":\"900000.00\",\"62\":\"310000.00\",\"66\":\"2100000.00\"},\"income_by_group\":{\"70\":\"3900000.00\",\"71\":\"150000.00\",\"75\":\"0.00\"},\"surplus_deficit\":\"740000.00\"},\"generated_at\":\"2026-09-20T11:00:00Z\",\"institution_ref\":\"11111111-2222-3333-4444-555555555555\",\"integrity\":{\"audit_events\":31,\"backdated_entries\":2,\"ledger_hash\":\"sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd\",\"reversals\":3},\"period\":\"2026-08\",\"sequence\":2,\"status\":\"final\"}",
+    "canonical_json": "{\"capabilities\":[\"ledger\",\"integrity\"],\"contract_version\":\"1.4\",\"currency\":\"XAF\",\"financial\":{\"cash\":{\"closing\":\"3040000.00\",\"movement\":\"740000.00\",\"opening\":\"2300000.00\"},\"control\":{\"journal_entry_count\":433,\"total_credits\":\"12180000.00\",\"total_debits\":\"12180000.00\",\"unposted_count\":0},\"expenditure_by_group\":{\"60\":\"900000.00\",\"62\":\"310000.00\",\"66\":\"2100000.00\"},\"income_by_group\":{\"70\":\"3900000.00\",\"71\":\"150000.00\",\"75\":\"0.00\"},\"surplus_deficit\":\"740000.00\"},\"generated_at\":\"2026-09-20T11:00:00Z\",\"institution_ref\":\"11111111-2222-3333-4444-555555555555\",\"integrity\":{\"audit_events\":31,\"backdated_entries\":2,\"ledger_hash\":\"sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd\",\"reversals\":3},\"period\":\"2026-08\",\"sequence\":2,\"status\":\"final\"}",
     "payload": {
         "capabilities": [
             "ledger",
             "integrity"
         ],
-        "contract_version": "1.3",
+        "contract_version": "1.4",
         "currency": "XAF",
         "financial": {
             "cash": {

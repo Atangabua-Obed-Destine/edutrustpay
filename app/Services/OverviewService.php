@@ -71,7 +71,10 @@ class OverviewService
                 $compliance === null ? null : $this->ruleTile($rows, $compliance, $ruleHeadline),
                 $this->issueTile($findingGroups),
                 $this->moneyTile(__('Fees collected so far'), $collections['collected'], $one, $many, '#fees'),
-                $this->moneyTile(__('Fees owed'), $collections['receivables'], $one, $many, '#fees', $collections['ageing']['90_plus'] ?? null),
+                // Over 90 days is aged from the books; beside fees owed from the
+                // year's fee records it could read larger than what is owed.
+                $this->moneyTile(__('Fees owed'), $collections['receivables'], $one, $many, '#fees',
+                    collect($collections['rows'])->contains('basis', 'year') ? null : ($collections['ageing']['90_plus'] ?? null)),
                 $this->moneyTile(__('Income less spending, :month', ['month' => period_text($period)]), $position['surplus'], $one, $many,
                     auth()->user()?->can('consolidation.view') ? route('body.consolidation', ['period' => $period]) : '#money'),
             ])),

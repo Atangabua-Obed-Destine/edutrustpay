@@ -556,6 +556,104 @@ final class Validator
                 $this->checkStaff($operational['staff']);
             }
         }
+
+        if (array_key_exists('fees', $operational)) {
+            if (version_compare($version, ContractVersion::FEES_FROM, '<')) {
+                $this->errors[] = sprintf('operational.fees arrived in contract %s; this report says %s.', ContractVersion::FEES_FROM, $version);
+            } else {
+                $this->checkFees($operational['fees']);
+            }
+        }
+    }
+
+    /**
+     * The fee position: every amount canonical, every row balanced, the rows
+     * adding up to the totals, and the students counted in four whole numbers.
+     *
+     * @param  mixed  $block
+     */
+    private function checkFees($block): void
+    {
+        if (! is_array($block) || ! $this->isText($block['session'] ?? null)
+            || ! is_array($block['rows'] ?? null) || ! array_is_list($block['rows'])
+            || ! is_array($block['students'] ?? null)) {
+            $this->errors[] = 'operational.fees must have a session name, a list of rows and the student counts.';
+
+            return;
+        }
+
+        $before = count($this->errors);
+
+        foreach (PayloadBuilder::FEE_AMOUNTS as $amount) {
+            $this->checkMoneyString($block[$amount] ?? null, "operational.fees.$amount");
+        }
+
+        $counts = $block['students'];
+
+        if (array_diff(array_keys($counts), PayloadBuilder::FEE_STUDENT_COUNTS) !== []
+            || array_diff(PayloadBuilder::FEE_STUDENT_COUNTS, array_keys($counts)) !== []) {
+            $this->errors[] = 'operational.fees.students must count paid, part_paid, not_paid and not_charged, and nothing else.';
+        } else {
+            foreach ($counts as $key => $value) {
+                if (! is_int($value) || $value < 0) {
+                    $this->errors[] = sprintf('operational.fees.students.%s must be a whole number.', $key);
+                }
+            }
+        }
+
+        $sums = array_fill_keys(PayloadBuilder::FEE_AMOUNTS, Money::zero());
+        $seen = [];
+
+        foreach ($block['rows'] as $i => $row) {
+            if (! is_array($row) || ! $this->isText($row['level'] ?? null) || ! $this->isText($row['category'] ?? null)) {
+                $this->errors[] = sprintf('operational.fees.rows[%d] needs a class and a fee name.', $i);
+
+                continue;
+            }
+
+            $amounts = [];
+
+            foreach (PayloadBuilder::FEE_AMOUNTS as $amount) {
+                $value = $row[$amount] ?? null;
+                $this->checkMoneyString($value, sprintf('operational.fees.rows[%d].%s', $i, $amount));
+
+                if (! is_string($value) || preg_match('/^(0|[1-9][0-9]*)\.[0-9]{2}$/', $value) !== 1) {
+                    if (is_string($value) && str_starts_with($value, '-')) {
+                        $this->errors[] = sprintf('operational.fees.rows[%d].%s cannot be negative.', $i, $amount);
+                    }
+
+                    continue 2;
+                }
+
+                $amounts[$amount] = Money::of($value);
+            }
+
+            if (! $amounts['expected']->subtract($amounts['collected'])->equals($amounts['owed']->subtract($amounts['overpaid']))) {
+                $this->errors[] = sprintf('operational.fees.rows[%d]: expected less collected does not equal owed less overpaid.', $i);
+            }
+
+            $key = $row['level']."\x1F".$row['category'];
+
+            if (isset($seen[$key])) {
+                $this->errors[] = sprintf('operational.fees lists "%s" for "%s" twice.', $row['category'], $row['level']);
+            }
+
+            $seen[$key] = true;
+
+            foreach ($amounts as $amount => $money) {
+                $sums[$amount] = $sums[$amount]->add($money);
+            }
+        }
+
+        if (count($this->errors) > $before) {
+            return;
+        }
+
+        foreach (PayloadBuilder::FEE_AMOUNTS as $amount) {
+            if (! $sums[$amount]->equals(Money::of($block[$amount]))) {
+                $this->errors[] = sprintf('operational.fees.rows add up to %s %s, not the total of %s.', $sums[$amount]->value(), $amount, $block[$amount]);
+            }
+        }
     }
 
     /**

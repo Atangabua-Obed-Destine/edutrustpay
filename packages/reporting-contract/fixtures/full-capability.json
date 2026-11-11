@@ -1,18 +1,18 @@
 {
     "name": "full-capability",
     "description": "An institution reporting every capability. Models a mature paxhitestbed deployment.",
-    "contract_version": "1.3",
+    "contract_version": "1.4",
     "signing": {
         "note": "The secret below is a published test vector, not a credential.",
         "secret": "edutrustpay-test-vector-secret-do-not-use-in-production",
         "timestamp": "2026-09-02T08:15:00Z",
         "signature_base": "timestamp . \".\" . canonical_json",
-        "signature": "sha256=f2761fbd1cabbbb5e3fd32f29694674e5433df2eb9d36c835f46fe6b9ed8804b"
+        "signature": "sha256=c28e2f53f0c59cda122464f3c1138bc421a0230d4fc35ba5ce9692a10d6b17c5"
     },
     "expected_warnings": [
         "unposted_backlog"
     ],
-    "canonical_json": "{\"capabilities\":[\"ledger\",\"receivables\",\"payables\",\"budget\",\"enrolment\",\"payroll\",\"integrity\",\"students\",\"staff\"],\"contract_version\":\"1.3\",\"currency\":\"XAF\",\"financial\":{\"budget\":{\"actual\":\"4200000.00\",\"budgeted\":\"5000000.00\"},\"cash\":{\"closing\":\"3340000.00\",\"movement\":\"1040000.00\",\"opening\":\"2300000.00\"},\"control\":{\"journal_entry_count\":431,\"total_credits\":\"12480000.00\",\"total_debits\":\"12480000.00\",\"unposted_count\":2},\"expenditure_by_group\":{\"60\":\"900000.00\",\"62\":\"310000.00\",\"66\":\"2100000.00\"},\"group_names\":{\"60\":\"Achats\",\"62\":\"Services Exterieurs\",\"66\":\"Charges de Personnel\",\"70\":\"Ventes\",\"71\":\"Scolarites\",\"75\":\"Autres Produits\",\"79\":\"Reprises de provisions\"},\"income_by_group\":{\"70\":\"4200000.00\",\"71\":\"150000.00\",\"75\":\"0.00\"},\"payables\":{\"ageing\":{\"0_30\":\"800000.00\",\"31_60\":\"400000.00\",\"61_90\":\"0.00\",\"90_plus\":\"0.00\"},\"total\":\"1200000.00\"},\"payroll\":{\"staff_cost\":\"3100000.00\",\"statutory_liabilities\":\"465000.00\"},\"receivables\":{\"ageing\":{\"0_30\":\"2000000.00\",\"31_60\":\"1500000.00\",\"61_90\":\"900000.00\",\"90_plus\":\"1000000.00\"},\"total\":\"5400000.00\"},\"surplus_deficit\":\"1040000.00\"},\"generated_at\":\"2026-09-02T08:14:00Z\",\"institution_ref\":\"11111111-2222-3333-4444-555555555555\",\"integrity\":{\"audit_events\":12,\"backdated_entries\":0,\"ledger_hash\":\"sha256:abababababababababababababababababababababababababababababababab\",\"reversals\":1},\"operational\":{\"cash_share\":\"0.31\",\"collected\":\"4200000.00\",\"collection_rate\":\"0.50\",\"enrolment\":842,\"expected_fees\":\"8400000.00\",\"staff\":{\"by_department\":[{\"name\":\"Accounting\",\"staff\":3},{\"name\":\"Administration\",\"staff\":1},{\"name\":null,\"staff\":1}],\"by_designation\":[{\"name\":\"Bursar\",\"staff\":1},{\"name\":\"Head of Department\",\"staff\":1},{\"name\":\"Lecturer\",\"staff\":2},{\"name\":null,\"staff\":1}],\"people\":[{\"department\":\"Administration\",\"designation\":\"Bursar\",\"name\":\"Example Bursar\",\"number\":\"ST-004\"},{\"department\":null,\"designation\":null,\"name\":\"Example Guard\",\"number\":null},{\"department\":\"Accounting\",\"designation\":\"Head of Department\",\"name\":\"Example Head\",\"number\":\"ST-003\"},{\"department\":\"Accounting\",\"designation\":\"Lecturer\",\"name\":\"Example Lecturer One\",\"number\":\"ST-001\"},{\"department\":\"Accounting\",\"designation\":\"Lecturer\",\"name\":\"Example Lecturer Two\",\"number\":\"ST-002\"}],\"total\":5},\"students\":{\"by_class\":[{\"level\":\"Bachelor 3\",\"students\":245},{\"level\":\"HND 1\",\"students\":310},{\"level\":\"HND 2\",\"students\":287}],\"session\":\"2026/2027\",\"total\":842}},\"period\":\"2026-08\",\"sequence\":1,\"status\":\"final\"}",
+    "canonical_json": "{\"capabilities\":[\"ledger\",\"receivables\",\"payables\",\"budget\",\"enrolment\",\"payroll\",\"integrity\",\"students\",\"staff\",\"fees\"],\"contract_version\":\"1.4\",\"currency\":\"XAF\",\"financial\":{\"budget\":{\"actual\":\"4200000.00\",\"budgeted\":\"5000000.00\"},\"cash\":{\"closing\":\"3340000.00\",\"movement\":\"1040000.00\",\"opening\":\"2300000.00\"},\"control\":{\"journal_entry_count\":431,\"total_credits\":\"12480000.00\",\"total_debits\":\"12480000.00\",\"unposted_count\":2},\"expenditure_by_group\":{\"60\":\"900000.00\",\"62\":\"310000.00\",\"66\":\"2100000.00\"},\"group_names\":{\"60\":\"Achats\",\"62\":\"Services Exterieurs\",\"66\":\"Charges de Personnel\",\"70\":\"Ventes\",\"71\":\"Scolarites\",\"75\":\"Autres Produits\",\"79\":\"Reprises de provisions\"},\"income_by_group\":{\"70\":\"4200000.00\",\"71\":\"150000.00\",\"75\":\"0.00\"},\"payables\":{\"ageing\":{\"0_30\":\"800000.00\",\"31_60\":\"400000.00\",\"61_90\":\"0.00\",\"90_plus\":\"0.00\"},\"total\":\"1200000.00\"},\"payroll\":{\"staff_cost\":\"3100000.00\",\"statutory_liabilities\":\"465000.00\"},\"receivables\":{\"ageing\":{\"0_30\":\"2000000.00\",\"31_60\":\"1500000.00\",\"61_90\":\"900000.00\",\"90_plus\":\"1000000.00\"},\"total\":\"5400000.00\"},\"surplus_deficit\":\"1040000.00\"},\"generated_at\":\"2026-09-02T08:14:00Z\",\"institution_ref\":\"11111111-2222-3333-4444-555555555555\",\"integrity\":{\"audit_events\":12,\"backdated_entries\":0,\"ledger_hash\":\"sha256:abababababababababababababababababababababababababababababababab\",\"reversals\":1},\"operational\":{\"cash_share\":\"0.31\",\"collected\":\"4200000.00\",\"collection_rate\":\"0.50\",\"enrolment\":842,\"expected_fees\":\"8400000.00\",\"fees\":{\"collected\":\"11315500.00\",\"expected\":\"18805500.00\",\"overpaid\":\"15000.00\",\"owed\":\"7505000.00\",\"rows\":[{\"category\":\"Admission\",\"collected\":\"480000.00\",\"expected\":\"465000.00\",\"level\":\"HND 1\",\"overpaid\":\"15000.00\",\"owed\":\"0.00\"},{\"category\":\"Tuition\",\"collected\":\"6100000.00\",\"expected\":\"9300000.00\",\"level\":\"HND 1\",\"overpaid\":\"0.00\",\"owed\":\"3200000.00\"},{\"category\":\"Admission\",\"collected\":\"430500.00\",\"expected\":\"430500.00\",\"level\":\"HND 2\",\"overpaid\":\"0.00\",\"owed\":\"0.00\"},{\"category\":\"Tuition\",\"collected\":\"4305000.00\",\"expected\":\"8610000.00\",\"level\":\"HND 2\",\"overpaid\":\"0.00\",\"owed\":\"4305000.00\"}],\"session\":\"2026/2027\",\"students\":{\"not_charged\":3,\"not_paid\":84,\"paid\":212,\"part_paid\":301}},\"staff\":{\"by_department\":[{\"name\":\"Accounting\",\"staff\":3},{\"name\":\"Administration\",\"staff\":1},{\"name\":null,\"staff\":1}],\"by_designation\":[{\"name\":\"Bursar\",\"staff\":1},{\"name\":\"Head of Department\",\"staff\":1},{\"name\":\"Lecturer\",\"staff\":2},{\"name\":null,\"staff\":1}],\"people\":[{\"department\":\"Administration\",\"designation\":\"Bursar\",\"name\":\"Example Bursar\",\"number\":\"ST-004\"},{\"department\":null,\"designation\":null,\"name\":\"Example Guard\",\"number\":null},{\"department\":\"Accounting\",\"designation\":\"Head of Department\",\"name\":\"Example Head\",\"number\":\"ST-003\"},{\"department\":\"Accounting\",\"designation\":\"Lecturer\",\"name\":\"Example Lecturer One\",\"number\":\"ST-001\"},{\"department\":\"Accounting\",\"designation\":\"Lecturer\",\"name\":\"Example Lecturer Two\",\"number\":\"ST-002\"}],\"total\":5},\"students\":{\"by_class\":[{\"level\":\"Bachelor 3\",\"students\":245},{\"level\":\"HND 1\",\"students\":310},{\"level\":\"HND 2\",\"students\":287}],\"session\":\"2026/2027\",\"total\":842}},\"period\":\"2026-08\",\"sequence\":1,\"status\":\"final\"}",
     "payload": {
         "capabilities": [
             "ledger",
@@ -23,9 +23,10 @@
             "payroll",
             "integrity",
             "students",
-            "staff"
+            "staff",
+            "fees"
         ],
-        "contract_version": "1.3",
+        "contract_version": "1.4",
         "currency": "XAF",
         "financial": {
             "budget": {
@@ -100,6 +101,53 @@
             "collection_rate": "0.50",
             "enrolment": 842,
             "expected_fees": "8400000.00",
+            "fees": {
+                "collected": "11315500.00",
+                "expected": "18805500.00",
+                "overpaid": "15000.00",
+                "owed": "7505000.00",
+                "rows": [
+                    {
+                        "category": "Admission",
+                        "collected": "480000.00",
+                        "expected": "465000.00",
+                        "level": "HND 1",
+                        "overpaid": "15000.00",
+                        "owed": "0.00"
+                    },
+                    {
+                        "category": "Tuition",
+                        "collected": "6100000.00",
+                        "expected": "9300000.00",
+                        "level": "HND 1",
+                        "overpaid": "0.00",
+                        "owed": "3200000.00"
+                    },
+                    {
+                        "category": "Admission",
+                        "collected": "430500.00",
+                        "expected": "430500.00",
+                        "level": "HND 2",
+                        "overpaid": "0.00",
+                        "owed": "0.00"
+                    },
+                    {
+                        "category": "Tuition",
+                        "collected": "4305000.00",
+                        "expected": "8610000.00",
+                        "level": "HND 2",
+                        "overpaid": "0.00",
+                        "owed": "4305000.00"
+                    }
+                ],
+                "session": "2026/2027",
+                "students": {
+                    "not_charged": 3,
+                    "not_paid": 84,
+                    "paid": 212,
+                    "part_paid": 301
+                }
+            },
             "staff": {
                 "by_department": [
                     {

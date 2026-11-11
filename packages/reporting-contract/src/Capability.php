@@ -70,6 +70,16 @@ final class Capability
     public const STAFF = 'staff';
 
     /**
+     * The fee position for the academic year the month falls in, as at the end
+     * of the month: expected, collected, still owed and overpaid, how many
+     * students are fully paid, part paid, not paid and never charged, and the
+     * same amounts class by class and fee by fee. No student is named. Since
+     * contract 1.4. Separate from enrolment, whose billed and collected run
+     * from the day the school started using its system rather than for a year.
+     */
+    public const FEES = 'fees';
+
+    /**
      * Every capability, in the order the console's capability matrix shows them.
      *
      * @return list<string>
@@ -88,6 +98,7 @@ final class Capability
             self::FEES_CHARGED,
             self::STUDENTS,
             self::STAFF,
+            self::FEES,
         ];
     }
 
@@ -124,6 +135,7 @@ final class Capability
             self::FEES_CHARGED => ['operational.fees_charged'],
             self::STUDENTS => ['operational.students'],
             self::STAFF => ['operational.staff'],
+            self::FEES => ['operational.fees'],
             self::INTEGRITY => ['integrity'],
         ];
     }
@@ -148,7 +160,7 @@ final class Capability
      */
     public static function notApplicableTo(string $institutionType): array
     {
-        return in_array($institutionType, self::WITHOUT_PUPILS, true) ? [self::ENROLMENT, self::FEES_CHARGED, self::STUDENTS] : [];
+        return in_array($institutionType, self::WITHOUT_PUPILS, true) ? [self::ENROLMENT, self::FEES_CHARGED, self::STUDENTS, self::FEES] : [];
     }
 
     /** Institution types that have no pupils, so no enrolment and no school fees. */

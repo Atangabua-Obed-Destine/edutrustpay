@@ -1,22 +1,22 @@
 {
     "name": "genuine-zeros",
     "description": "Receivables declared and genuinely zero. Contrast with ledger-only, where the same figure is absent — the console must not render these two alike.",
-    "contract_version": "1.3",
+    "contract_version": "1.4",
     "signing": {
         "note": "The secret below is a published test vector, not a credential.",
         "secret": "edutrustpay-test-vector-secret-do-not-use-in-production",
         "timestamp": "2026-09-02T08:15:00Z",
         "signature_base": "timestamp . \".\" . canonical_json",
-        "signature": "sha256=2f1eb69244de0b46f662cb146f6646a79cf0e6bfce751952065b682db698d5c9"
+        "signature": "sha256=7e6ab4a1dbbe3f056d367d9019e75a7c6cbc99ec267bd1321528a1280241281b"
     },
     "expected_warnings": [],
-    "canonical_json": "{\"capabilities\":[\"ledger\",\"receivables\"],\"contract_version\":\"1.3\",\"currency\":\"XAF\",\"financial\":{\"cash\":{\"closing\":\"500000.00\",\"movement\":\"0.00\",\"opening\":\"500000.00\"},\"control\":{\"journal_entry_count\":40,\"total_credits\":\"1800000.00\",\"total_debits\":\"1800000.00\",\"unposted_count\":0},\"expenditure_by_group\":{\"60\":\"900000.00\"},\"income_by_group\":{\"70\":\"900000.00\"},\"receivables\":{\"ageing\":{\"0_30\":\"0.00\",\"31_60\":\"0.00\",\"61_90\":\"0.00\",\"90_plus\":\"0.00\"},\"total\":\"0.00\"},\"surplus_deficit\":\"0.00\"},\"generated_at\":\"2026-08-02T08:00:00Z\",\"institution_ref\":\"66666666-7777-8888-9999-000000000000\",\"period\":\"2026-07\",\"sequence\":1,\"status\":\"final\"}",
+    "canonical_json": "{\"capabilities\":[\"ledger\",\"receivables\"],\"contract_version\":\"1.4\",\"currency\":\"XAF\",\"financial\":{\"cash\":{\"closing\":\"500000.00\",\"movement\":\"0.00\",\"opening\":\"500000.00\"},\"control\":{\"journal_entry_count\":40,\"total_credits\":\"1800000.00\",\"total_debits\":\"1800000.00\",\"unposted_count\":0},\"expenditure_by_group\":{\"60\":\"900000.00\"},\"income_by_group\":{\"70\":\"900000.00\"},\"receivables\":{\"ageing\":{\"0_30\":\"0.00\",\"31_60\":\"0.00\",\"61_90\":\"0.00\",\"90_plus\":\"0.00\"},\"total\":\"0.00\"},\"surplus_deficit\":\"0.00\"},\"generated_at\":\"2026-08-02T08:00:00Z\",\"institution_ref\":\"66666666-7777-8888-9999-000000000000\",\"period\":\"2026-07\",\"sequence\":1,\"status\":\"final\"}",
     "payload": {
         "capabilities": [
             "ledger",
             "receivables"
         ],
-        "contract_version": "1.3",
+        "contract_version": "1.4",
         "currency": "XAF",
         "financial": {
             "cash": {

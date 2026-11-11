@@ -188,12 +188,122 @@
         </section>
 
         {{-- ══════════════════════════════════════════════════════════
+             Fees for the school year, as at the end of the month: what is
+             expected, collected and still owed, by class and by fee, and
+             how many students have paid. No student is named.
+             ══════════════════════════════════════════════════════════ --}}
+        @php $fees = \App\Support\FeePosition::fromReport($report); @endphp
+        <section id="fees" class="mb-8 scroll-mt-4">
+            <h2 class="mb-1 font-serif text-lg text-ink">
+                {{ $fees ? __('Fees for the :session year', ['session' => $fees->session]) : __('Fees for the year') }}
+            </h2>
+
+            @if (! $fees)
+                <p class="text-sm italic text-ink-muted">{{ $notSent(__('its fees for the school year: what is expected, collected and still owed')) }}</p>
+            @else
+                <p class="mb-4 text-sm text-ink-muted">
+                    {{ __('As at the end of :month, from the school\'s own fee records. Owed and overpaid are worked out fee by fee, so one student paying too much never hides another\'s debt.', ['month' => $month]) }}
+                </p>
+
+                @php $share = $fees->collectedShare(); @endphp
+                <div class="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <x-stat :label="__('Expected for the year')" :figure="$report->figure('fees_expected', Capability::FEES)" />
+                    <div>
+                        <x-stat :label="__('Collected')" :figure="$report->figure('fees_collected', Capability::FEES)" />
+                        @if ($share !== null)
+                            <p class="mt-1 text-xs text-ink-muted">{{ __(':share% of what is expected', ['share' => $share]) }}</p>
+                        @endif
+                    </div>
+                    <x-stat :label="__('Still owed')" :figure="$report->figure('fees_owed', Capability::FEES)" />
+                    <div>
+                        <x-stat :label="__('Paid beyond what was charged')" :figure="$report->figure('fees_overpaid', Capability::FEES)" />
+                        @unless ($fees->overpaid->isZero())
+                            <p class="mt-1 text-xs text-ink-muted">{{ __('Usually a credit the student will use later.') }}</p>
+                        @endunless
+                    </div>
+                </div>
+
+                {{-- Students, not fees: a student with three fees counts once. --}}
+                @php $s = $fees->students; @endphp
+                <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-muted">{{ __('Students') }}</p>
+                <dl class="mb-2 grid grid-cols-2 gap-px overflow-hidden rounded border border-rule bg-rule text-sm sm:grid-cols-4">
+                    @foreach ([
+                        ['paid', __('Paid everything'), 'text-ink'],
+                        ['part_paid', __('Paid part'), 'text-ink'],
+                        ['not_paid', __('Paid nothing yet'), $s['not_paid'] > 0 ? 'text-rose-700' : 'text-ink'],
+                        ['not_charged', __('Enrolled, never charged'), $s['not_charged'] > 0 ? 'text-amber-800' : 'text-ink'],
+                    ] as [$key, $label, $tone])
+                        <div class="bg-surface px-4 py-3">
+                            <dt class="text-xs text-ink-muted">{{ $label }}</dt>
+                            <dd class="mt-0.5 text-lg font-semibold tabular-nums {{ $tone }}">{{ number_format($s[$key]) }}</dd>
+                        </div>
+                    @endforeach
+                </dl>
+                <p class="mb-6 text-xs {{ $s['not_charged'] > 0 ? 'text-amber-800' : 'text-ink-muted' }}">
+                    @if ($s['not_charged'] > 0)
+                        {{ trans_choice('{1}One student is enrolled for the year but has not been charged any fee. Worth asking the school why.|[2,*]:count students are enrolled for the year but have not been charged any fee. Worth asking the school why.', $s['not_charged'], ['count' => number_format($s['not_charged'])]) }}
+                    @else
+                        {{ __('Every student enrolled for the year has been charged.') }}
+                    @endif
+                </p>
+
+                @if ($fees->rows === [])
+                    <p class="text-sm italic text-ink-muted">{{ __('Nothing has been billed for this year yet.') }}</p>
+                @else
+                    <div class="grid gap-6 xl:grid-cols-2">
+                        @foreach ([[__('By class'), __('Class'), $fees->byClass()], [__('By fee'), __('Fee'), $fees->byFee()]] as [$heading, $column, $groups])
+                            <div>
+                                <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-muted">{{ $heading }}</p>
+                                <div class="overflow-x-auto rounded border border-rule">
+                                    <table class="min-w-full divide-y divide-rule text-sm">
+                                        <thead class="bg-surface-sunk text-left text-xs uppercase tracking-wide text-ink-muted">
+                                            <tr>
+                                                <th class="px-3 py-2 font-semibold">{{ $column }}</th>
+                                                <th class="px-3 py-2 text-right font-semibold">{{ __('Expected') }}</th>
+                                                <th class="px-3 py-2 text-right font-semibold">{{ __('Collected') }}</th>
+                                                <th class="px-3 py-2 text-right font-semibold">{{ __('Owed') }}</th>
+                                                <th class="px-3 py-2 text-right font-semibold">%</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-rule bg-surface">
+                                            @foreach ($groups as $name => $amounts)
+                                                @php $rowShare = \App\Support\FeePosition::share($amounts['collected'], $amounts['expected']); @endphp
+                                                <tr>
+                                                    <td class="px-3 py-2 text-ink-soft">{{ $name }}</td>
+                                                    <td class="whitespace-nowrap px-3 py-2 text-right tabular-nums">{{ money_text($amounts['expected']->value()) }}</td>
+                                                    <td class="whitespace-nowrap px-3 py-2 text-right tabular-nums">{{ money_text($amounts['collected']->value()) }}</td>
+                                                    <td class="whitespace-nowrap px-3 py-2 text-right tabular-nums {{ $amounts['owed']->isZero() ? 'text-ink-muted' : 'font-medium text-ink' }}">{{ money_text($amounts['owed']->value()) }}</td>
+                                                    <td class="px-3 py-2 text-right tabular-nums text-ink-muted">{{ $rowShare !== null ? $rowShare.'%' : '—' }}</td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                        <tfoot class="border-t-2 border-rule-strong font-medium">
+                                            <tr>
+                                                <td class="px-3 py-2 text-ink">{{ __('Total') }}</td>
+                                                <td class="whitespace-nowrap px-3 py-2 text-right tabular-nums">{{ money_text($fees->expected->value()) }}</td>
+                                                <td class="whitespace-nowrap px-3 py-2 text-right tabular-nums">{{ money_text($fees->collected->value()) }}</td>
+                                                <td class="whitespace-nowrap px-3 py-2 text-right tabular-nums">{{ money_text($fees->owed->value()) }}</td>
+                                                <td class="px-3 py-2 text-right tabular-nums text-ink-muted">{{ $share !== null ? $share.'%' : '—' }}</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            @endif
+        </section>
+
+        {{-- ══════════════════════════════════════════════════════════
              Fees, budget, staff pay, bank
              ══════════════════════════════════════════════════════════ --}}
         <section class="mb-8 grid gap-6 lg:grid-cols-2">
 
-            <x-card :title="__('Students and fees collected')" :subtitle="__('The school\'s own figures.')">
-                @if (! $report->declares(Capability::ENROLMENT))
+            <x-card :title="__('Students and fees collected')" :subtitle="__('The school\'s own figures, since it started using its system.')">
+                @if (! $report->declares(Capability::ENROLMENT) && $fees)
+                    <p class="text-sm text-ink-muted">{{ __('This school sends its fees for the year instead; they are above, under Fees for the :session year.', ['session' => $fees->session]) }}</p>
+                @elseif (! $report->declares(Capability::ENROLMENT))
                     <p class="text-sm italic text-ink-muted">{{ $notSent($report->declares(Capability::STUDENTS) ? __('its fees billed against fees collected. Its student numbers are below, under Students per class') : __('its student numbers or fees billed against fees collected')) }}</p>
                 @else
                     <dl class="divide-y divide-rule text-sm">

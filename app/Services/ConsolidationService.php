@@ -178,9 +178,25 @@ class ConsolidationService
             $report = $reports->get($institution->id);
             $name = $institution->name;
 
-            $expected[$name] = $this->figure($institution, $report, 'expected_fees', Capability::ENROLMENT);
-            $collected[$name] = $this->figure($institution, $report, 'collected', Capability::ENROLMENT);
-            $receivables[$name] = $this->figure($institution, $report, 'receivables_total', Capability::RECEIVABLES);
+            /*
+             * A school that sends its fees for the year (contract 1.4) is read
+             * from those: expected, collected and still owed for the school year,
+             * owed worked out fee by fee from its fee records. One that does not
+             * keeps the older figures: billed and collected since it started
+             * using its system, and owed from its books. The row says which, so
+             * the two are never mistaken for each other.
+             */
+            $year = $report && $report->declares(Capability::FEES);
+
+            $expected[$name] = $year
+                ? $this->figure($institution, $report, 'fees_expected', Capability::FEES)
+                : $this->figure($institution, $report, 'expected_fees', Capability::ENROLMENT);
+            $collected[$name] = $year
+                ? $this->figure($institution, $report, 'fees_collected', Capability::FEES)
+                : $this->figure($institution, $report, 'collected', Capability::ENROLMENT);
+            $receivables[$name] = $year
+                ? $this->figure($institution, $report, 'fees_owed', Capability::FEES)
+                : $this->figure($institution, $report, 'receivables_total', Capability::RECEIVABLES);
 
             foreach (array_keys($ageing) as $bucket) {
                 $ageing[$bucket][$name] = $this->figure($institution, $report, 'receivables_'.$bucket, Capability::RECEIVABLES);
@@ -192,9 +208,11 @@ class ConsolidationService
                 'collected' => $collected[$name],
                 'receivables' => $receivables[$name],
                 'owed_over_90' => $ageing['90_plus'][$name],
-                'collection_rate' => $report && $report->declares(Capability::ENROLMENT)
-                    ? $report->collection_rate
-                    : null,
+                'basis' => $year ? 'year' : ($report ? 'running' : null),
+                'fee_session' => $year ? $report->fee_session : null,
+                'collection_rate' => $year
+                    ? self::share($report->fees_collected, $report->fees_expected)
+                    : ($report && $report->declares(Capability::ENROLMENT) ? self::share($report->collected, $report->expected_fees) : null),
                 'cash_share' => $report && $report->declares(Capability::ENROLMENT)
                     ? $report->cash_share
                     : null,
@@ -342,6 +360,17 @@ class ConsolidationService
      *   not capable     -> the report came, but without this capability
      *   stale / reported
      */
+    /**
+     * Collected as a share of expected, from the two amounts, uncapped: more
+     * collected than expected is worth seeing. Null when nothing is expected.
+     */
+    private static function share(?string $collected, ?string $expected): ?string
+    {
+        return $collected !== null && (float) $expected > 0
+            ? number_format((float) $collected / (float) $expected, 4, '.', '')
+            : null;
+    }
+
     private function figure(Institution $institution, ?PeriodReport $report, string $column, string $capability): Figure
     {
         if (! in_array($capability, $institution->applicableCapabilities(), true)) {

@@ -421,11 +421,134 @@ final class ContractTest extends TestCase
     {
         // Schools upgrade when they can.
         $payload = $this->fixture('full-capability')['payload'];
-        unset($payload['financial']['group_names'], $payload['operational']['students'], $payload['operational']['staff']);
-        $payload['capabilities'] = array_values(array_diff($payload['capabilities'], [Capability::STUDENTS, Capability::STAFF]));
+        unset($payload['financial']['group_names'], $payload['operational']['students'], $payload['operational']['staff'], $payload['operational']['fees']);
+        $payload['capabilities'] = array_values(array_diff($payload['capabilities'], [Capability::STUDENTS, Capability::STAFF, Capability::FEES]));
         $payload['contract_version'] = '1.0';
 
         $this->assertTrue((new Validator())->validate($payload)['valid']);
+    }
+
+    // ---------------------------------------------------------------
+    // The fee position for the academic year (1.4)
+    // ---------------------------------------------------------------
+
+    /**
+     * @param  list<array{0: string, 1: string, 2: string, 3: string, 4: string, 5: string}>  $rows  level, category, expected, collected, owed, overpaid
+     * @return array<string, mixed>
+     */
+    private function feesReport(array $rows, string $status = 'provisional', array $students = ['paid' => 1, 'part_paid' => 1, 'not_paid' => 0, 'not_charged' => 2]): array
+    {
+        return PayloadBuilder::for(TestVectors::INSTITUTION_REF, '2026-10')
+            ->status($status)
+            ->sequence(1)
+            ->generatedAt('2026-11-01T00:00:00Z')
+            ->currency('XAF')
+            ->fees('2026/2027', array_map(fn (array $r) => [
+                'level' => $r[0], 'category' => $r[1],
+                'expected' => Money::of($r[2]), 'collected' => Money::of($r[3]),
+                'owed' => Money::of($r[4]), 'overpaid' => Money::of($r[5]),
+            ], $rows), $students)
+            ->build();
+    }
+
+    private const FEE_ROWS = [
+        ['Form Two', 'Tuition', '200000.00', '50000.00', '150000.00', '0.00'],
+        // One overpaid 10 000 while another still owes 30 000: summed first,
+        // the class would look as if it owed only 20 000.
+        ['Form One', 'Tuition', '100000.00', '80000.00', '30000.00', '10000.00'],
+    ];
+
+    public function test_fee_totals_are_added_up_from_the_rows(): void
+    {
+        $payload = $this->feesReport(self::FEE_ROWS);
+        $fees = Canonical::decode(Canonical::encode($payload))['operational']['fees'];
+
+        $this->assertSame(['fees'], $payload['capabilities']);
+        $this->assertSame('2026/2027', $fees['session']);
+        $this->assertSame(['300000.00', '130000.00', '180000.00', '10000.00'], [$fees['expected'], $fees['collected'], $fees['owed'], $fees['overpaid']]);
+        $this->assertEquals(['paid' => 1, 'part_paid' => 1, 'not_paid' => 0, 'not_charged' => 2], $fees['students']);
+        // A fixed order, whatever order the school's system lists them in.
+        $this->assertSame(['Form One', 'Form Two'], array_column($fees['rows'], 'level'));
+        $this->assertSame(Canonical::encode($payload), Canonical::encode($this->feesReport(array_reverse(self::FEE_ROWS))));
+
+        $this->assertTrue((new Validator())->validate($payload)['valid']);
+    }
+
+    public function test_a_year_with_nothing_billed_yet_is_sent_as_true_zeros(): void
+    {
+        $payload = $this->feesReport([], students: ['paid' => 0, 'part_paid' => 0, 'not_paid' => 0, 'not_charged' => 40]);
+        $fees = Canonical::decode(Canonical::encode($payload))['operational']['fees'];
+
+        $this->assertSame([], $fees['rows']);
+        $this->assertSame('0.00', $fees['expected']);
+        $this->assertTrue((new Validator())->validate($payload)['valid']);
+    }
+
+    public function test_a_fee_row_that_does_not_balance_is_refused(): void
+    {
+        $refused = 0;
+
+        foreach ([
+            // 100 000 billed, 80 000 paid, but only 10 000 said to be owed.
+            fn () => $this->feesReport([['Form One', 'Tuition', '100000.00', '80000.00', '10000.00', '0.00']]),
+            fn () => $this->feesReport([['Form One', 'Tuition', '-1.00', '0.00', '0.00', '1.00']]),
+            fn () => $this->feesReport([['Form One', 'Tuition', '1.00', '0.00', '1.00', '0.00'], [' Form  One ', 'Tuition', '1.00', '0.00', '1.00', '0.00']]),
+            fn () => $this->feesReport([], students: ['paid' => 1]),
+            fn () => $this->feesReport([], students: ['paid' => 1, 'part_paid' => 0, 'not_paid' => 0, 'not_charged' => 0, 'names' => 3]),
+        ] as $attempt) {
+            try {
+                $attempt();
+            } catch (ContractException) {
+                $refused++;
+            }
+        }
+
+        $this->assertSame(5, $refused);
+
+        $payload = Canonical::decode(Canonical::encode($this->feesReport(self::FEE_ROWS)));
+        $payload['operational']['fees']['rows'][0]['owed'] = '20000.00';
+
+        $this->assertStringContainsString('expected less collected does not equal owed less overpaid', implode(' ', (new Validator())->validate($payload)['errors']));
+    }
+
+    public function test_fee_totals_that_disagree_with_the_rows_are_refused(): void
+    {
+        $payload = Canonical::decode(Canonical::encode($this->feesReport(self::FEE_ROWS)));
+        $payload['operational']['fees']['collected'] = '999.00';
+
+        $errors = implode(' ', (new Validator())->validate($payload)['errors']);
+
+        $this->assertStringContainsString('rows add up to 130000.00 collected, not the total of 999.00', $errors);
+    }
+
+    public function test_fees_are_refused_on_an_older_contract(): void
+    {
+        $payload = Canonical::decode(Canonical::encode($this->feesReport(self::FEE_ROWS)));
+        $payload['contract_version'] = '1.3';
+
+        $this->assertStringContainsString('operational.fees arrived in contract 1.4', implode(' ', (new Validator())->validate($payload)['errors']));
+    }
+
+    public function test_a_fee_change_refiles_an_open_month_but_never_a_closed_one(): void
+    {
+        // A discount granted today changes last month's figures with no new
+        // money involved: a closed month must not be refiled for it.
+        $paidMore = self::FEE_ROWS;
+        $paidMore[0] = ['Form Two', 'Tuition', '200000.00', '90000.00', '110000.00', '0.00'];
+
+        $open = Canonical::encode($this->feesReport(self::FEE_ROWS));
+        $closed = Canonical::encode($this->feesReport(self::FEE_ROWS, 'final'));
+
+        $this->assertFalse(Fingerprint::needsRefiling($open, $this->feesReport(self::FEE_ROWS)));
+        $this->assertTrue(Fingerprint::needsRefiling($open, $this->feesReport($paidMore)));
+        $this->assertFalse(Fingerprint::needsRefiling($closed, $this->feesReport($paidMore, 'final')));
+    }
+
+    public function test_fees_do_not_apply_to_a_hospital_or_a_shop(): void
+    {
+        $this->assertContains(Capability::FEES, Capability::notApplicableTo('health'));
+        $this->assertContains(Capability::FEES, Capability::notApplicableTo('business'));
+        $this->assertNotContains(Capability::FEES, Capability::notApplicableTo('school_higher'));
     }
 
     // ---------------------------------------------------------------

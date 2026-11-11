@@ -118,6 +118,17 @@ class ReportIngestService
             }
         }
 
+        // The fee position for the academic year, since contract 1.4. The rows
+        // stay in the payload; the headline amounts become columns so they can
+        // be added up across schools.
+        if (isset($operational['fees'])) {
+            $values['fee_session'] = mb_substr((string) $operational['fees']['session'], 0, 120);
+
+            foreach (['expected', 'collected', 'owed', 'overpaid'] as $key) {
+                $values['fees_'.$key] = $operational['fees'][$key];
+            }
+        }
+
         foreach (['ledger_hash', 'audit_events', 'reversals', 'backdated_entries'] as $key) {
             if (isset($integrity[$key])) {
                 $values[$key] = $integrity[$key];

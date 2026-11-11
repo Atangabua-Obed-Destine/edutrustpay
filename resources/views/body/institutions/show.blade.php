@@ -123,19 +123,38 @@
             </div>
         @endif
 
-        {{-- 3. THE MONTH IN FOUR FIGURES. --}}
+        {{-- 3. THE MONTH IN FOUR FIGURES. Fees for the school year when the
+             school sends them; otherwise its running totals and the books. --}}
+        @php
+            $yearFees = \App\Support\FeePosition::fromReport($report);
+            $feeTiles = $yearFees
+                ? [
+                    ['fees_collected', __('Fees collected, :session', ['session' => $yearFees->session]), \EdutrustPay\Contract\Capability::FEES,
+                        $yearFees->collectedShare() !== null ? __(':share% of :expected expected', ['share' => $yearFees->collectedShare(), 'expected' => money_text($yearFees->expected->value())]) : null],
+                    ['fees_owed', __('Fees still owed, :session', ['session' => $yearFees->session]), \EdutrustPay\Contract\Capability::FEES,
+                        $yearFees->students['not_paid'] > 0 ? trans_choice('{1}One student has paid nothing yet.|[2,*]:count students have paid nothing yet.', $yearFees->students['not_paid'], ['count' => number_format($yearFees->students['not_paid'])]) : null],
+                ]
+                : [
+                    ['collected', __('Fees collected so far'), \EdutrustPay\Contract\Capability::ENROLMENT, null],
+                    ['receivables_total', __('Fees owed'), \EdutrustPay\Contract\Capability::RECEIVABLES, null],
+                ];
+        @endphp
         <div class="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            @foreach ([
-                ['surplus_deficit', __('Income less spending'), \EdutrustPay\Contract\Capability::LEDGER],
-                ['cash_closing', __('Cash at month end'), \EdutrustPay\Contract\Capability::LEDGER],
-                ['collected', __('Fees collected so far'), \EdutrustPay\Contract\Capability::ENROLMENT],
-                ['receivables_total', __('Fees owed'), \EdutrustPay\Contract\Capability::RECEIVABLES],
-            ] as [$column, $label, $capability])
+            @foreach (array_merge([
+                ['surplus_deficit', __('Income less spending'), \EdutrustPay\Contract\Capability::LEDGER, null],
+                ['cash_closing', __('Cash at month end'), \EdutrustPay\Contract\Capability::LEDGER, null],
+            ], $feeTiles) as [$column, $label, $capability, $note])
                 <div class="rounded border border-rule bg-surface p-4">
                     <p class="text-xs uppercase tracking-wide text-ink-muted">{{ $label }}</p>
                     <p class="mt-1 text-xl font-semibold">
                         <x-figure :figure="$report->figure($column, $capability)" />
                     </p>
+                    @if ($note)
+                        <p class="mt-1 text-xs text-ink-muted">{{ $note }}</p>
+                    @endif
+                    @if ($yearFees && in_array($column, ['fees_collected', 'fees_owed'], true))
+                        <a href="{{ route('body.institutions.monthly', ['institution' => $institution, 'period' => $period]) }}#fees" class="mt-1 inline-block text-xs text-accent hover:underline">{{ __('By class and by fee') }} →</a>
+                    @endif
                 </div>
             @endforeach
         </div>

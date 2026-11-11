@@ -43,6 +43,7 @@ class PeriodReport extends Model
         'staff_cost', 'statutory_liabilities',
         'bank_statement_closing', 'bank_ledger_closing', 'bank_divergence', 'bank_statement_ref',
         'enrolment', 'expected_fees', 'collected', 'collection_rate', 'cash_share',
+        'fee_session', 'fees_expected', 'fees_collected', 'fees_owed', 'fees_overpaid',
         'ledger_hash', 'audit_events', 'reversals', 'backdated_entries',
     ];
 
@@ -67,6 +68,7 @@ class PeriodReport extends Model
         'staff_cost', 'statutory_liabilities',
         'bank_statement_closing', 'bank_ledger_closing', 'bank_divergence',
         'expected_fees', 'collected',
+        'fees_expected', 'fees_collected', 'fees_owed', 'fees_overpaid',
     ];
 
     protected function casts(): array

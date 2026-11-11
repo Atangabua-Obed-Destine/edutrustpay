@@ -15,7 +15,7 @@
         'not_applicable' => ['bg-transparent text-ink-muted opacity-60', __('does not apply'), __('Does not apply to this kind of institution, and never will.')],
     ];
 
-    $order = [Capability::LEDGER, Capability::RECEIVABLES, Capability::PAYABLES, Capability::ENROLMENT, Capability::FEES_CHARGED, Capability::PAYROLL, Capability::BANK_RECON, Capability::INTEGRITY, Capability::BUDGET, Capability::STUDENTS, Capability::STAFF];
+    $order = [Capability::LEDGER, Capability::RECEIVABLES, Capability::PAYABLES, Capability::ENROLMENT, Capability::FEES_CHARGED, Capability::PAYROLL, Capability::BANK_RECON, Capability::INTEGRITY, Capability::BUDGET, Capability::STUDENTS, Capability::STAFF, Capability::FEES];
     // Any capability the contract gains later still gets a column, at the end.
     $order = array_merge(array_values(array_intersect($order, $capabilities)), array_values(array_diff($capabilities, $order)));
 

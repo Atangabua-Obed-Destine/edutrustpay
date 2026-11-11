@@ -30,6 +30,7 @@ final class CapabilityText
             Capability::INTEGRITY => [__('How the books were kept'), __('Counts of entries, late entries, reversals and unfinished entries.')],
             Capability::STUDENTS => [__('Students per class'), __('How many students it has in the session, class by class. No student is named.')],
             Capability::STAFF => [__('Staff'), __('How many staff, by department and post, with the staff list: number, name, department and post. Never pay.')],
+            Capability::FEES => [__('Fees for the year'), __('For the school year: what is expected, collected and still owed, class by class and fee by fee, and how many students have paid. No student is named.')],
         ];
     }
 

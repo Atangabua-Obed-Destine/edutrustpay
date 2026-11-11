@@ -1,0 +1,1142 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://edutrustpay.local/schema/report.v1.4.json",
+    "title": "EdutrustPay Reporting Contract v1.4",
+    "description": "A single institution's figures for a single CALENDAR MONTH. The unit is always the calendar month, never a fiscal year: paxhitestbed runs January-December while the schools run July-June, so a body holds both and the console assembles any fiscal year from months. A capability absent from \"capabilities\" means CANNOT REPORT; a figure present with value 0 means GENUINELY ZERO. These are different facts and must never be conflated.",
+    "type": "object",
+    "required": [
+        "contract_version",
+        "institution_ref",
+        "period",
+        "status",
+        "sequence",
+        "generated_at",
+        "currency",
+        "capabilities"
+    ],
+    "additionalProperties": false,
+    "properties": {
+        "contract_version": {
+            "type": "string",
+            "enum": [
+                "1.0",
+                "1.1",
+                "1.2",
+                "1.3",
+                "1.4"
+            ]
+        },
+        "institution_ref": {
+            "type": "string",
+            "minLength": 1
+        },
+        "period": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+            "description": "Calendar month, \"YYYY-MM\". Never a fiscal year."
+        },
+        "status": {
+            "type": "string",
+            "enum": [
+                "provisional",
+                "final"
+            ],
+            "description": "A month may be reported while still open (provisional) and again when closed (final). Restating a FINAL period is a control event."
+        },
+        "sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Increments per (institution, period). A higher sequence supersedes; the prior version is retained, never overwritten."
+        },
+        "generated_at": {
+            "type": "string",
+            "format": "date-time"
+        },
+        "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+        },
+        "capabilities": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+                "type": "string",
+                "enum": [
+                    "ledger",
+                    "receivables",
+                    "payables",
+                    "budget",
+                    "enrolment",
+                    "payroll",
+                    "integrity",
+                    "bank_recon",
+                    "fees_charged",
+                    "students",
+                    "staff",
+                    "fees"
+                ]
+            },
+            "description": "What this institution can report. Omission means cannot report. An institution with nothing new to say sends a heartbeat, not an empty report."
+        },
+        "financial": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "income_by_group": {
+                    "type": "object",
+                    "description": "Keyed by two-digit OHADA group. Consolidation happens at OHADA class/group level so no institution has to adopt anyone else's chart of accounts. An empty month is {} — never [].",
+                    "propertyNames": {
+                        "pattern": "^[0-9]{2}$"
+                    },
+                    "patternProperties": {
+                        "^[0-9]{2}$": {
+                            "type": "string",
+                            "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                            "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "expenditure_by_group": {
+                    "type": "object",
+                    "description": "Keyed by two-digit OHADA group. Consolidation happens at OHADA class/group level so no institution has to adopt anyone else's chart of accounts. An empty month is {} — never [].",
+                    "propertyNames": {
+                        "pattern": "^[0-9]{2}$"
+                    },
+                    "patternProperties": {
+                        "^[0-9]{2}$": {
+                            "type": "string",
+                            "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                            "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "group_names": {
+                    "type": "object",
+                    "description": "Since 1.2. The institution's own name for each of its income and spending groups, from its own chart of accounts, whether or not the group has an amount this month: closed months are never filed again, so this is how earlier months get their names. Optional: absent means unnamed.",
+                    "propertyNames": {
+                        "pattern": "^[0-9]{2}$"
+                    },
+                    "patternProperties": {
+                        "^[0-9]{2}$": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 120
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "surplus_deficit": {
+                    "type": "string",
+                    "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                    "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                },
+                "cash": {
+                    "type": "object",
+                    "required": [
+                        "opening",
+                        "movement",
+                        "closing"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "opening": {
+                            "type": "string",
+                            "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                            "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                        },
+                        "movement": {
+                            "type": "string",
+                            "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                            "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                        },
+                        "closing": {
+                            "type": "string",
+                            "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                            "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                        }
+                    }
+                },
+                "control": {
+                    "type": "object",
+                    "description": "Control totals, so the console can verify the ledger balances itself rather than trusting a summary. An unbalanced set is ACCEPTED and raises a finding — it is never rejected at ingest.",
+                    "required": [
+                        "total_debits",
+                        "total_credits",
+                        "journal_entry_count",
+                        "unposted_count"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "total_debits": {
+                            "type": "string",
+                            "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                            "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                        },
+                        "total_credits": {
+                            "type": "string",
+                            "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                            "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                        },
+                        "journal_entry_count": {
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        "unposted_count": {
+                            "type": "integer",
+                            "minimum": 0
+                        }
+                    }
+                },
+                "receivables": {
+                    "type": "object",
+                    "required": [
+                        "total",
+                        "ageing"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "total": {
+                            "type": "string",
+                            "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                            "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                        },
+                        "ageing": {
+                            "type": "object",
+                            "required": [
+                                "0_30",
+                                "31_60",
+                                "61_90",
+                                "90_plus"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                                "0_30": {
+                                    "type": "string",
+                                    "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                                    "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                                },
+                                "31_60": {
+                                    "type": "string",
+                                    "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                                    "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                                },
+                                "61_90": {
+                                    "type": "string",
+                                    "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                                    "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                                },
+                                "90_plus": {
+                                    "type": "string",
+                                    "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                                    "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                                }
+                            }
+                        }
+                    }
+                },
+                "payables": {
+                    "type": "object",
+                    "required": [
+                        "total",
+                        "ageing"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "total": {
+                            "type": "string",
+                            "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                            "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                        },
+                        "ageing": {
+                            "type": "object",
+                            "required": [
+                                "0_30",
+                                "31_60",
+                                "61_90",
+                                "90_plus"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                                "0_30": {
+                                    "type": "string",
+                                    "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                                    "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                                },
+                                "31_60": {
+                                    "type": "string",
+                                    "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                                    "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                                },
+                                "61_90": {
+                                    "type": "string",
+                                    "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                                    "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                                },
+                                "90_plus": {
+                                    "type": "string",
+                                    "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                                    "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                                }
+                            }
+                        }
+                    }
+                },
+                "budget": {
+                    "type": "object",
+                    "required": [
+                        "budgeted",
+                        "actual"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "budgeted": {
+                            "type": "string",
+                            "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                            "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                        },
+                        "actual": {
+                            "type": "string",
+                            "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                            "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                        }
+                    }
+                },
+                "payroll": {
+                    "type": "object",
+                    "required": [
+                        "staff_cost",
+                        "statutory_liabilities"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "staff_cost": {
+                            "type": "string",
+                            "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                            "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                        },
+                        "statutory_liabilities": {
+                            "type": "string",
+                            "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                            "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                        }
+                    }
+                },
+                "bank_recon": {
+                    "type": "object",
+                    "description": "Reconciliation against a source the bursar does not author — the highest-value control in the platform.",
+                    "required": [
+                        "statement_closing",
+                        "ledger_closing",
+                        "divergence",
+                        "statement_ref"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "statement_closing": {
+                            "type": "string",
+                            "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                            "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                        },
+                        "ledger_closing": {
+                            "type": "string",
+                            "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                            "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                        },
+                        "divergence": {
+                            "type": "string",
+                            "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                            "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                        },
+                        "statement_ref": {
+                            "type": "string",
+                            "minLength": 1
+                        }
+                    }
+                }
+            }
+        },
+        "operational": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "enrolment": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "expected_fees": {
+                    "type": "string",
+                    "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                    "description": "Enrolment multiplied by the fee structure the BODY set — not a figure the institution chose. Compared against collected, it turns \"do we trust this report\" into arithmetic."
+                },
+                "collected": {
+                    "type": "string",
+                    "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                    "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                },
+                "collection_rate": {
+                    "type": "string",
+                    "pattern": "^(0(\\.[0-9]{1,4})?|1(\\.0{1,4})?)$",
+                    "description": "A decimal string between \"0\" and \"1\", e.g. \"0.50\". Never a float."
+                },
+                "fees_charged": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                        "session",
+                        "rows"
+                    ],
+                    "description": "What is actually being charged, per class and fee. No student is named.",
+                    "properties": {
+                        "session": {
+                            "type": "string",
+                            "minLength": 1
+                        },
+                        "rows": {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                    "level",
+                                    "category",
+                                    "amount",
+                                    "students"
+                                ],
+                                "properties": {
+                                    "level": {
+                                        "type": "string",
+                                        "minLength": 1
+                                    },
+                                    "category": {
+                                        "type": "string",
+                                        "minLength": 1
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                                        "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                                    },
+                                    "students": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "cash_share": {
+                    "type": "string",
+                    "pattern": "^(0(\\.[0-9]{1,4})?|1(\\.0{1,4})?)$",
+                    "description": "Proportion taken as physical cash. The exposure measure for interception."
+                },
+                "students": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                        "session",
+                        "total",
+                        "by_class"
+                    ],
+                    "description": "Since 1.3. How many students the institution has in the session the month falls in, class by class. No student is named.",
+                    "properties": {
+                        "session": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 120
+                        },
+                        "total": {
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        "by_class": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                    "level",
+                                    "students"
+                                ],
+                                "properties": {
+                                    "level": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 120
+                                    },
+                                    "students": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "staff": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                        "total",
+                        "by_department",
+                        "by_designation",
+                        "people"
+                    ],
+                    "description": "Since 1.3. The staff on the books at the end of the month: number, name, department and post. Never pay.",
+                    "properties": {
+                        "total": {
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        "by_department": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                    "name",
+                                    "staff"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "minLength": 1,
+                                        "maxLength": 120,
+                                        "description": "null when the school has not recorded it."
+                                    },
+                                    "staff": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                    }
+                                }
+                            }
+                        },
+                        "by_designation": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                    "name",
+                                    "staff"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "minLength": 1,
+                                        "maxLength": 120,
+                                        "description": "null when the school has not recorded it."
+                                    },
+                                    "staff": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                    }
+                                }
+                            }
+                        },
+                        "people": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                    "name",
+                                    "number",
+                                    "department",
+                                    "designation"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 120
+                                    },
+                                    "number": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "minLength": 1,
+                                        "maxLength": 120,
+                                        "description": "null when the school has not recorded it."
+                                    },
+                                    "department": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "minLength": 1,
+                                        "maxLength": 120,
+                                        "description": "null when the school has not recorded it."
+                                    },
+                                    "designation": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "minLength": 1,
+                                        "maxLength": 120,
+                                        "description": "null when the school has not recorded it."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "fees": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                        "session",
+                        "expected",
+                        "collected",
+                        "owed",
+                        "overpaid",
+                        "students",
+                        "rows"
+                    ],
+                    "description": "Since 1.4. The fee position for the academic year the month falls in, as at the end of the month. Owed and overpaid are worked out fee by fee before summing; on every row and in total, expected - collected = owed - overpaid. No student is named.",
+                    "properties": {
+                        "session": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 120
+                        },
+                        "expected": {
+                            "type": "string",
+                            "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                            "description": "Billed for the year by month end, net of discounts and fines."
+                        },
+                        "collected": {
+                            "type": "string",
+                            "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                            "description": "Paid against those fees by month end."
+                        },
+                        "owed": {
+                            "type": "string",
+                            "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                            "description": "Still to pay, fee by fee."
+                        },
+                        "overpaid": {
+                            "type": "string",
+                            "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                            "description": "Paid beyond a fee, fee by fee."
+                        },
+                        "students": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                                "paid",
+                                "part_paid",
+                                "not_paid",
+                                "not_charged"
+                            ],
+                            "description": "Students, not fees: owes nothing for the year; has paid some; owes and has paid nothing; enrolled with no fee at all.",
+                            "properties": {
+                                "paid": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                },
+                                "part_paid": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                },
+                                "not_paid": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                },
+                                "not_charged": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                }
+                            }
+                        },
+                        "rows": {
+                            "type": "array",
+                            "description": "One row per class and fee, the same class names as students and fees_charged.",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                    "level",
+                                    "category",
+                                    "expected",
+                                    "collected",
+                                    "owed",
+                                    "overpaid"
+                                ],
+                                "properties": {
+                                    "level": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 120
+                                    },
+                                    "category": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 120
+                                    },
+                                    "expected": {
+                                        "type": "string",
+                                        "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                                        "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                                    },
+                                    "collected": {
+                                        "type": "string",
+                                        "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                                        "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                                    },
+                                    "owed": {
+                                        "type": "string",
+                                        "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                                        "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                                    },
+                                    "overpaid": {
+                                        "type": "string",
+                                        "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+                                        "description": "A decimal string such as \"4200000.00\". NEVER a JSON number: float encoding is not reproducible across PHP versions and would break the payload signature."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "integrity": {
+            "type": "object",
+            "required": [
+                "ledger_hash",
+                "audit_events",
+                "reversals",
+                "backdated_entries"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "ledger_hash": {
+                    "type": "string",
+                    "pattern": "^sha256:[0-9a-f]{64}$",
+                    "description": "Hash over the period's journal lines, so the console can tell that a period's underlying detail changed even when its totals did not."
+                },
+                "audit_events": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "reversals": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "backdated_entries": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Entries whose entry date precedes the date they were created, EXCLUDING reversals. Reversals are legitimately dated to the original entry when its period is still open, so counting them here would make the finding fire constantly on correct behaviour."
+                }
+            }
+        }
+    },
+    "allOf": [
+        {
+            "title": "Capability \"ledger\" is declared if and only if its figures are present.",
+            "if": {
+                "properties": {
+                    "capabilities": {
+                        "contains": {
+                            "const": "ledger"
+                        }
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "financial": {
+                        "required": [
+                            "income_by_group",
+                            "expenditure_by_group",
+                            "surplus_deficit",
+                            "cash",
+                            "control"
+                        ]
+                    }
+                },
+                "required": [
+                    "financial"
+                ]
+            },
+            "else": {
+                "properties": {
+                    "financial": {
+                        "properties": {
+                            "income_by_group": false,
+                            "expenditure_by_group": false,
+                            "surplus_deficit": false,
+                            "cash": false,
+                            "control": false
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "title": "Capability \"receivables\" is declared if and only if its figures are present.",
+            "if": {
+                "properties": {
+                    "capabilities": {
+                        "contains": {
+                            "const": "receivables"
+                        }
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "financial": {
+                        "required": [
+                            "receivables"
+                        ]
+                    }
+                },
+                "required": [
+                    "financial"
+                ]
+            },
+            "else": {
+                "properties": {
+                    "financial": {
+                        "properties": {
+                            "receivables": false
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "title": "Capability \"payables\" is declared if and only if its figures are present.",
+            "if": {
+                "properties": {
+                    "capabilities": {
+                        "contains": {
+                            "const": "payables"
+                        }
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "financial": {
+                        "required": [
+                            "payables"
+                        ]
+                    }
+                },
+                "required": [
+                    "financial"
+                ]
+            },
+            "else": {
+                "properties": {
+                    "financial": {
+                        "properties": {
+                            "payables": false
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "title": "Capability \"budget\" is declared if and only if its figures are present.",
+            "if": {
+                "properties": {
+                    "capabilities": {
+                        "contains": {
+                            "const": "budget"
+                        }
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "financial": {
+                        "required": [
+                            "budget"
+                        ]
+                    }
+                },
+                "required": [
+                    "financial"
+                ]
+            },
+            "else": {
+                "properties": {
+                    "financial": {
+                        "properties": {
+                            "budget": false
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "title": "Capability \"payroll\" is declared if and only if its figures are present.",
+            "if": {
+                "properties": {
+                    "capabilities": {
+                        "contains": {
+                            "const": "payroll"
+                        }
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "financial": {
+                        "required": [
+                            "payroll"
+                        ]
+                    }
+                },
+                "required": [
+                    "financial"
+                ]
+            },
+            "else": {
+                "properties": {
+                    "financial": {
+                        "properties": {
+                            "payroll": false
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "title": "Capability \"bank_recon\" is declared if and only if its figures are present.",
+            "if": {
+                "properties": {
+                    "capabilities": {
+                        "contains": {
+                            "const": "bank_recon"
+                        }
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "financial": {
+                        "required": [
+                            "bank_recon"
+                        ]
+                    }
+                },
+                "required": [
+                    "financial"
+                ]
+            },
+            "else": {
+                "properties": {
+                    "financial": {
+                        "properties": {
+                            "bank_recon": false
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "title": "Capability \"enrolment\" is declared if and only if its figures are present.",
+            "if": {
+                "properties": {
+                    "capabilities": {
+                        "contains": {
+                            "const": "enrolment"
+                        }
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "operational": {
+                        "required": [
+                            "enrolment"
+                        ]
+                    }
+                },
+                "required": [
+                    "operational"
+                ]
+            },
+            "else": {
+                "properties": {
+                    "operational": {
+                        "properties": {
+                            "enrolment": false
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "title": "Capability \"fees_charged\" is declared if and only if its figures are present.",
+            "if": {
+                "properties": {
+                    "capabilities": {
+                        "contains": {
+                            "const": "fees_charged"
+                        }
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "operational": {
+                        "required": [
+                            "fees_charged"
+                        ]
+                    }
+                },
+                "required": [
+                    "operational"
+                ]
+            },
+            "else": {
+                "properties": {
+                    "operational": {
+                        "properties": {
+                            "fees_charged": false
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "title": "Capability \"students\" is declared if and only if its figures are present.",
+            "if": {
+                "properties": {
+                    "capabilities": {
+                        "contains": {
+                            "const": "students"
+                        }
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "operational": {
+                        "required": [
+                            "students"
+                        ]
+                    }
+                },
+                "required": [
+                    "operational"
+                ]
+            },
+            "else": {
+                "properties": {
+                    "operational": {
+                        "properties": {
+                            "students": false
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "title": "Capability \"staff\" is declared if and only if its figures are present.",
+            "if": {
+                "properties": {
+                    "capabilities": {
+                        "contains": {
+                            "const": "staff"
+                        }
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "operational": {
+                        "required": [
+                            "staff"
+                        ]
+                    }
+                },
+                "required": [
+                    "operational"
+                ]
+            },
+            "else": {
+                "properties": {
+                    "operational": {
+                        "properties": {
+                            "staff": false
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "title": "Capability \"fees\" is declared if and only if its figures are present.",
+            "if": {
+                "properties": {
+                    "capabilities": {
+                        "contains": {
+                            "const": "fees"
+                        }
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "operational": {
+                        "required": [
+                            "fees"
+                        ]
+                    }
+                },
+                "required": [
+                    "operational"
+                ]
+            },
+            "else": {
+                "properties": {
+                    "operational": {
+                        "properties": {
+                            "fees": false
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "title": "Capability \"integrity\" is declared if and only if its figures are present.",
+            "if": {
+                "properties": {
+                    "capabilities": {
+                        "contains": {
+                            "const": "integrity"
+                        }
+                    }
+                }
+            },
+            "then": {
+                "required": [
+                    "integrity"
+                ]
+            },
+            "else": {
+                "properties": {
+                    "integrity": false
+                }
+            }
+        }
+    ]
+}

@@ -17,16 +17,19 @@ namespace EdutrustPay\Contract;
 final class ContractVersion
 {
     /** The version this package implements. */
-    public const CURRENT = '1.3';
+    public const CURRENT = '1.4';
 
     /** Versions this package can still read. */
-    public const SUPPORTED = ['1.0', '1.1', '1.2', '1.3'];
+    public const SUPPORTED = ['1.0', '1.1', '1.2', '1.3', '1.4'];
 
     /** The version that added financial.group_names. */
     public const GROUP_NAMES_FROM = '1.2';
 
     /** Students per class, and the staff part, arrived together. */
     public const STUDENTS_AND_STAFF_FROM = '1.3';
+
+    /** The fee position for the academic year. */
+    public const FEES_FROM = '1.4';
 
     public static function supports(string $version): bool
     {

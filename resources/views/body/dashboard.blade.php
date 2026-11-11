@@ -321,37 +321,67 @@
 
     {{-- 6. FEES, SCHOOL BY SCHOOL. --}}
     <section id="fees" class="mb-8 scroll-mt-4">
-        <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('Fees up to the end of :month', ['month' => period_text($period)]) }}</h2>
+        @php
+            $yearRows = collect($collections['rows'])->where('basis', 'year');
+            $runningRows = collect($collections['rows'])->filter(fn ($row) => $row->basis === 'running' && $row->expected->state() !== \App\Support\Figure::NOT_APPLICABLE);
+        @endphp
+        <h2 class="mb-1 text-sm font-semibold uppercase tracking-wide text-ink-muted">{{ __('Fees for the school year, as at the end of :month', ['month' => period_text($period)]) }}</h2>
+        <p class="mb-3 text-xs text-ink-muted">
+            {{ __('What each school expects in fees for the year, what it has collected and what is still owed, from its own fee records.') }}
+            @if ($runningRows->isNotEmpty())
+                {{ __('Marked *: the school\'s system does not send its fees for the year yet, so its figures run from the day it started using the system, and what is owed comes from its books.') }}
+            @endif
+        </p>
 
         <div class="overflow-x-auto rounded border border-rule">
             <table class="min-w-full divide-y divide-rule text-sm">
                 <thead class="bg-surface-sunk text-left text-xs uppercase tracking-wide text-ink-muted">
                     <tr>
                         <th class="px-4 py-2 font-semibold">{{ ucfirst($overview->one) }}</th>
-                        <th class="px-4 py-2 text-right font-semibold">{{ __('Billed so far') }}</th>
-                        <th class="px-4 py-2 text-right font-semibold">{{ __('Collected so far') }}</th>
-                        <th class="px-4 py-2 text-right font-semibold">{{ __('Fees owed') }}</th>
-                        <th class="px-4 py-2 text-right font-semibold">{{ __('Owed over 90 days') }}</th>
+                        <th class="px-4 py-2 text-right font-semibold">{{ __('Expected') }}</th>
+                        <th class="px-4 py-2 text-right font-semibold">{{ __('Collected') }}</th>
+                        <th class="px-4 py-2 text-right font-semibold">{{ __('Still owed') }}</th>
+                        <th class="px-4 py-2 text-right font-semibold">{{ __('Share collected') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-rule bg-surface">
                     @foreach ($collections['rows'] as $row)
                         <tr>
-                            <td class="px-4 py-2 font-medium text-ink">{{ $row->institution->name }}</td>
+                            <td class="px-4 py-2">
+                                <a href="{{ route('body.institutions.monthly', ['institution' => $row->institution, 'period' => $period]) }}#fees" class="font-medium text-ink underline-offset-2 hover:underline">{{ $row->institution->name }}</a>
+                                @if ($row->basis === 'year')
+                                    <span class="block text-xs text-ink-muted">{{ $row->fee_session }}</span>
+                                @elseif ($row->basis === 'running' && $row->expected->state() !== \App\Support\Figure::NOT_APPLICABLE)
+                                    <span class="text-ink-muted" title="{{ __('Since it started using its system; owed from its books.') }}">*</span>
+                                @endif
+                            </td>
                             <td class="px-4 py-2 text-right"><x-figure :figure="$row->expected" /></td>
                             <td class="px-4 py-2 text-right"><x-figure :figure="$row->collected" /></td>
                             <td class="px-4 py-2 text-right"><x-figure :figure="$row->receivables" /></td>
-                            <td class="px-4 py-2 text-right"><x-figure :figure="$row->owed_over_90" /></td>
+                            <td class="px-4 py-2 text-right tabular-nums {{ $row->collection_rate !== null && (float) $row->collection_rate < 0.5 ? 'font-medium text-amber-800' : 'text-ink-soft' }}">
+                                {{ $row->collection_rate !== null ? round((float) $row->collection_rate * 100).'%' : '—' }}
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>
                 @if ($showTotals)
                     <tfoot class="border-t-2 border-rule-strong bg-surface-sunk font-medium">
                         <tr>
-                            <td class="px-4 py-2 text-ink">{{ __('All :many', ['many' => $overview->many]) }}</td>
-                            @foreach ([$collections['expected'], $collections['collected'], $collections['receivables'], $collections['ageing']['90_plus']] as $aggregate)
+                            <td class="px-4 py-2 text-ink">
+                                {{ __('All :many', ['many' => $overview->many]) }}
+                                @if ($runningRows->isNotEmpty() && $yearRows->isNotEmpty())
+                                    <span class="block text-xs font-normal text-ink-muted">{{ __('Adds the year\'s figures to those marked *') }}</span>
+                                @endif
+                            </td>
+                            @foreach ([$collections['expected'], $collections['collected'], $collections['receivables']] as $aggregate)
                                 <td class="px-4 py-2 text-right tabular-nums {{ $aggregate->isComplete() ? 'text-ink' : 'text-xs font-normal text-ink-muted' }}">{{ $total($aggregate) }}</td>
                             @endforeach
+                            @php
+                                $allExpected = $collections['expected'];
+                                $allShare = $allExpected->isComplete() && $collections['collected']->isComplete() && (float) $allExpected->total()->value() > 0
+                                    ? round((float) $collections['collected']->total()->value() / (float) $allExpected->total()->value() * 100) : null;
+                            @endphp
+                            <td class="px-4 py-2 text-right tabular-nums text-ink-soft">{{ $allShare !== null ? $allShare.'%' : '' }}</td>
                         </tr>
                     </tfoot>
                 @endif

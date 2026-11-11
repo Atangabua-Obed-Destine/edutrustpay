@@ -1,31 +1,31 @@
 {
     "full-capability": {
         "description": "An institution reporting every capability. Models a mature paxhitestbed deployment.",
-        "signature": "sha256=f2761fbd1cabbbb5e3fd32f29694674e5433df2eb9d36c835f46fe6b9ed8804b",
+        "signature": "sha256=c28e2f53f0c59cda122464f3c1138bc421a0230d4fc35ba5ce9692a10d6b17c5",
         "expected_warnings": [
             "unposted_backlog"
         ]
     },
     "ledger-only": {
         "description": "An institution that can only report a ledger. Receivables are ABSENT, not zero \u2014 the console must render \"not yet reporting\" and exclude it from consolidated receivables.",
-        "signature": "sha256=5e9b3acf26e5a9f0c44fb919053ca56b2bc9838a994b3cac7bcbbcae5e8295d8",
+        "signature": "sha256=cb2d0b610f99b79b2b00229909899c49792c3143b03c71ce602025eb9a236935",
         "expected_warnings": []
     },
     "genuine-zeros": {
         "description": "Receivables declared and genuinely zero. Contrast with ledger-only, where the same figure is absent \u2014 the console must not render these two alike.",
-        "signature": "sha256=2f1eb69244de0b46f662cb146f6646a79cf0e6bfce751952065b682db698d5c9",
+        "signature": "sha256=7e6ab4a1dbbe3f056d367d9019e75a7c6cbc99ec267bd1321528a1280241281b",
         "expected_warnings": []
     },
     "restatement-of-final": {
         "description": "Sequence 2 for a period already reported as final, with income revised down. Supersedes the prior version, which is retained. Must raise final_restated.",
-        "signature": "sha256=1cb7619f95bded161ac693c3b530d16690131fa409853e88ece0befb10e55acd",
+        "signature": "sha256=b84098596d695c2022b6ee72588c30b9f77a9076dfe3d8783a977bc4192f4405",
         "expected_warnings": [
             "backdated_entries"
         ]
     },
     "unbalanced-ledger": {
         "description": "Debits do not equal credits, and there is an unposted backlog. Must be ACCEPTED and raise unbalanced_ledger \u2014 never rejected at the door.",
-        "signature": "sha256=440d04ddef7feb1b9e98d768056f9004d32f784cf3ceae58aa868db0fd730ef6",
+        "signature": "sha256=87e508752dbb07a8a7a6bc1d2f0b86b538a1e85df1f86601c3134d118ed5dca4",
         "expected_warnings": [
             "unbalanced_ledger",
             "unposted_backlog"
@@ -33,12 +33,12 @@
     },
     "business-reduced": {
         "description": "A pharmacy on posinnova. Ledger and receivables only \u2014 no budget, no integrity, no enrolment, because those genuinely do not exist there.",
-        "signature": "sha256=104744a737a7fc1f3fccaeb5d29a1ed11ef55c2c861371e5daccfb1af1384575",
+        "signature": "sha256=c1262489fe5a4fa66ea978d37e40669c64a4b92c1dc3211353dd5c08c4a9fae2",
         "expected_warnings": []
     },
     "empty-groups": {
         "description": "A dormant month: no income and no expenditure in any OHADA group. Group maps must serialise as {} not [].",
-        "signature": "sha256=8e793e5ec3cf22f3385ad4871e2513f43320a8fe6f4714afe3ba2bf5067283f2",
+        "signature": "sha256=abdb82174a752baa54a6029bec30eb2162ad11f0d072f165933133d565cb60f5",
         "expected_warnings": []
     }
 }

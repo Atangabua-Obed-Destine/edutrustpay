@@ -234,6 +234,48 @@ $operational = [
                 ],
             ],
         ],
+        'fees' => [
+            'type' => 'object',
+            'additionalProperties' => false,
+            'required' => ['session', 'expected', 'collected', 'owed', 'overpaid', 'students', 'rows'],
+            'description' => 'Since 1.4. The fee position for the academic year the month falls in, as at the end of the month. Owed and overpaid are worked out fee by fee before summing; on every row and in total, expected - collected = owed - overpaid. No student is named.',
+            'properties' => [
+                'session' => $text,
+                'expected' => array_merge($money, ['description' => 'Billed for the year by month end, net of discounts and fines.']),
+                'collected' => array_merge($money, ['description' => 'Paid against those fees by month end.']),
+                'owed' => array_merge($money, ['description' => 'Still to pay, fee by fee.']),
+                'overpaid' => array_merge($money, ['description' => 'Paid beyond a fee, fee by fee.']),
+                'students' => [
+                    'type' => 'object',
+                    'additionalProperties' => false,
+                    'required' => ['paid', 'part_paid', 'not_paid', 'not_charged'],
+                    'description' => 'Students, not fees: owes nothing for the year; has paid some; owes and has paid nothing; enrolled with no fee at all.',
+                    'properties' => [
+                        'paid' => ['type' => 'integer', 'minimum' => 0],
+                        'part_paid' => ['type' => 'integer', 'minimum' => 0],
+                        'not_paid' => ['type' => 'integer', 'minimum' => 0],
+                        'not_charged' => ['type' => 'integer', 'minimum' => 0],
+                    ],
+                ],
+                'rows' => [
+                    'type' => 'array',
+                    'description' => 'One row per class and fee, the same class names as students and fees_charged.',
+                    'items' => [
+                        'type' => 'object',
+                        'additionalProperties' => false,
+                        'required' => ['level', 'category', 'expected', 'collected', 'owed', 'overpaid'],
+                        'properties' => [
+                            'level' => $text,
+                            'category' => $text,
+                            'expected' => $money,
+                            'collected' => $money,
+                            'owed' => $money,
+                            'overpaid' => $money,
+                        ],
+                    ],
+                ],
+            ],
+        ],
     ],
 ];
 

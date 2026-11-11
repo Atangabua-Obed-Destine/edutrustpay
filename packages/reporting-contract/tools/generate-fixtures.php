@@ -81,6 +81,14 @@ $fixtures['full-capability'] = [
             ['level' => 'HND 2', 'students' => 287],
             ['level' => 'Bachelor 3', 'students' => 245],
         ])
+        // Two classes, two fees each. One student overpaid the second
+        // instalment in HND 1, which does not hide the others' debt.
+        ->fees('2026/2027', [
+            ['level' => 'HND 1', 'category' => 'Tuition', 'expected' => $m('9300000.00'), 'collected' => $m('6100000.00'), 'owed' => $m('3200000.00'), 'overpaid' => $m('0.00')],
+            ['level' => 'HND 1', 'category' => 'Admission', 'expected' => $m('465000.00'), 'collected' => $m('480000.00'), 'owed' => $m('0.00'), 'overpaid' => $m('15000.00')],
+            ['level' => 'HND 2', 'category' => 'Tuition', 'expected' => $m('8610000.00'), 'collected' => $m('4305000.00'), 'owed' => $m('4305000.00'), 'overpaid' => $m('0.00')],
+            ['level' => 'HND 2', 'category' => 'Admission', 'expected' => $m('430500.00'), 'collected' => $m('430500.00'), 'owed' => $m('0.00'), 'overpaid' => $m('0.00')],
+        ], ['paid' => 212, 'part_paid' => 301, 'not_paid' => 84, 'not_charged' => 3])
         // Invented people, so the fixture names nobody real.
         ->staff([
             ['number' => 'ST-001', 'name' => 'Example Lecturer One', 'department' => 'Accounting', 'designation' => 'Lecturer'],

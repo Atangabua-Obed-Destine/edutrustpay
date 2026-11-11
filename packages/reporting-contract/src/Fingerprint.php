@@ -36,6 +36,12 @@ final class Fingerprint
             // raises a finding.
             $payload['operational']['students'],
             $payload['operational']['staff'],
+            // The fee position is worked out from fee and payment records whose
+            // amounts are edited in place (a discount granted, a fine waived), so
+            // a closed month's figure can drift with no new money involved.
+            // Refiling a closed month for that would raise a finding each time;
+            // an open month is refiled when it changes.
+            $payload['operational']['fees'],
             // A school naming or renaming its account groups is not a change to
             // its figures. Counting it would refile every closed month the day
             // the names first appear, and each refile of a closed month raises
@@ -82,7 +88,7 @@ final class Fingerprint
             return false;
         }
 
-        foreach ([['operational', 'fees_charged'], ['financial', 'group_names'], ['operational', 'students'], ['operational', 'staff']] as [$block, $key]) {
+        foreach ([['operational', 'fees_charged'], ['financial', 'group_names'], ['operational', 'students'], ['operational', 'staff'], ['operational', 'fees']] as [$block, $key]) {
             if (json_encode($filed[$block][$key] ?? null) !== json_encode($current[$block][$key] ?? null)) {
                 return true;
             }

@@ -1,22 +1,22 @@
 {
     "name": "business-reduced",
     "description": "A pharmacy on posinnova. Ledger and receivables only — no budget, no integrity, no enrolment, because those genuinely do not exist there.",
-    "contract_version": "1.3",
+    "contract_version": "1.4",
     "signing": {
         "note": "The secret below is a published test vector, not a credential.",
         "secret": "edutrustpay-test-vector-secret-do-not-use-in-production",
         "timestamp": "2026-09-02T08:15:00Z",
         "signature_base": "timestamp . \".\" . canonical_json",
-        "signature": "sha256=104744a737a7fc1f3fccaeb5d29a1ed11ef55c2c861371e5daccfb1af1384575"
+        "signature": "sha256=c1262489fe5a4fa66ea978d37e40669c64a4b92c1dc3211353dd5c08c4a9fae2"
     },
     "expected_warnings": [],
-    "canonical_json": "{\"capabilities\":[\"ledger\",\"receivables\"],\"contract_version\":\"1.3\",\"currency\":\"XAF\",\"financial\":{\"cash\":{\"closing\":\"2290000.00\",\"movement\":\"1470000.00\",\"opening\":\"820000.00\"},\"control\":{\"journal_entry_count\":517,\"total_credits\":\"13430000.00\",\"total_debits\":\"13430000.00\",\"unposted_count\":0},\"expenditure_by_group\":{\"60\":\"5980000.00\"},\"income_by_group\":{\"70\":\"7450000.00\"},\"receivables\":{\"ageing\":{\"0_30\":\"210000.00\",\"31_60\":\"90000.00\",\"61_90\":\"40000.00\",\"90_plus\":\"0.00\"},\"total\":\"340000.00\"},\"surplus_deficit\":\"1470000.00\"},\"generated_at\":\"2026-09-01T06:30:00Z\",\"institution_ref\":\"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee\",\"period\":\"2026-08\",\"sequence\":1,\"status\":\"final\"}",
+    "canonical_json": "{\"capabilities\":[\"ledger\",\"receivables\"],\"contract_version\":\"1.4\",\"currency\":\"XAF\",\"financial\":{\"cash\":{\"closing\":\"2290000.00\",\"movement\":\"1470000.00\",\"opening\":\"820000.00\"},\"control\":{\"journal_entry_count\":517,\"total_credits\":\"13430000.00\",\"total_debits\":\"13430000.00\",\"unposted_count\":0},\"expenditure_by_group\":{\"60\":\"5980000.00\"},\"income_by_group\":{\"70\":\"7450000.00\"},\"receivables\":{\"ageing\":{\"0_30\":\"210000.00\",\"31_60\":\"90000.00\",\"61_90\":\"40000.00\",\"90_plus\":\"0.00\"},\"total\":\"340000.00\"},\"surplus_deficit\":\"1470000.00\"},\"generated_at\":\"2026-09-01T06:30:00Z\",\"institution_ref\":\"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee\",\"period\":\"2026-08\",\"sequence\":1,\"status\":\"final\"}",
     "payload": {
         "capabilities": [
             "ledger",
             "receivables"
         ],
-        "contract_version": "1.3",
+        "contract_version": "1.4",
         "currency": "XAF",
         "financial": {
             "cash": {

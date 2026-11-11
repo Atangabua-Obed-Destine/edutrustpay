@@ -456,6 +456,120 @@ final class PayloadBuilder
     }
 
     /**
+     * The fee position for the academic year the month falls in, as at the end
+     * of the month. Since contract 1.4.
+     *
+     * A row is one class and one fee (the same class names as students() and
+     * feesCharged()), with four amounts summed over that class's fees of that
+     * kind: expected (billed, net of discounts and fines), collected, owed and
+     * overpaid. Owed and overpaid are worked out fee by fee BEFORE summing, so
+     * one student's overpayment never hides another's debt; on every row,
+     * expected - collected = owed - overpaid. The totals are added up here from
+     * the rows, so the two can never disagree.
+     *
+     * $students counts students, not fees: paid (owes nothing for the year),
+     * part_paid, not_paid (owes, and has paid nothing), and not_charged
+     * (enrolled in the year, no fee at all). No student is named.
+     *
+     * A year with nothing billed yet is sent with no rows and zero totals: that
+     * is a true zero, not a missing figure.
+     *
+     * @param  array<int, array{level: string, category: string, expected: Money, collected: Money, owed: Money, overpaid: Money}>  $rows
+     * @param  array{paid: int, part_paid: int, not_paid: int, not_charged: int}  $students
+     */
+    public function fees(string $session, array $rows, array $students): self
+    {
+        $session = self::cleanText($session);
+
+        if ($session === '' || mb_strlen($session) > self::TEXT_MAX) {
+            throw new ContractException(sprintf('fees needs a session name of 1 to %d characters.', self::TEXT_MAX));
+        }
+
+        $counts = [];
+
+        foreach (self::FEE_STUDENT_COUNTS as $key) {
+            $value = $students[$key] ?? null;
+
+            if (! is_int($value) || $value < 0) {
+                throw new ContractException(sprintf('fees needs a whole number of students for "%s".', $key));
+            }
+
+            $counts[$key] = $value;
+        }
+
+        if (array_diff(array_keys($students), self::FEE_STUDENT_COUNTS) !== []) {
+            throw new ContractException('fees counts students as paid, part_paid, not_paid and not_charged, and nothing else.');
+        }
+
+        $clean = [];
+        $totals = array_fill_keys(self::FEE_AMOUNTS, Money::zero());
+
+        foreach ($rows as $row) {
+            $level = self::cleanText((string) ($row['level'] ?? ''));
+            $category = self::cleanText((string) ($row['category'] ?? ''));
+
+            if ($level === '' || $category === '' || mb_strlen($level) > self::TEXT_MAX || mb_strlen($category) > self::TEXT_MAX) {
+                throw new ContractException('Each fee row needs a class and a fee name of 1 to '.self::TEXT_MAX.' characters.');
+            }
+
+            $key = $level."\x1F".$category;
+
+            if (isset($clean[$key])) {
+                throw new ContractException(sprintf('The fee "%s" for "%s" appears twice. Add its amounts together.', $category, $level));
+            }
+
+            $entry = ['category' => $category, 'level' => $level];
+
+            foreach (self::FEE_AMOUNTS as $amount) {
+                if (! (($row[$amount] ?? null) instanceof Money)) {
+                    throw new ContractException(sprintf('Each fee row needs "%s" as Money.', $amount));
+                }
+
+                if ($row[$amount]->isNegative()) {
+                    throw new ContractException(sprintf('"%s" cannot be negative, for "%s" in "%s".', $amount, $category, $level));
+                }
+
+                $entry[$amount] = $row[$amount];
+            }
+
+            if (! $entry['expected']->subtract($entry['collected'])->equals($entry['owed']->subtract($entry['overpaid']))) {
+                throw new ContractException(sprintf(
+                    'For "%s" in "%s", expected less collected must equal owed less overpaid.',
+                    $category,
+                    $level
+                ));
+            }
+
+            foreach (self::FEE_AMOUNTS as $amount) {
+                $totals[$amount] = $totals[$amount]->add($entry[$amount]);
+            }
+
+            ksort($entry);
+            $clean[$key] = $entry;
+        }
+
+        ksort($clean, SORT_STRING);
+
+        $this->operational['fees'] = [
+            'collected' => $totals['collected'],
+            'expected' => $totals['expected'],
+            'overpaid' => $totals['overpaid'],
+            'owed' => $totals['owed'],
+            'rows' => array_values($clean),
+            'session' => $session,
+            'students' => $counts,
+        ];
+
+        return $this->declare(Capability::FEES);
+    }
+
+    /** The four amounts on every fee row and in the fee totals. */
+    public const FEE_AMOUNTS = ['expected', 'collected', 'owed', 'overpaid'];
+
+    /** How the fee part counts students. */
+    public const FEE_STUDENT_COUNTS = ['paid', 'part_paid', 'not_paid', 'not_charged'];
+
+    /**
      * @param  list<array<string, ?string>>  $people
      * @return list<array{name: ?string, staff: int}>  by name, with "not recorded" (null) last
      */
